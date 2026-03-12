@@ -7,12 +7,14 @@ import { User } from '@/types';
 interface CollaborationPanelProps {
   users: User[];
   currentUser: User;
+  proposalId?: string;
   onAddUser?: (email: string, role: User['role']) => void;
 }
 
 export default function CollaborationPanel({
   users,
   currentUser,
+  proposalId,
   onAddUser,
 }: CollaborationPanelProps) {
   const [showAddUser, setShowAddUser] = useState(false);
@@ -80,11 +82,11 @@ export default function CollaborationPanel({
             value={newUserRole}
             onChange={(e) => setNewUserRole(e.target.value as User['role'])}
             className="w-full px-2 py-1.5 border border-[#d1d5db] text-xs mb-2 focus:ring-1 focus:ring-[#2563eb] focus:border-[#2563eb] bg-white"
+            disabled
           >
             <option value="viewer">Viewer</option>
-            <option value="editor">Editor</option>
-            <option value="admin">Admin</option>
           </select>
+          <p className="text-xs text-[#6b7280] mb-2">All collaborators are viewers for now</p>
           <div className="flex gap-1.5">
             <button
               onClick={handleAddUser}
@@ -106,30 +108,36 @@ export default function CollaborationPanel({
       )}
 
       <div className="space-y-1.5">
-        {users.map((user) => (
-          <div
-            key={user.id}
-            className="flex items-center justify-between p-2 bg-[#f9fafb] border border-[#d1d5db] gap-2 min-w-0"
-          >
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <div className="w-7 h-7 bg-[#1a1a1a] flex items-center justify-center text-white text-xs font-medium flex-shrink-0 border border-[#d1d5db]">
-                {user.name.charAt(0).toUpperCase()}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-[#1a1a1a] truncate">{user.name}</p>
-                <p className="text-xs text-[#6b7280] truncate mono">{user.email}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <span className="flex-shrink-0">{getRoleIcon(user.role)}</span>
-              <span
-                className={`px-1.5 py-0.5 text-xs font-medium whitespace-nowrap border ${getRoleColor(user.role)}`}
-              >
-                {user.role}
-              </span>
-            </div>
+        {users.length === 0 ? (
+          <div className="text-center py-4 text-xs text-[#6b7280]">
+            No collaborators yet. Add someone to share this proposal.
           </div>
-        ))}
+        ) : (
+          users.map((user) => (
+            <div
+              key={user.id}
+              className="flex items-center justify-between p-2 bg-[#f9fafb] border border-[#d1d5db] gap-2 min-w-0"
+            >
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <div className="w-7 h-7 bg-[#1a1a1a] flex items-center justify-center text-white text-xs font-medium flex-shrink-0 border border-[#d1d5db]">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-[#1a1a1a] truncate">{user.name}</p>
+                  <p className="text-xs text-[#6b7280] truncate mono">{user.email}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <span className="flex-shrink-0">{getRoleIcon(user.role)}</span>
+                <span
+                  className={`px-1.5 py-0.5 text-xs font-medium whitespace-nowrap border ${getRoleColor(user.role)}`}
+                >
+                  {user.role}
+                </span>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

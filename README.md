@@ -50,9 +50,8 @@ A web-based AI system that helps research organizations analyze government BAAs/
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **UI Components**: Lucide React (icons)
-- **PDF Processing**: pdf-parse
+- **PDF Processing**: pdf2json
 - **File Upload**: react-dropzone
-- **Charts**: Recharts (for future enhancements)
 
 ## Getting Started
 
@@ -68,17 +67,17 @@ A web-based AI system that helps research organizations analyze government BAAs/
 npm install
 ```
 
-### Supabase Setup
+### Environment Setup
 
 1. Create a Supabase project at https://supabase.com
-2. Copy `.env.local.example` to `.env.local`
-3. Add your Supabase credentials:
+2. Create `.env.local` file with:
    ```
    NEXT_PUBLIC_SUPABASE_URL=your_project_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+   OPENAI_API_KEY=your_openai_api_key
    ```
 
-4. Run the database schema:
+3. Run the database schema:
    - Go to Supabase Dashboard → SQL Editor
    - Run the SQL from `supabase/schema.sql`
    - This creates the `proposals` table with RLS policies
@@ -111,7 +110,7 @@ leidos_prototype/
 ├── app/
 │   ├── api/
 │   │   ├── parse-pdf/          # PDF parsing endpoint
-│   │   ├── generate-proposal/   # AI proposal generation endpoint
+│   │   ├── generate-proposal-stream/   # AI proposal generation endpoint (streaming)
 │   │   └── save-proposal/      # Save proposal to database
 │   ├── login/                   # Authentication pages
 │   ├── signup/
@@ -126,7 +125,7 @@ leidos_prototype/
 │   ├── ProposalView.tsx         # Proposal display with feedback
 │   ├── ConfidenceScore.tsx      # Confidence visualization
 │   ├── CollaborationPanel.tsx   # User collaboration UI
-│   └── ProjectSetup.tsx         # Post-award project setup
+│   └── ProposalGenerationLoader.tsx  # Loading component with progress
 ├── lib/
 │   ├── supabase/                # Supabase client utilities
 │   └── validation.ts            # JSON validation logic
@@ -161,11 +160,11 @@ Parses uploaded PDF and extracts structure, requirements, and deadlines.
 **Request**: FormData with `file` field
 **Response**: BAA object with parsed sections and metadata
 
-### POST `/api/generate-proposal`
-Generates proposal draft based on BAA and organizational context.
+### POST `/api/generate-proposal-stream`
+Generates proposal draft using OpenAI with real-time progress updates via Server-Sent Events (SSE).
 
 **Request**: JSON with `baa` and `organizationContext`
-**Response**: Proposal object with sections, confidence scores, and feedback
+**Response**: SSE stream with progress updates (0-100%) and final proposal object with sections, confidence scores, and feedback
 
 ## Database Schema
 
@@ -181,18 +180,75 @@ The `proposals` table stores:
 
 **Row Level Security (RLS)** is enabled - users can only access their own proposals.
 
+## Environment Variables
+
+Required environment variables (add to `.env.local`):
+
+```bash
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+
+# OpenAI API Configuration
+OPENAI_API_KEY=your_openai_api_key
+
+# Resend Email Configuration (for collaboration invitations)
+RESEND_API_KEY=your_resend_api_key  # Optional: Get from https://resend.com
+# RESEND_FROM_EMAIL=noreply@yourdomain.com  # Optional: Requires domain verification
+
+# App URL (for email links)
+NEXT_PUBLIC_APP_URL=http://localhost:3000  # or your production URL
+```
+
+## Database Setup
+
+1. **Create `proposals` table**: Run `supabase/migration_add_collaborators.sql` in Supabase SQL Editor
+2. **Create `proposal_collaborators` table**: Run `supabase/migration_add_collaborators.sql` (includes both tables)
+3. **Fix RLS policies** (if needed): Run `supabase/FIX_COLLABORATORS_NOW.sql` if you encounter permission errors
+
+## Collaboration Features
+
+The platform supports inviting collaborators to view proposals:
+
+- **Invite via email**: Add collaborator email addresses in the Collaboration Panel
+- **Email invitations**: Automatically sent via Resend (if configured)
+- **Viewer access**: All invited users have viewer-only access
+- **Shared links**: Collaborators receive unique invitation links
+
+**Setup Email Sending:**
+1. Sign up at https://resend.com
+2. Get your API key from https://resend.com/api-keys
+3. Add `RESEND_API_KEY` to `.env.local`
+4. For custom domains, verify at https://resend.com/domains
+
 ## Notes
 
-- AI proposal generation is currently stubbed with simulated responses
-- PDF parsing uses pdf2json for text extraction
-- All proposals are saved to Supabase database
+- AI proposal generation uses OpenAI GPT-4o-mini with streaming for real-time progress
+- Generates comprehensive ~10-page Stage 1 BAA proposals (5,000-6,000 words, 10 sections)
+- PDF parsing uses pdf2json for text extraction with raw text preservation
+- All proposals are saved to Supabase database with auto-save functionality
 - Authentication required for all protected routes
-- Collaboration features are UI-ready but need backend integration
-- Project setup is functional but requires persistence layer
+- Users can resume proposals from any step
+- Markdown rendering for proposal content (bold, bullets, headers, etc.)
+
+## Deployment
+
+### Vercel Deployment
+
+1. Push code to GitHub
+2. Import repository in Vercel
+3. Add environment variables in Vercel dashboard
+4. Deploy
+
+**Required Vercel Environment Variables:**
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `OPENAI_API_KEY`
+- `RESEND_API_KEY` (optional)
+- `NEXT_PUBLIC_APP_URL` (set to your Vercel URL)
 
 ## Future Enhancements
 
-- Real AI model integration
 - Advanced PDF parsing with better structure detection
 - Real-time collaboration with WebSockets
 - Document versioning and history
@@ -203,4 +259,3 @@ The `proposals` table stores:
 ## License
 
 Private prototype for Leidos GenAI BAA & RFP Proposal Assistant.
-# Leidos-BAA-Gen-AI

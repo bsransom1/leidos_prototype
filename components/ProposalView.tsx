@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { CheckCircle2, AlertCircle, XCircle, TrendingUp, Award, MessageSquare } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { Proposal, BAA, ProposalSection } from '@/types';
 import ConfidenceScore from './ConfidenceScore';
 
@@ -68,7 +69,8 @@ export default function ProposalView({ proposal, baa, onAward }: ProposalViewPro
           <div className="bg-[#f9fafb] border border-[#d1d5db] p-3 sticky top-0">
             <h3 className="text-xs font-semibold text-[#1a1a1a] mb-3">Proposal Sections</h3>
             <div className="space-y-1.5">
-              {proposal.sections.map((section) => (
+              {proposal.sections && proposal.sections.length > 0 ? (
+                proposal.sections.map((section) => (
                 <button
                   key={section.id}
                   onClick={() => setSelectedSection(section.id)}
@@ -86,9 +88,9 @@ export default function ProposalView({ proposal, baa, onAward }: ProposalViewPro
                   </div>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs text-[#6b7280] mono">
-                      {section.confidence}%
+                      {section.confidence || 0}%
                     </span>
-                    {section.feedback.length > 0 && (
+                    {section.feedback && section.feedback.length > 0 && (
                       <span className="text-xs text-[#2563eb] flex items-center gap-1">
                         <MessageSquare className="w-3 h-3" />
                         {section.feedback.length}
@@ -96,7 +98,12 @@ export default function ProposalView({ proposal, baa, onAward }: ProposalViewPro
                     )}
                   </div>
                 </button>
-              ))}
+              ))
+              ) : (
+                <div className="p-4 text-center text-xs text-[#6b7280]">
+                  No sections available. The proposal may still be generating.
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -104,9 +111,17 @@ export default function ProposalView({ proposal, baa, onAward }: ProposalViewPro
         {/* Main Content - Section Details */}
         <div className="lg:col-span-2">
           {selectedSection ? (
-            <SectionDetail
-              section={proposal.sections.find((s) => s.id === selectedSection)!}
-            />
+            (() => {
+              const section = proposal.sections?.find((s) => s.id === selectedSection);
+              if (!section) {
+                return (
+                  <div className="text-center py-8 text-[#6b7280] border border-[#d1d5db] bg-[#f9fafb] p-6">
+                    <p className="text-xs">Section not found</p>
+                  </div>
+                );
+              }
+              return <SectionDetail section={section} />;
+            })()
           ) : (
             <div className="text-center py-8 text-[#6b7280] border border-[#d1d5db] bg-[#f9fafb] p-6">
               <p className="text-xs">Select a section to view details</p>
@@ -151,7 +166,7 @@ function SectionDetail({ section }: { section: ProposalSection }) {
           <div className="flex items-center gap-1.5">
             <TrendingUp className="w-3.5 h-3.5 text-[#6b7280]" />
             <span className="text-xs text-[#6b7280]">
-              Confidence: <span className="font-medium mono">{section.confidence}%</span>
+              Confidence: <span className="font-medium mono">{section.confidence || 0}%</span>
             </span>
           </div>
           {section.required && (
@@ -166,20 +181,98 @@ function SectionDetail({ section }: { section: ProposalSection }) {
       <div className="mb-3">
         <h4 className="text-xs font-semibold text-[#374151] mb-2">Content</h4>
         <div className="bg-[#f9fafb] border border-[#d1d5db] p-3">
-          <div className="text-xs text-[#374151] whitespace-pre-wrap leading-relaxed">
-            {section.content}
+          <div className="text-xs text-[#374151] leading-relaxed prose prose-sm max-w-none">
+            {section.content ? (
+              <ReactMarkdown
+                components={{
+                  // Bold text
+                  strong: ({ children }) => (
+                    <strong className="font-semibold text-[#1a1a1a]">{children}</strong>
+                  ),
+                  // Paragraphs
+                  p: ({ children }) => (
+                    <p className="mb-3 last:mb-0">{children}</p>
+                  ),
+                  // Unordered lists (bullet points)
+                  ul: ({ children, ...props }: any) => {
+                    const depth = props.depth || 0;
+                    const indentClass = depth === 0 ? 'ml-6' : depth === 1 ? 'ml-10' : 'ml-14';
+                    return (
+                      <ul className={`list-disc list-outside ${indentClass} mb-3 space-y-1.5 last:mb-0`}>
+                        {children}
+                      </ul>
+                    );
+                  },
+                  // Ordered lists (numbered)
+                  ol: ({ children, ...props }: any) => {
+                    const depth = props.depth || 0;
+                    const indentClass = depth === 0 ? 'ml-6' : depth === 1 ? 'ml-10' : 'ml-14';
+                    return (
+                      <ol className={`list-decimal list-outside ${indentClass} mb-3 space-y-1.5 last:mb-0`}>
+                        {children}
+                      </ol>
+                    );
+                  },
+                  // List items
+                  li: ({ children }) => (
+                    <li className="pl-1.5 leading-relaxed">{children}</li>
+                  ),
+                  // Headers
+                  h1: ({ children }) => (
+                    <h1 className="text-base font-semibold text-[#1a1a1a] mb-2 mt-4 first:mt-0">
+                      {children}
+                    </h1>
+                  ),
+                  h2: ({ children }) => (
+                    <h2 className="text-sm font-semibold text-[#1a1a1a] mb-2 mt-3 first:mt-0">
+                      {children}
+                    </h2>
+                  ),
+                  h3: ({ children }) => (
+                    <h3 className="text-xs font-semibold text-[#1a1a1a] mb-1.5 mt-2 first:mt-0">
+                      {children}
+                    </h3>
+                  ),
+                  // Code blocks
+                  code: ({ children, className }) => {
+                    const isInline = !className;
+                    return isInline ? (
+                      <code className="bg-[#f3f4f6] px-1 py-0.5 rounded text-[#dc2626] font-mono text-[11px]">
+                        {children}
+                      </code>
+                    ) : (
+                      <code className={className}>{children}</code>
+                    );
+                  },
+                  // Blockquotes
+                  blockquote: ({ children }) => (
+                    <blockquote className="border-l-4 border-[#d1d5db] pl-3 italic text-[#6b7280] my-3">
+                      {children}
+                    </blockquote>
+                  ),
+                  // Horizontal rule
+                  hr: () => (
+                    <hr className="my-4 border-t border-[#d1d5db]" />
+                  ),
+                }}
+              >
+                {section.content}
+              </ReactMarkdown>
+            ) : (
+              <p className="text-[#6b7280]">No content available for this section.</p>
+            )}
           </div>
         </div>
       </div>
 
       {/* Feedback */}
-      {section.feedback.length > 0 && (
+      {section.feedback && section.feedback.length > 0 && (
         <div>
           <h4 className="text-xs font-semibold text-[#374151] mb-2">Analysis & Recommendations</h4>
           <div className="space-y-2">
-            {section.feedback.map((fb) => (
+            {section.feedback.map((fb, index) => (
               <div
-                key={fb.id}
+                key={fb.id || `feedback-${section.id}-${index}`}
                 className={`p-3 border ${
                   fb.type === 'strength'
                     ? 'bg-[#ecfdf5] border-[#a7f3d0]'

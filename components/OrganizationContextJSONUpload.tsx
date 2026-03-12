@@ -10,9 +10,10 @@ import { validateOrganizationContext } from '@/lib/validation';
 interface OrganizationContextJSONUploadProps {
   baa: BAA;
   onSubmit: (context: OrganizationContext) => void;
+  onContinue?: () => void;
 }
 
-export default function OrganizationContextJSONUpload({ baa, onSubmit }: OrganizationContextJSONUploadProps) {
+export default function OrganizationContextJSONUpload({ baa, onSubmit, onContinue }: OrganizationContextJSONUploadProps) {
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
@@ -59,13 +60,8 @@ export default function OrganizationContextJSONUpload({ baa, onSubmit }: Organiz
       const result = validateOrganizationContext(data);
 
       setValidationResult(result);
-
-      // If valid, convert to OrganizationContext format and submit
-      if (result.valid && result.data) {
-        // Convert JSON format to OrganizationContext format
-        const context: OrganizationContext = convertJSONToContext(result.data);
-        onSubmit(context);
-      }
+      
+      // Don't auto-submit - user must click button
     } catch (error) {
       setValidationResult({
         valid: false,
@@ -225,6 +221,23 @@ export default function OrganizationContextJSONUpload({ baa, onSubmit }: Organiz
                 <p className="text-[#1a1a1a] font-medium mono">${validationResult.data.funding_plan.total_requested_usd.toLocaleString()}</p>
               </div>
             </div>
+          </div>
+          <div className="mt-3 flex justify-end">
+            <button
+              onClick={() => {
+                if (validationResult.valid && validationResult.data) {
+                  const context: OrganizationContext = convertJSONToContext(validationResult.data);
+                  onSubmit(context);
+                  if (onContinue) {
+                    onContinue();
+                  }
+                }
+              }}
+              className="px-4 py-1.5 bg-[#059669] text-white text-xs font-medium hover:bg-[#047857] transition-colors border border-[#059669] flex items-center gap-1.5"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Continue to Review & Plan
+            </button>
           </div>
         </div>
       )}

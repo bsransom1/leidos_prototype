@@ -50,7 +50,15 @@ export default function LoginPage() {
         return;
       }
 
-      router.push('/dashboard');
+      // Check for redirect parameter
+      const params = new URLSearchParams(window.location.search);
+      const redirectUrl = params.get('redirect');
+      
+      if (redirectUrl) {
+        router.push(decodeURIComponent(redirectUrl));
+      } else {
+        router.push('/dashboard');
+      }
       router.refresh();
     } catch (err: any) {
       setError(err.message || 'Failed to sign in');

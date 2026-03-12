@@ -7,6 +7,7 @@ export interface BAA {
   requirements: Requirement[];
   deadlines: Deadline[];
   structure: string[];
+  rawText?: string; // Full PDF text content
 }
 
 export interface BAASection {

@@ -20,6 +20,10 @@ export async function POST(request: NextRequest) {
     const PDFParser = (await import('pdf2json')).default;
     const pdfParser = new PDFParser();
     
+    // Enable raw text extraction by setting the needRawText property
+    // @ts-ignore - pdf2json types may not include this property
+    pdfParser.needRawText = true;
+    
     // Parse PDF and extract text using pdf2json
     return new Promise<NextResponse>((resolve, reject) => {
       pdfParser.on('pdfParser_dataError', (errMsg: Error | { parserError: Error }) => {
@@ -28,19 +32,113 @@ export async function POST(request: NextRequest) {
         reject(new Error(`PDF parsing error: ${error.message}`));
       });
       
-      pdfParser.on('pdfParser_dataReady', () => {
+      pdfParser.on('pdfParser_dataReady', (pdfData: any) => {
         try {
-          // Extract text from all pages
-          const pdfData = pdfParser.getRawTextContent();
-          const text = pdfData || '';
+          console.log('📄 PDF parsed successfully');
+          console.log('  PDF pages:', pdfData.Pages?.length || 0);
+          console.log('  PDF formImage:', pdfData.formImage ? 'Present' : 'Missing');
           
-          const data = { text };
+          // Try multiple methods to extract text from pdf2json
+          let text = '';
+          
+          // Method 1: getRawTextContent() - primary method (should work now with needRawText: 1)
+          try {
+            const rawText = pdfParser.getRawTextContent();
+            if (rawText && typeof rawText === 'string' && rawText.length > 100) {
+              text = rawText;
+              console.log('✅ Method 1 (getRawTextContent):', text.length, 'characters');
+            } else {
+              console.warn('⚠️  Method 1 (getRawTextContent):', rawText?.length || 0, 'characters - too short');
+              console.warn('  Raw text type:', typeof rawText);
+              console.warn('  Raw text preview:', String(rawText).substring(0, 200));
+            }
+          } catch (e) {
+            console.warn('⚠️  Method 1 (getRawTextContent) failed:', e);
+          }
+          
+          // Method 2: Extract from Pages array if Method 1 failed
+          if (!text || text.length < 100) {
+            try {
+              if (pdfData.Pages && Array.isArray(pdfData.Pages)) {
+                const extractedText: string[] = [];
+                pdfData.Pages.forEach((page: any, pageIndex: number) => {
+                  if (page.Texts && Array.isArray(page.Texts)) {
+                    page.Texts.forEach((textItem: any) => {
+                      if (textItem.R && Array.isArray(textItem.R)) {
+                        textItem.R.forEach((r: any) => {
+                          if (r.T) {
+                            // Decode URI-encoded text
+                            try {
+                              const decoded = decodeURIComponent(r.T);
+                              extractedText.push(decoded);
+                            } catch (e) {
+                              extractedText.push(r.T);
+                            }
+                          }
+                        });
+                      }
+                    });
+                  }
+                });
+                const method2Text = extractedText.join(' ');
+                if (method2Text.length > text.length) {
+                  text = method2Text;
+                  console.log('✅ Method 2 (Pages extraction):', text.length, 'characters');
+                }
+              }
+            } catch (e) {
+              console.warn('⚠️  Method 2 (Pages extraction) failed:', e);
+            }
+          }
+          
+          // Method 3: Extract from all text fields if still empty
+          if (!text || text.length < 100) {
+            try {
+              const allText: string[] = [];
+              const extractTextFromObject = (obj: any): void => {
+                if (typeof obj === 'string') {
+                  allText.push(obj);
+                } else if (Array.isArray(obj)) {
+                  obj.forEach(item => extractTextFromObject(item));
+                } else if (obj && typeof obj === 'object') {
+                  Object.values(obj).forEach(value => extractTextFromObject(value));
+                }
+              };
+              extractTextFromObject(pdfData);
+              const method3Text = allText.filter(t => t && t.length > 2).join(' ');
+              if (method3Text.length > text.length) {
+                text = method3Text;
+                console.log('✅ Method 3 (Deep extraction):', text.length, 'characters');
+              }
+            } catch (e) {
+              console.warn('⚠️  Method 3 (Deep extraction) failed:', e);
+            }
+          }
+          
+          // Final fallback
+          if (!text || text.length < 100) {
+            console.error('❌ All extraction methods failed or returned insufficient text');
+            console.error('  Final text length:', text.length);
+            console.error('  PDF data keys:', Object.keys(pdfData || {}));
+            // Still return what we have, but log the issue
+          }
+          
+          console.log('📝 Final extracted text length:', text.length, 'characters');
+          if (text.length > 0) {
+            console.log('📝 Text preview (first 500 chars):', text.substring(0, 500));
+          }
           
           // Parse the PDF text into sections
           const sections = parseBAASections(text);
           const requirements = extractRequirements(text);
           const deadlines = extractDeadlines(text);
           const structure = extractStructure(text);
+          
+          console.log('📊 Parsed results:');
+          console.log('  Sections:', sections.length);
+          console.log('  Requirements:', requirements.length);
+          console.log('  Deadlines:', deadlines.length);
+          console.log('  Structure:', structure.length);
 
           resolve(NextResponse.json({
             id: `baa-${Date.now()}`,
@@ -51,7 +149,7 @@ export async function POST(request: NextRequest) {
             requirements,
             deadlines,
             structure,
-            rawText: text,
+            rawText: text, // CRITICAL: Always include rawText
           }));
         } catch (error) {
           console.error('Error processing PDF data:', error);
