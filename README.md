@@ -46,7 +46,7 @@ A web-based AI system that helps research organizations analyze government BAAs/
 
 ## Tech Stack
 
-- **Framework**: Next.js 16 with App Router
+- **Framework**: Next.js 16 with App Router (single app in `app/`; no separate Vite bundle)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **UI Components**: Lucide React (icons)

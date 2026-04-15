@@ -5,11 +5,8 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || '',
 });
 
-// Log API key status on module load
-if (process.env.OPENAI_API_KEY) {
-  console.log('✅ OpenAI API key loaded:', process.env.OPENAI_API_KEY.substring(0, 20) + '...');
-} else {
-  console.error('❌ OPENAI_API_KEY not found in environment');
+if (!process.env.OPENAI_API_KEY) {
+  console.error('OPENAI_API_KEY is not set');
 }
 
 export async function POST(request: NextRequest) {

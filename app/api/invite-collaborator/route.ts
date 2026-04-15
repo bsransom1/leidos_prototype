@@ -212,7 +212,7 @@ async function sendInvitationEmail(
     let fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
     
     // Try sending with the configured email
-    let { data, error } = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: fromEmail,
       to: [toEmail],
       subject: `You've been invited to view: ${proposalTitle}`,
