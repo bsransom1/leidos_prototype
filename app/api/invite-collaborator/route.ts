@@ -205,121 +205,157 @@ async function sendInvitationEmail(
     }
 
     const resend = new Resend(resendApiKey);
-    
-    // Get sender email from env or use Resend's default domain
-    // For demos, use onboarding@resend.dev (no domain verification needed)
-    // To use custom domain, verify it at https://resend.com/domains first
-    let fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
-    
-    // Try sending with the configured email
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+
+    const emailHtml = buildInvitationEmail({ toEmail, proposalTitle, invitationLink, inviterEmail });
+
     const { data, error } = await resend.emails.send({
       from: fromEmail,
       to: [toEmail],
-      subject: `You've been invited to view: ${proposalTitle}`,
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background-color: #ffffff; border: 1px solid #d1d5db; border-radius: 4px; padding: 24px;">
-            <h2 style="color: #1a1a1a; margin-top: 0;">Proposal Collaboration Invitation</h2>
-            <p>You've been invited by <strong>${inviterEmail}</strong> to view the proposal:</p>
-            <div style="background-color: #f9fafb; border-left: 4px solid #059669; padding: 16px; margin: 20px 0;">
-              <p style="font-weight: bold; font-size: 18px; color: #059669; margin: 0;">${proposalTitle}</p>
-            </div>
-            <p>Click the button below to view the proposal:</p>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${invitationLink}" 
-                 style="display: inline-block; padding: 12px 24px; background-color: #059669; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
-                View Proposal
-              </a>
-            </div>
-            <p style="color: #6b7280; font-size: 12px; margin-top: 30px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
-              If the button doesn't work, copy and paste this link into your browser:<br>
-              <a href="${invitationLink}" style="color: #2563eb; word-break: break-all;">${invitationLink}</a>
-            </p>
-          </div>
-        </body>
-        </html>
-      `,
-      text: `You've been invited by ${inviterEmail} to view the proposal: ${proposalTitle}\n\nView the proposal here: ${invitationLink}`,
+      subject: `[LEIDOS GENAI] Proposal review access granted — ${proposalTitle}`,
+      html: emailHtml,
+      text: `${inviterEmail} has granted you read access to the following DARPA BAA proposal:\n\n"${proposalTitle}"\n\nAccess the proposal here:\n${invitationLink}\n\nThis link is unique to ${toEmail}. Do not forward.`,
     });
 
-    // If domain verification error, fall back to Resend's default domain
-    if (error && error.message?.includes('domain is not verified')) {
-      console.warn('⚠️  Custom domain not verified, falling back to Resend default domain');
-      fromEmail = 'onboarding@resend.dev';
-      
-      // Retry with default domain
-      const retryResult = await resend.emails.send({
-        from: fromEmail,
-        to: [toEmail],
-        subject: `You've been invited to view: ${proposalTitle}`,
-        html: `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background-color: #ffffff; border: 1px solid #d1d5db; border-radius: 4px; padding: 24px;">
-              <h2 style="color: #1a1a1a; margin-top: 0;">Proposal Collaboration Invitation</h2>
-              <p>You've been invited by <strong>${inviterEmail}</strong> to view the proposal:</p>
-              <div style="background-color: #f9fafb; border-left: 4px solid #059669; padding: 16px; margin: 20px 0;">
-                <p style="font-weight: bold; font-size: 18px; color: #059669; margin: 0;">${proposalTitle}</p>
-              </div>
-              <p>Click the button below to view the proposal:</p>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${invitationLink}" 
-                   style="display: inline-block; padding: 12px 24px; background-color: #059669; color: white; text-decoration: none; border-radius: 4px; font-weight: 500;">
-                  View Proposal
-                </a>
-              </div>
-              <p style="color: #6b7280; font-size: 12px; margin-top: 30px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
-                If the button doesn't work, copy and paste this link into your browser:<br>
-                <a href="${invitationLink}" style="color: #2563eb; word-break: break-all;">${invitationLink}</a>
-              </p>
-            </div>
-          </body>
-          </html>
-        `,
-        text: `You've been invited by ${inviterEmail} to view the proposal: ${proposalTitle}\n\nView the proposal here: ${invitationLink}`,
-      });
-      
-      if (retryResult.error) {
-        console.error('❌ Resend API error (retry failed):', retryResult.error);
-        return false;
-      }
-      
-      console.log('✅ Email sent successfully via Resend (using default domain):', {
-        to: toEmail,
-        emailId: retryResult.data?.id,
-        proposal: proposalTitle,
-        from: fromEmail,
-      });
-      
-      return true;
-    }
-    
     if (error) {
       console.error('❌ Resend API error:', error);
       return false;
     }
 
-    console.log('✅ Email sent successfully via Resend:', {
-      to: toEmail,
-      emailId: data?.id,
-      proposal: proposalTitle,
-      from: fromEmail,
-    });
-    
+    console.log('✅ Invitation email sent:', { to: toEmail, emailId: data?.id, from: fromEmail });
     return true;
   } catch (error) {
     console.error('❌ Email sending error:', error);
     return false;
   }
+}
+
+function buildInvitationEmail({
+  toEmail,
+  proposalTitle,
+  invitationLink,
+  inviterEmail,
+}: {
+  toEmail: string;
+  proposalTitle: string;
+  invitationLink: string;
+  inviterEmail: string;
+}): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proposal Access — ${proposalTitle}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#060a12;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#060a12;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#060c18;border:1px solid rgba(80,110,150,0.35);border-bottom:none;padding:20px 28px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td>
+                    <span style="font-family:monospace;font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#7a8ca8;">LEIDOS</span>
+                    <span style="font-family:monospace;font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#dce6f0;"> GENAI</span>
+                    <span style="font-family:monospace;font-size:10px;color:rgba(107,124,150,0.8);margin-left:12px;">// PROPOSAL INTELLIGENCE PLATFORM</span>
+                  </td>
+                  <td align="right">
+                    <span style="font-family:monospace;font-size:10px;color:rgba(107,124,150,0.6);letter-spacing:0.1em;">CONTROLLED ACCESS</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Navy accent bar -->
+          <tr>
+            <td style="height:3px;background:linear-gradient(90deg,#0033a0 0%,#c5920a 100%);border-left:1px solid rgba(80,110,150,0.35);border-right:1px solid rgba(80,110,150,0.35);"></td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="background-color:#0c1422;border:1px solid rgba(80,110,150,0.35);border-top:none;border-bottom:none;padding:32px 28px;">
+
+              <p style="margin:0 0 8px 0;font-family:monospace;font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#6b7c96;">
+                ACCESS NOTIFICATION
+              </p>
+              <h1 style="margin:0 0 24px 0;font-size:20px;font-weight:700;color:#dce6f0;letter-spacing:0.01em;line-height:1.2;">
+                You've been granted<br>read access to a proposal
+              </h1>
+
+              <p style="margin:0 0 20px 0;font-size:13px;color:rgba(220,230,240,0.8);line-height:1.6;">
+                <strong style="color:#dce6f0;">${inviterEmail}</strong> has shared a DARPA BAA proposal with you for review.
+              </p>
+
+              <!-- Proposal title block -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+                <tr>
+                  <td style="background-color:#080e1a;border:1px solid rgba(80,110,150,0.35);border-left:3px solid #0033a0;padding:16px 18px;">
+                    <p style="margin:0 0 4px 0;font-family:monospace;font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#6b7c96;">PROPOSAL TITLE</p>
+                    <p style="margin:0;font-size:15px;font-weight:600;color:#dce6f0;line-height:1.4;">${proposalTitle}</p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Access details -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;border:1px solid rgba(80,110,150,0.25);">
+                <tr>
+                  <td width="50%" style="padding:12px 16px;border-right:1px solid rgba(80,110,150,0.25);">
+                    <p style="margin:0 0 3px 0;font-family:monospace;font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#6b7c96;">ACCESS LEVEL</p>
+                    <p style="margin:0;font-size:12px;color:#dce6f0;font-weight:600;">VIEWER — Read Only</p>
+                  </td>
+                  <td width="50%" style="padding:12px 16px;">
+                    <p style="margin:0 0 3px 0;font-family:monospace;font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#6b7c96;">GRANTED TO</p>
+                    <p style="margin:0;font-size:12px;color:#dce6f0;font-family:monospace;">${toEmail}</p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CTA -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+                <tr>
+                  <td align="center">
+                    <a href="${invitationLink}"
+                       style="display:inline-block;padding:12px 32px;background-color:#0033a0;color:#ffffff;text-decoration:none;font-family:monospace;font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;">
+                      ACCESS PROPOSAL DOCUMENT &#8594;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0;font-size:11px;color:#6b7c96;line-height:1.6;">
+                This link is unique to <span style="color:#7a8ca8;font-family:monospace;">${toEmail}</span> and provides read-only access to the proposal document. Do not forward this email.
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#060a12;border:1px solid rgba(80,110,150,0.35);border-top:1px solid rgba(80,110,150,0.2);padding:16px 28px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td>
+                    <p style="margin:0;font-family:monospace;font-size:10px;color:rgba(107,124,150,0.5);letter-spacing:0.08em;">
+                      LEIDOS GENAI · PROPOSAL INTELLIGENCE PLATFORM<br>
+                      If the button does not work, copy this URL into your browser:<br>
+                      <a href="${invitationLink}" style="color:rgba(107,124,150,0.7);word-break:break-all;">${invitationLink}</a>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 }

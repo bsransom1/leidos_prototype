@@ -1,0 +1,87 @@
+/**
+ * Defense/GovTech design tokens.
+ * Palette: DoD navy primary · tactical amber accent · cold near-black surfaces.
+ * Typography: IBM Plex Sans body · IBM Plex Mono data / labels.
+ * Shape: hard-edge (2–3 px radius) — no consumer-app rounding.
+ */
+:root {
+  /* Brand */
+  --ds-primary: #0033a0;
+  --ds-primary-hover: #0044cc;
+  --ds-accent: #c5920a;
+  --ds-accent-muted: rgba(197, 146, 10, 0.2);
+
+  /* Surfaces — cold, near-black (no purple) */
+  --ds-surface: #0c1422;
+  --ds-surface-elevated: #101b2e;
+  --ds-page: #060a12;
+  --ds-shell: #080e1a;
+  --ds-header: #060c18;
+
+  /* Neutral scale */
+  --ds-neutral-strong: #3a4558;
+  --ds-neutral-mid: #7a8ca8;
+
+  /* Content */
+  --ds-text: #dce6f0;
+  --ds-text-secondary: rgba(220, 230, 240, 0.85);
+  --ds-text-muted: #6b7c96;
+  --ds-text-subtle: rgba(107, 124, 150, 0.75);
+
+  /* Lines — visible structural borders */
+  --ds-border: rgba(80, 110, 150, 0.38);
+  --ds-border-muted: rgba(50, 70, 100, 0.5);
+  --ds-border-strong: rgba(80, 110, 150, 0.6);
+
+  /* Semantic */
+  --ds-positive: #2e9e6a;
+  --ds-positive-muted: rgba(46, 158, 106, 0.12);
+  --ds-warning: #c5920a;
+  --ds-warning-muted: rgba(197, 146, 10, 0.14);
+  --ds-danger: #c03535;
+  --ds-danger-muted: rgba(192, 53, 53, 0.1);
+  --ds-info: #2e6ab5;
+  --ds-info-muted: rgba(46, 106, 181, 0.12);
+
+  /* Chart / viz */
+  --ds-chart-1: #0033a0;
+  --ds-chart-2: #c5920a;
+  --ds-chart-3: #2e9e6a;
+  --ds-chart-4: #2e6ab5;
+  --ds-chart-midtone: rgba(122, 140, 168, 0.3);
+
+  /* Elevation — crisp, no soft glow */
+  --ds-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(80, 110, 150, 0.15);
+  --ds-shadow-md: 0 2px 10px rgba(0, 0, 0, 0.75);
+
+  /* Shape — near-zero for hard military feel */
+  --ds-radius-sm: 2px;
+  --ds-radius-md: 2px;
+  --ds-radius-lg: 3px;
+
+  /* Type scale — slightly denser than consumer defaults */
+  --ds-text-body: 0.875rem;
+  --ds-leading-body: 1.45;
+
+  /* Spacing grid (8px base) */
+  --ds-space-1: 0.25rem;
+  --ds-space-2: 0.5rem;
+  --ds-space-3: 0.75rem;
+  --ds-space-4: 1rem;
+  --ds-space-5: 1.25rem;
+  --ds-space-6: 1.5rem;
+  --ds-space-8: 2rem;
+}
+
+.ds-app {
+  background: var(--ds-page);
+  color: var(--ds-text);
+}
+
+/* Focus ring: thin amber outline — HUD-style */
+.ds-focus-ring:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 1px var(--ds-page),
+    0 0 0 3px var(--ds-accent);
+}

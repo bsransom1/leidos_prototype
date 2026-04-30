@@ -2,12 +2,49 @@
 
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, FileText, Loader2, CheckCircle2 } from 'lucide-react';
-import { BAA } from '@/types';
+import {
+  UploadSimple,
+  CircleNotch,
+  CheckCircle,
+  FileText,
+  CalendarBlank,
+  Cpu,
+  Hash,
+  Tree,
+  Target,
+  ChartBar,
+  BookOpen,
+  ArrowRight,
+} from '@phosphor-icons/react';
+import { BAA, Deadline } from '@/types';
+import { Badge } from '@/components/ui/badge';
 
 interface PDFUploadProps {
   onUploadComplete: (baa: BAA) => void;
   onContinue?: () => void;
+}
+
+function formatDeadlineDay(isoLike: Deadline['date']): string {
+  const d = typeof isoLike === 'string' ? new Date(isoLike) : isoLike;
+  if (!(d instanceof Date) || Number.isNaN(d.getTime())) return 'TBD';
+  return new Intl.DateTimeFormat('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(d);
+}
+
+function deadlineTone(t: Deadline['type']): 'positive' | 'info' | 'default' {
+  if (t === 'submission') return 'positive';
+  if (t === 'question') return 'info';
+  return 'default';
+}
+
+function deadlineTypeLabel(t: Deadline['type']): string {
+  if (t === 'submission') return 'SUBMIT';
+  if (t === 'question') return 'Q&A';
+  return 'SCHED';
 }
 
 export default function PDFUpload({ onUploadComplete, onContinue }: PDFUploadProps) {
@@ -36,9 +73,7 @@ export default function PDFUpload({ onUploadComplete, onContinue }: PDFUploadPro
         body: formData,
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to parse PDF');
-      }
+      if (!response.ok) throw new Error('Failed to parse PDF');
 
       const baa = await response.json();
       setUploadedBAA(baa);
@@ -48,120 +83,311 @@ export default function PDFUpload({ onUploadComplete, onContinue }: PDFUploadPro
     } finally {
       setUploading(false);
     }
-  }, [onUploadComplete]);
+  }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      'application/pdf': ['.pdf'],
-    },
+    accept: { 'application/pdf': ['.pdf'] },
     maxFiles: 1,
     disabled: uploading,
   });
 
+  const chars  = uploadedBAA?.rawText?.length ?? 0;
+  const pages  = uploadedBAA?.pageCount;
+  const tech   = uploadedBAA?.technologySignals ?? [];
+  const notices = uploadedBAA?.noticeNumbers ?? [];
+  const summary = uploadedBAA?.ingestSummary?.trim();
+  const deadlines = uploadedBAA?.deadlines ?? [];
+  const reqs   = uploadedBAA?.requirements ?? [];
+  const structure = uploadedBAA?.structure ?? [];
+
   return (
     <div className="w-full">
-      <div className="mb-3">
-        <h2 className="text-base font-semibold text-[#1a1a1a]">Ingest Solicitation Document</h2>
+      {/* Page header */}
+      <div className="mb-5">
+        <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-ds-text">
+          Ingest solicitation (PDF)
+        </h2>
+        <p className="mt-1.5 text-[13px] text-ds-text-muted">
+          Extracts headings, requirement phrases, calendar cues, tech vocabulary, and program markers
+          from the PDF text layer.
+        </p>
       </div>
 
+      {/* Drop zone */}
       <div
         {...getRootProps()}
-        className={`border-2 border-dashed p-6 text-center cursor-pointer ${
+        className={`cursor-pointer border-2 border-dashed p-6 text-center transition-colors ${
           isDragActive
-            ? 'border-[#2563eb] bg-[#eff6ff]'
+            ? 'border-ds-accent/70 bg-ds-accent/10'
             : uploadedBAA
-            ? 'border-[#059669] bg-[#ecfdf5]'
-            : 'border-[#d1d5db] hover:border-[#9ca3af] bg-white'
-        } ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              ? 'border-emerald-800/65 bg-emerald-950/30'
+              : 'border-ds-border bg-ds-shell/35 hover:border-ds-border-strong hover:bg-white/[0.02]'
+        } ${uploading ? 'cursor-not-allowed opacity-50' : ''}`}
       >
         <input {...getInputProps()} />
-        
+
         {uploading ? (
-          <div className="flex flex-col items-center">
-            <Loader2 className="w-8 h-8 text-[#2563eb] animate-spin mb-3" />
-            <p className="text-xs text-[#6b7280]">Processing...</p>
+          <div className="flex items-center justify-center gap-3">
+            <CircleNotch className="h-5 w-5 animate-spin text-ds-primary" weight="bold" />
+            <p className="mono text-[11px] uppercase tracking-[0.1em] text-ds-text-muted">
+              Parsing PDF text layer…
+            </p>
           </div>
         ) : uploadedBAA ? (
-          <div className="flex flex-col items-center">
-            <CheckCircle2 className="w-8 h-8 text-[#059669] mb-2" />
-            <p className="text-sm font-medium text-[#065f46] mb-1">BAA Document Parsed Successfully</p>
-            <p className="text-xs text-[#6b7280]">Click "Continue" below to proceed</p>
+          <div className="flex items-center justify-center gap-3">
+            <CheckCircle className="h-5 w-5 text-emerald-400" weight="bold" aria-hidden />
+            <div className="text-left">
+              <p className="text-[13px] font-semibold text-emerald-200">Solicitation ingest complete</p>
+              <p className="mono text-[11px] text-ds-text-muted">
+                Review extract fidelity below — then continue to org context.
+              </p>
+            </div>
           </div>
         ) : (
           <div className="flex flex-col items-center">
-            <div className="w-12 h-12 bg-[#f3f4f6] border border-[#d1d5db] flex items-center justify-center mb-3">
-              <Upload className="w-6 h-6 text-[#374151]" />
+            <div className="mb-3 flex h-10 w-10 items-center justify-center border border-ds-border bg-ds-surface-elevated/40">
+              <UploadSimple className="h-5 w-5 text-ds-text-muted" weight="bold" aria-hidden />
             </div>
-            <p className="text-sm font-medium text-[#1a1a1a] mb-1">
-              {isDragActive ? 'Release to ingest' : 'Drag document here'}
+            <p className="mb-2 text-[14px] font-semibold text-ds-text">
+              {isDragActive ? 'Release to ingest' : 'Drag & drop solicitation PDF'}
             </p>
-            <p className="text-xs text-[#6b7280] mb-3">or</p>
-            <button className="px-4 py-1.5 bg-[#1a1a1a] text-white text-xs font-medium hover:bg-[#374151] transition-colors border border-[#1a1a1a]">
-              Select File
-            </button>
+            <span className="mono border border-ds-primary bg-ds-primary px-5 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white">
+              Browse file
+            </span>
           </div>
         )}
       </div>
 
       {error && (
-        <div className="mt-4 p-3 bg-[#fef2f2] border border-[#fecaca]">
-          <p className="text-xs text-[#991b1b] font-medium">Error: {error}</p>
+        <div className="mt-4 border border-red-900/55 bg-red-950/35 px-4 py-3">
+          <p className="text-sm font-semibold text-red-200">{error}</p>
         </div>
       )}
 
-      {/* BAA Info Summary */}
+      {/* ── Ingest profile ──────────────────────────────────────── */}
       {uploadedBAA && (
-        <div className="mt-4">
-          <h3 className="text-xs font-semibold text-[#1a1a1a] mb-2">BAA Document Summary</h3>
-          <div className="bg-[#f9fafb] border border-[#d1d5db] p-4">
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div>
-                <p className="text-[#6b7280] mb-0.5">Document Title</p>
-                <p className="text-[#1a1a1a] font-medium">{uploadedBAA.title}</p>
+        <div className="mt-6 space-y-0 border border-ds-border bg-ds-surface shadow-ds-md">
+
+          {/* ── Title + meta badges ─────────────────────────────── */}
+          <div className="flex flex-col gap-2 border-b border-ds-border bg-ds-header/70 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <FileText className="h-3.5 w-3.5 shrink-0 text-ds-accent" aria-hidden />
+                <p className="truncate text-[13px] font-semibold leading-snug text-ds-text">
+                  {uploadedBAA.title || uploadedBAA.fileName}
+                </p>
               </div>
-              <div>
-                <p className="text-[#6b7280] mb-0.5">File Name</p>
-                <p className="text-[#1a1a1a] font-medium mono text-xs">{uploadedBAA.fileName}</p>
-              </div>
-              <div>
-                <p className="text-[#6b7280] mb-0.5">Sections Identified</p>
-                <p className="text-[#1a1a1a] font-medium">{uploadedBAA.sections?.length || 0} sections</p>
-              </div>
-              <div>
-                <p className="text-[#6b7280] mb-0.5">Requirements Found</p>
-                <p className="text-[#1a1a1a] font-medium">{uploadedBAA.requirements?.length || 0} requirements</p>
-              </div>
-              <div>
-                <p className="text-[#6b7280] mb-0.5">Deadlines Identified</p>
-                <p className="text-[#1a1a1a] font-medium">{uploadedBAA.deadlines?.length || 0} deadlines</p>
-              </div>
-              <div>
-                <p className="text-[#6b7280] mb-0.5">Document Structure</p>
-                <p className="text-[#1a1a1a] font-medium">{uploadedBAA.structure?.length || 0} structure elements</p>
-              </div>
-              {uploadedBAA.rawText && (
-                <div className="col-span-2">
-                  <p className="text-[#6b7280] mb-0.5">Content Length</p>
-                  <p className="text-[#1a1a1a] font-medium mono">{uploadedBAA.rawText.length.toLocaleString()} characters</p>
+              <p className="mt-0.5 font-mono text-[10px] text-ds-text-muted">{uploadedBAA.fileName}</p>
+            </div>
+            <div className="flex flex-wrap gap-1.5 sm:justify-end">
+              {typeof pages === 'number' && pages > 0 && (
+                <Badge tone="info">
+                  <BookOpen className="mr-1 inline h-3 w-3" aria-hidden />{pages} pg
+                </Badge>
+              )}
+              <Badge tone="default">
+                <ChartBar className="mr-1 inline h-3 w-3" weight="bold" aria-hidden />{chars.toLocaleString()} ch
+              </Badge>
+              <Badge tone="accent">
+                <Tree className="mr-1 inline h-3 w-3" weight="bold" aria-hidden />{structure.length} toc
+              </Badge>
+              <Badge tone="warning">
+                <Target className="mr-1 inline h-3 w-3" aria-hidden />{reqs.length} req
+              </Badge>
+              <Badge tone="positive">
+                <CalendarBlank className="mr-1 inline h-3 w-3" weight="bold" aria-hidden />{deadlines.length} dates
+              </Badge>
+            </div>
+          </div>
+
+          {/* ── Narrative + signals ─────────────────────────────── */}
+          <div className="grid gap-0 border-b border-ds-border lg:grid-cols-[1fr_180px]">
+            {/* Narrative + notices + tech */}
+            <div className="space-y-4 border-b border-ds-border px-5 py-4 lg:border-b-0 lg:border-r">
+              {summary ? (
+                <div>
+                  <p className="mono mb-1.5 text-[10px] uppercase tracking-[0.12em] text-ds-text-muted">
+                    Opening corpus
+                  </p>
+                  <p className="text-[12px] leading-relaxed text-ds-text-secondary">{summary}</p>
+                </div>
+              ) : (
+                <p className="text-[12px] italic text-ds-text-muted">
+                  Narrative unavailable — PDF may be a scan with no text layer.
+                </p>
+              )}
+
+              {notices.length > 0 && (
+                <div>
+                  <p className="mono mb-1.5 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.12em] text-ds-text-muted">
+                    <Hash className="h-3 w-3" aria-hidden />
+                    Program / notice IDs
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {notices.map((n) => (
+                      <span
+                        key={n}
+                        className="mono border border-ds-border-strong bg-black/25 px-2 py-px text-[10px] text-ds-text-secondary"
+                      >
+                        {n}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {tech.length > 0 && (
+                <div>
+                  <p className="mono mb-1.5 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.12em] text-ds-text-muted">
+                    <Cpu className="h-3 w-3" aria-hidden />
+                    Mission-domain signals
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {tech.map((t) => (
+                      <Badge key={t} tone="accent" className="text-[10px]">{t}</Badge>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
+
+            {/* Compact stats column */}
+            <div className="px-5 py-4">
+              <p className="mono mb-2 text-[10px] uppercase tracking-[0.12em] text-ds-text-muted">
+                Coverage
+              </p>
+              <table className="w-full text-[11px]">
+                <tbody>
+                  {([
+                    ['Sections',  uploadedBAA.sections?.length ?? 0],
+                    ['Req phrases', reqs.length],
+                    ['Dates',     deadlines.length],
+                    ['TOC nodes', structure.length],
+                    ...(typeof pages === 'number' ? [['Pages' as string, pages as number]] : []),
+                  ] as [string, number][]).map(([label, val]) => (
+                    <tr key={label} className="border-b border-ds-border/40 last:border-none">
+                      <td className="py-1.5 pr-3 font-mono text-ds-text-muted">{label}</td>
+                      <td className="py-1.5 text-right font-mono font-semibold tabular-nums text-ds-text">
+                        {val}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div className="mt-3 flex justify-end">
-            <button
-              onClick={() => {
-                onUploadComplete(uploadedBAA);
-                if (onContinue) {
-                  onContinue();
-                }
-              }}
-              className="px-4 py-1.5 bg-[#059669] text-white text-xs font-medium hover:bg-[#047857] transition-colors border border-[#059669] flex items-center gap-1.5"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              Continue to Organization Context
-            </button>
-          </div>
+
+          {/* ── Critical dates: compact table rows ──────────────── */}
+          {deadlines.length > 0 && (
+            <div className="border-b border-ds-border">
+              <div className="border-b border-ds-border/50 bg-ds-header/40 px-5 py-2">
+                <p className="mono flex items-center gap-1.5 text-[10px] uppercase tracking-[0.12em] text-ds-text-muted">
+                  <CalendarBlank className="h-3 w-3" weight="bold" aria-hidden />
+                  Critical dates
+                </p>
+              </div>
+              <table className="w-full">
+                <tbody>
+                  {deadlines.map((d, i) => (
+                    <tr
+                      key={d.id ?? i}
+                      className="border-b border-ds-border/40 last:border-none hover:bg-white/[0.02]"
+                    >
+                      <td className="w-16 px-5 py-2.5">
+                        <Badge tone={deadlineTone(d.type)} className="whitespace-nowrap">
+                          {deadlineTypeLabel(d.type)}
+                        </Badge>
+                      </td>
+                      <td className="w-48 px-3 py-2.5 font-mono text-[11px] tabular-nums text-ds-text">
+                        {formatDeadlineDay(d.date)}
+                      </td>
+                      <td className="px-3 py-2.5 text-[11px] leading-snug text-ds-text-muted">
+                        {d.description || 'Adjacent calendar language in solicitation.'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* ── TOC + Requirements ───────────────────────────────── */}
+          {(structure.length > 0 || reqs.length > 0) && (
+            <div className="grid gap-0 md:grid-cols-2">
+              {structure.length > 0 && (
+                <div className={reqs.length > 0 ? 'border-b border-ds-border md:border-b-0 md:border-r' : ''}>
+                  <div className="border-b border-ds-border/50 bg-ds-header/40 px-5 py-2">
+                    <p className="mono flex items-center gap-1.5 text-[10px] uppercase tracking-[0.12em] text-ds-text-muted">
+                      <Tree className="h-3 w-3" weight="bold" aria-hidden />
+                      TOC scan ({structure.length} nodes)
+                    </p>
+                  </div>
+                  <ul className="max-h-[180px] overflow-y-auto px-5 py-3">
+                    {structure.slice(0, 14).map((line, idx) => (
+                      <li
+                        key={`${idx}-${line.slice(0, 40)}`}
+                        className="flex gap-2.5 py-1 text-[11px] leading-snug text-ds-text-secondary"
+                      >
+                        <span className="mono w-5 shrink-0 text-right text-[10px] text-ds-accent/80">
+                          {String(idx + 1).padStart(2, '0')}
+                        </span>
+                        <span className="min-w-0 truncate">{line}</span>
+                      </li>
+                    ))}
+                    {structure.length > 14 && (
+                      <li className="mono py-1 text-[10px] text-ds-text-muted">
+                        +{structure.length - 14} more…
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              )}
+
+              {reqs.length > 0 && (
+                <div>
+                  <div className="border-b border-ds-border/50 bg-ds-header/40 px-5 py-2">
+                    <p className="mono flex items-center gap-1.5 text-[10px] uppercase tracking-[0.12em] text-ds-text-muted">
+                      <Target className="h-3 w-3" aria-hidden />
+                      Req phrases ({reqs.length} found)
+                    </p>
+                  </div>
+                  <ul className="max-h-[180px] overflow-y-auto px-5 py-3 space-y-2">
+                    {reqs.slice(0, 8).map((r) => (
+                      <li
+                        key={r.id}
+                        className="border-l-2 border-ds-accent/50 pl-2.5 text-[11px] leading-snug text-ds-text-muted"
+                      >
+                        {r.text.slice(0, 200)}{r.text.length > 200 ? '…' : ''}
+                      </li>
+                    ))}
+                    {reqs.length > 8 && (
+                      <li className="mono text-[10px] text-ds-text-muted">
+                        +{reqs.length - 8} additional phrases…
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Continue button */}
+      {uploadedBAA && (
+        <div className="mt-4 flex justify-end">
+          <button
+            type="button"
+            onClick={() => {
+              onUploadComplete(uploadedBAA);
+              if (onContinue) onContinue();
+            }}
+            className="mono inline-flex items-center gap-2 border border-emerald-800/65 bg-emerald-900/50 px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-emerald-100 shadow-ds-sm transition-[filter] hover:brightness-110 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ds-accent"
+          >
+            Continue to org context
+            <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+          </button>
         </div>
       )}
     </div>

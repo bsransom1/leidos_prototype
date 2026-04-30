@@ -1,6 +1,6 @@
 'use client';
 
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendUp, TrendDown, Minus } from '@phosphor-icons/react';
 
 interface ConfidenceScoreProps {
   score: number;
@@ -8,58 +8,58 @@ interface ConfidenceScoreProps {
 }
 
 export default function ConfidenceScore({ score, previousScore }: ConfidenceScoreProps) {
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-[#059669]';
-    if (score >= 65) return 'text-[#d97706]';
-    return 'text-[#dc2626]';
+  const getScoreColor = (s: number) => {
+    if (s >= 80) return 'text-emerald-300';
+    if (s >= 65) return 'text-amber-300';
+    return 'text-red-300';
   };
 
-  const getScoreBgColor = (score: number) => {
-    if (score >= 80) return 'bg-[#ecfdf5] border-[#a7f3d0]';
-    if (score >= 65) return 'bg-[#fffbeb] border-[#fde68a]';
-    return 'bg-[#fef2f2] border-[#fecaca]';
+  const getScoreBand = (s: number) => {
+    if (s >= 80) return 'border-emerald-800/50 bg-emerald-950/30';
+    if (s >= 65) return 'border-amber-800/50 bg-amber-950/30';
+    return 'border-red-900/45 bg-red-950/35';
   };
 
-  const getTrend = () => {
-    if (!previousScore) return null;
+  const trend = (): 'up' | 'down' | 'neutral' | null => {
+    if (previousScore === undefined) return null;
     if (score > previousScore) return 'up';
     if (score < previousScore) return 'down';
     return 'neutral';
   };
 
-  const trend = getTrend();
+  const t = trend();
 
   return (
-    <div className={`border p-4 ${getScoreBgColor(score)}`}>
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex-1">
-          <p className="text-xs font-medium text-[#6b7280] mb-1">Overall Proposal Confidence</p>
-          <div className="flex items-baseline gap-2">
-            <span className={`text-2xl font-semibold mono ${getScoreColor(score)}`}>
-              {score}%
-            </span>
-            {trend && (
-              <div className="flex items-center gap-1">
-                {trend === 'up' && (
+    <div className={`rounded-ds-md border p-6 shadow-ds-sm ${getScoreBand(score)}`}>
+      <div className="flex flex-wrap items-center justify-between gap-6">
+        <div className="min-w-[12rem] flex-1">
+          <p className="mono text-[11px] uppercase tracking-[0.12em] text-ds-text-muted">
+            Proposal confidence aggregate
+          </p>
+          <div className="mt-3 flex flex-wrap items-baseline gap-3">
+            <span className={`mono text-4xl font-semibold tabular-nums ${getScoreColor(score)}`}>{score}%</span>
+            {t && (
+              <div className="flex items-center gap-2 text-xs">
+                {t === 'up' && previousScore !== undefined && (
                   <>
-                    <TrendingUp className="w-3.5 h-3.5 text-[#059669]" />
-                    <span className="text-xs text-[#059669] font-medium mono">
-                      +{score - previousScore!}%
+                    <TrendUp className="h-4 w-4 text-emerald-400" weight="bold" />
+                    <span className="mono font-medium text-emerald-300">
+                      +{(score - previousScore).toFixed(0)} pts
                     </span>
                   </>
                 )}
-                {trend === 'down' && (
+                {t === 'down' && previousScore !== undefined && (
                   <>
-                    <TrendingDown className="w-3.5 h-3.5 text-[#dc2626]" />
-                    <span className="text-xs text-[#dc2626] font-medium mono">
-                      {score - previousScore!}%
+                    <TrendDown className="h-4 w-4 text-red-300" weight="bold" />
+                    <span className="mono font-medium text-red-200">
+                      {(score - previousScore).toFixed(0)} pts
                     </span>
                   </>
                 )}
-                {trend === 'neutral' && (
+                {t === 'neutral' && (
                   <>
-                    <Minus className="w-3.5 h-3.5 text-[#9ca3af]" />
-                    <span className="text-xs text-[#9ca3af] font-medium">No change</span>
+                    <Minus className="h-4 w-4 text-ds-text-muted" weight="bold" />
+                    <span className="text-ds-text-muted">Stable</span>
                   </>
                 )}
               </div>
@@ -67,33 +67,25 @@ export default function ConfidenceScore({ score, previousScore }: ConfidenceScor
           </div>
         </div>
 
-        {/* Confidence Bar */}
-        <div className="flex-1 max-w-xs">
-          <div className="w-full bg-[#e5e7eb] h-2 overflow-hidden border border-[#d1d5db]">
+        <div className="min-w-[10rem] max-w-xs flex-1">
+          <div className="h-2 overflow-hidden rounded-ds-sm border border-ds-border bg-ds-shell/60">
             <div
-              className={`h-full transition-all duration-500 ${
-                score >= 80
-                  ? 'bg-[#059669]'
-                  : score >= 65
-                  ? 'bg-[#d97706]'
-                  : 'bg-[#dc2626]'
+              className={`h-full transition-[width] duration-500 ${
+                score >= 80 ? 'bg-emerald-500/80' : score >= 65 ? 'bg-amber-400/90' : 'bg-red-500/85'
               }`}
               style={{ width: `${score}%` }}
             />
           </div>
-          <div className="flex justify-between mt-1 text-xs text-[#6b7280]">
-            <span>0%</span>
-            <span>50%</span>
-            <span>100%</span>
+          <div className="mono mt-2 flex justify-between text-[10px] uppercase tracking-wide text-ds-text-muted">
+            <span>0</span>
+            <span>50</span>
+            <span>100</span>
           </div>
         </div>
       </div>
 
-      {/* Benchmark Info */}
-      <div className="mt-3 pt-3 border-t border-[#d1d5db]">
-        <p className="text-xs text-[#6b7280]">
-          Target: 75%+
-        </p>
+      <div className="mt-5 border-t border-ds-border pt-4">
+        <p className="text-[11px] text-ds-text-muted">Conformance target baseline: ≥ 75%</p>
       </div>
     </div>
   );

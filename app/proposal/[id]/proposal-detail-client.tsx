@@ -3,31 +3,49 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { ArrowLeft, Trash2, Edit2, Save, X } from 'lucide-react';
-import ProposalView from '@/components/ProposalView';
-import { BAA, Proposal } from '@/types';
-import { User } from '@supabase/supabase-js';
+import { ArrowLeft, ArrowRight, Trash, PencilSimple, FloppyDisk, X, SquaresFour } from '@phosphor-icons/react';
+import ProposalEditor from '@/components/ProposalEditor';
+import type { BAA, Proposal } from '@/types';
+import type { User } from '@supabase/supabase-js';
+import { AppFooter, AppHeader } from '@/components/ui/app-shell';
+import { BackLink } from '@/components/ui/app-shell';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface ProposalDetailClientProps {
-  proposal: any;
+  proposal: {
+    id: string;
+    title: string;
+    status: string;
+    created_at: string;
+    generated_output: string;
+    baa_input: string;
+  };
   user: User;
 }
 
 export default function ProposalDetailClient({ proposal, user }: ProposalDetailClientProps) {
+  void user;
   const router = useRouter();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [title, setTitle] = useState(proposal.title);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  const proposalData: Proposal = JSON.parse(proposal.generated_output);
+  const [proposalData, setProposalData] = useState<Proposal>(() => JSON.parse(proposal.generated_output));
   const baaData: BAA = JSON.parse(proposal.baa_input);
+
+  const handleSaveProposalContent = async (updated: Proposal) => {
+    const supabase = createClient();
+    await supabase
+      .from('proposals')
+      .update({ generated_output: JSON.stringify(updated) })
+      .eq('id', proposal.id);
+    setProposalData(updated);
+  };
 
   const handleSaveTitle = async () => {
     const supabase = createClient();
-    const { error } = await supabase
-      .from('proposals')
-      .update({ title })
-      .eq('id', proposal.id);
+    const { error } = await supabase.from('proposals').update({ title }).eq('id', proposal.id);
 
     if (!error) {
       setIsEditingTitle(false);
@@ -40,10 +58,7 @@ export default function ProposalDetailClient({ proposal, user }: ProposalDetailC
 
     setIsDeleting(true);
     const supabase = createClient();
-    const { error } = await supabase
-      .from('proposals')
-      .delete()
-      .eq('id', proposal.id);
+    const { error } = await supabase.from('proposals').delete().eq('id', proposal.id);
 
     if (!error) {
       router.push('/dashboard');
@@ -53,101 +68,102 @@ export default function ProposalDetailClient({ proposal, user }: ProposalDetailC
   };
 
   return (
-    <div className="h-screen flex flex-col bg-[#f8f9fa]">
-      {/* Header */}
-      <header className="flex-shrink-0 bg-white border-b border-[#d1d5db]">
-        <div className="w-full px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <a href="/dashboard" className="text-[#6b7280] hover:text-[#1a1a1a]">
-                <ArrowLeft className="w-4 h-4" />
-              </a>
-              {isEditingTitle ? (
+    <div className="flex h-screen flex-col bg-ds-page">
+      <AppHeader>
+        <div className="flex w-full flex-wrap items-start justify-between gap-4 px-6 py-3">
+          <div className="flex min-w-0 flex-[1_1_280px] items-start gap-3">
+            <BackLink
+              href={proposal.status === 'awarded' ? `/dashboard/projects/${proposal.id}/pm` : '/dashboard'}
+              className="mt-1.5 shrink-0"
+            >
+              <ArrowLeft className="h-4 w-4" weight="bold" aria-label="Back to dashboard" />
+            </BackLink>
+            {isEditingTitle ? (
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} className="max-w-xl min-w-[12rem]" autoFocus />
+                <Button type="button" variant="ghost" className="!p-1.5" onClick={handleSaveTitle}>
+                  <FloppyDisk className="h-4 w-4 text-emerald-400" weight="bold" aria-hidden />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="!p-1.5"
+                  onClick={() => {
+                    setTitle(proposal.title);
+                    setIsEditingTitle(false);
+                  }}
+                >
+                  <X className="h-4 w-4 text-ds-text-muted" weight="bold" aria-hidden />
+                </Button>
+              </div>
+            ) : (
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="px-2 py-1 border border-[#d1d5db] text-sm focus:ring-1 focus:ring-[#2563eb] focus:border-[#2563eb] bg-white"
-                    autoFocus
-                  />
+                  <p className="ds-h3 truncate text-ds-text">{proposal.title}</p>
                   <button
-                    onClick={handleSaveTitle}
-                    className="p-1 text-[#059669] hover:bg-[#ecfdf5]"
+                    type="button"
+                    onClick={() => setIsEditingTitle(true)}
+                    className="text-ds-text-muted hover:text-ds-text-secondary shrink-0 rounded-ds-sm p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-accent"
                   >
-                    <Save className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setTitle(proposal.title);
-                      setIsEditingTitle(false);
-                    }}
-                    className="p-1 text-[#6b7280] hover:bg-[#f3f4f6]"
-                  >
-                    <X className="w-4 h-4" />
+                    <PencilSimple className="h-3.5 w-3.5" weight="bold" aria-hidden />
                   </button>
                 </div>
-              ) : (
-                <div>
-                  <h1 className="text-base font-semibold text-[#1a1a1a] tracking-tight flex items-center gap-2">
-                    {proposal.title}
-                    <button
-                      onClick={() => setIsEditingTitle(true)}
-                      className="text-[#6b7280] hover:text-[#1a1a1a]"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                  </h1>
-                  <p className="text-xs text-[#6b7280] mt-0.5">Proposal Detail</p>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <span className={`px-2 py-0.5 text-xs font-medium border ${
-                proposal.status === 'generated' 
-                  ? 'bg-[#ecfdf5] text-[#065f46] border-[#a7f3d0]'
-                  : 'bg-[#f3f4f6] text-[#374151] border-[#d1d5db]'
-              }`}>
-                {proposal.status}
-              </span>
-              <button
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="p-1.5 text-[#dc2626] hover:bg-[#fef2f2] disabled:opacity-50"
+                <p className="mt-1 text-xs uppercase tracking-[0.08em] text-ds-text-muted">Proposal artifact</p>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {proposal.status === 'awarded' ? (
+              <Badge tone="accent">Awarded</Badge>
+            ) : (
+              <Badge tone={proposal.status === 'generated' ? 'positive' : 'default'}>{proposal.status}</Badge>
+            )}
+            {proposal.status === 'awarded' && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="!px-3 !py-1.5 !text-[10px] !font-mono !uppercase !tracking-[0.1em]"
+                onClick={() => router.push(`/dashboard/projects/${proposal.id}/pm`)}
               >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
+                <SquaresFour className="h-3.5 w-3.5" weight="bold" aria-hidden />
+                PM Dashboard
+                <ArrowRight className="h-3 w-3" weight="bold" aria-hidden />
+              </Button>
+            )}
+            <Button type="button" variant="ghost" className="!p-2" disabled={isDeleting} onClick={handleDelete}>
+              <Trash className="h-4 w-4 text-red-300" weight="bold" aria-hidden />
+            </Button>
           </div>
         </div>
-      </header>
+      </AppHeader>
 
-      {/* Main Content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="w-full px-6 py-4">
-          <div className="bg-white border border-[#d1d5db] p-6">
-            <ProposalView
-              proposal={proposalData}
-              baa={baaData}
-              onAward={() => {}}
-            />
-          </div>
+        <div className="overflow-hidden border-t border-ds-border bg-ds-surface shadow-ds-md">
+          <ProposalEditor
+            proposal={proposalData}
+            baa={baaData}
+            onSave={handleSaveProposalContent}
+            readOnly={proposal.status === 'awarded'}
+            onAward={proposal.status !== 'awarded' ? async () => {
+              const res = await fetch(`/api/proposals/${proposal.id}/award`, { method: 'POST' });
+              const data = await res.json().catch(() => ({}));
+              if (!res.ok) {
+                alert(data.error ?? 'Could not mark as awarded');
+                return;
+              }
+              router.push(data.redirectTo ?? `/dashboard/projects/${proposal.id}/pm`);
+              router.refresh();
+            } : undefined}
+          />
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="flex-shrink-0 border-t border-[#d1d5db] bg-white">
-        <div className="w-full px-6 py-2">
-          <div className="flex items-center justify-between text-xs text-[#6b7280]">
-            <div className="flex items-center gap-4">
-              <span>Created: {new Date(proposal.created_at).toLocaleString()}</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span>System Status: Operational</span>
-            </div>
-          </div>
+      <AppFooter>
+        <div className="flex w-full flex-wrap items-center justify-between gap-4 px-6 py-3 text-[11px] uppercase tracking-[0.06em] text-ds-text-subtle">
+          <span>Created {new Date(proposal.created_at).toLocaleString()}</span>
+          <span>Operational domain</span>
         </div>
-      </footer>
+      </AppFooter>
     </div>
   );
 }

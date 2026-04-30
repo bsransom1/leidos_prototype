@@ -7,7 +7,15 @@ export interface BAA {
   requirements: Requirement[];
   deadlines: Deadline[];
   structure: string[];
-  rawText?: string; // Full PDF text content
+  rawText?: string;
+  /** Pages reported by the PDF parser (when available). */
+  pageCount?: number;
+  /** First-pass narrative snapshot from extracted text (not LLM-generated). */
+  ingestSummary?: string;
+  /** Heuristic tech / mission-area tags detected in the solicitation. */
+  technologySignals?: string[];
+  /** Best-effort program / notice identifiers (FA*, W**, BAA#, etc.). */
+  noticeNumbers?: string[];
 }
 
 export interface BAASection {

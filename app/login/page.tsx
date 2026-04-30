@@ -3,6 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { CardSection } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ButtonLink } from '@/components/ui/button';
+import { Input, Label } from '@/components/ui/input';
+import { PassBrand } from '@/components/ui/app-shell';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,7 +16,6 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Check for error in URL params (from redirect)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -35,7 +39,6 @@ export default function LoginPage() {
       });
 
       if (error) {
-        // Check for email confirmation error
         if (error.message.includes('email') && error.message.includes('confirm')) {
           setError('Please confirm your email address before signing in. Check your inbox for the confirmation link.');
         } else {
@@ -44,90 +47,92 @@ export default function LoginPage() {
         return;
       }
 
-      // Verify user email is confirmed
       if (data.user && !data.user.email_confirmed_at) {
-        setError('Please confirm your email address before signing in. Check your inbox for the confirmation link.');
+        setError(
+          'Please confirm your email address before signing in. Check your inbox for the confirmation link.',
+        );
         return;
       }
 
-      // Check for redirect parameter
       const params = new URLSearchParams(window.location.search);
       const redirectUrl = params.get('redirect');
-      
+
       if (redirectUrl) {
         router.push(decodeURIComponent(redirectUrl));
       } else {
         router.push('/dashboard');
       }
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign in');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to sign in';
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="h-screen flex items-center justify-center bg-[#f8f9fa]">
+    <div className="flex min-h-screen items-center justify-center bg-ds-page px-4 py-16">
       <div className="w-full max-w-md">
-        <div className="bg-white border border-[#d1d5db] p-6">
-          <div className="mb-4">
-            <h1 className="text-base font-semibold text-[#1a1a1a] mb-1">BAA/RFP Proposal System</h1>
-            <p className="text-xs text-[#6b7280]">Sign in to access</p>
-          </div>
+        <div className="mb-10 flex flex-col items-center gap-3 text-center">
+          <PassBrand size="md" />
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-ds-text-muted">Authenticated access only</p>
+        </div>
 
-          <form onSubmit={handleLogin} className="space-y-3">
-            <div>
-              <label className="block text-xs font-medium text-[#374151] mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-[#d1d5db] text-sm focus:ring-1 focus:ring-[#2563eb] focus:border-[#2563eb] bg-white"
-                placeholder="user@example.com"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-[#374151] mb-1">
-                Password
-              </label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-[#d1d5db] text-sm focus:ring-1 focus:ring-[#2563eb] focus:border-[#2563eb] bg-white"
-                placeholder="••••••••"
-              />
-            </div>
-
-            {error && (
-              <div className="p-2 bg-[#fef2f2] border border-[#fecaca]">
-                <p className="text-xs text-[#991b1b]">{error}</p>
+        <div className="overflow-hidden border border-ds-border bg-ds-surface shadow-ds-md">
+          <CardSection>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <Label htmlFor="login-email">Email</Label>
+                <Input
+                  id="login-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="user@agency.gov"
+                  autoComplete="email"
+                  className="mt-2"
+                />
               </div>
-            )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full px-4 py-2 bg-[#1a1a1a] text-white text-sm font-medium hover:bg-[#374151] transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-[#1a1a1a]"
-            >
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
-          </form>
+              <div>
+                <Label htmlFor="login-password">Password</Label>
+                <Input
+                  id="login-password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  className="mt-2"
+                />
+              </div>
 
-          <div className="mt-4 pt-4 border-t border-[#d1d5db]">
-            <p className="text-xs text-[#6b7280] text-center">
-              Don't have an account?{' '}
-              <a href="/signup" className="text-[#2563eb] hover:underline">
-                Sign up
-              </a>
-            </p>
-          </div>
+              {error && (
+                <div
+                  role="alert"
+                  className="rounded-ds-sm border border-red-900/55 bg-red-950/35 px-3 py-2 text-sm text-red-200"
+                >
+                  {error}
+                </div>
+              )}
+
+              <Button type="submit" variant="primary" disabled={loading} block>
+                {loading ? 'Signing in…' : 'Sign in'}
+              </Button>
+            </form>
+
+            <div className="mt-8 border-t border-ds-border pt-6 text-center">
+              <p className="text-xs text-ds-text-muted">
+                No account?{' '}
+                <ButtonLink href="/signup" variant="ghost" prefetch={false} className="inline !px-0 !py-0 text-ds-accent">
+                  Create one
+                </ButtonLink>
+              </p>
+            </div>
+          </CardSection>
         </div>
       </div>
     </div>

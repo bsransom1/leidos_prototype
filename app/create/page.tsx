@@ -32,6 +32,9 @@ export default async function CreateProposalPage({
     }
 
     if (proposal) {
+      if (proposal.status === 'awarded') {
+        redirect(`/dashboard/projects/${proposal.id}/pm`);
+      }
       proposalData = proposal;
       console.log('Loaded proposal:', {
         id: proposal.id,

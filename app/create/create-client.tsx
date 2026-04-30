@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload, FileText, Users, BarChart3, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { UploadSimple, FileText, ChartBar, CheckCircle, ArrowLeft } from '@phosphor-icons/react';
+import { AppFooter, AppHeader, BackLink } from '@/components/ui/app-shell';
+import { Button } from '@/components/ui/button';
 import PDFUpload from '@/components/PDFUpload';
 import OrganizationContextJSONUpload from '@/components/OrganizationContextJSONUpload';
-import ProposalView from '@/components/ProposalView';
+import ProposalEditor from '@/components/ProposalEditor';
 import ProposalGenerationLoader from '@/components/ProposalGenerationLoader';
-import CollaborationPanel from '@/components/CollaborationPanel';
 import { BAA, OrganizationContext, Proposal, User } from '@/types';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -118,7 +119,7 @@ export default function CreateProposalClient({ user, existingProposal }: CreateP
       }
       
       // Validate and determine the correct step based on available data
-      let validatedStep: 'upload' | 'context' | 'proposal' | 'project' = 'upload';
+      let validatedStep: 'upload' | 'context' | 'proposal' = 'upload';
       const savedStep = existingProposal.current_step;
       
       if (parsedProposal && parsedBAA) {
@@ -160,7 +161,7 @@ export default function CreateProposalClient({ user, existingProposal }: CreateP
   };
 
   const initialState = initializeFromProposal();
-  const [step, setStep] = useState<'upload' | 'context' | 'proposal' | 'project'>(initialState.step);
+  const [step, setStep] = useState<'upload' | 'context' | 'proposal'>(initialState.step);
   const [baa, setBAA] = useState<BAA | null>(initialState.baa);
   const [organizationContext, setOrganizationContext] = useState<OrganizationContext | null>(initialState.organizationContext || null);
   const [proposal, setProposal] = useState<Proposal | null>(initialState.proposal);
@@ -402,29 +403,25 @@ export default function CreateProposalClient({ user, existingProposal }: CreateP
   };
 
   return (
-    <div className="h-screen flex flex-col bg-[#f8f9fa]">
-      {/* Header */}
-      <header className="flex-shrink-0 bg-white border-b border-[#d1d5db]">
-        <div className="w-full px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <a href="/dashboard" className="text-[#6b7280] hover:text-[#1a1a1a]">
-                <ArrowLeft className="w-4 h-4" />
-              </a>
-              <div className="w-9 h-9 bg-[#1a1a1a] flex items-center justify-center border border-[#d1d5db]">
-                <FileText className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-base font-semibold text-[#1a1a1a] tracking-tight">Create Proposal</h1>
-                <p className="text-xs text-[#6b7280] mt-0.5">Leidos GenAI • Internal Use</p>
-              </div>
+    <div className="flex h-screen flex-col bg-ds-page">
+      <AppHeader>
+        <div className="flex w-full px-6 py-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <BackLink href="/dashboard">
+              <ArrowLeft className="h-4 w-4" weight="bold" />
+            </BackLink>
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-ds-sm border border-ds-border bg-ds-primary shadow-ds-sm">
+              <FileText className="h-5 w-5 text-white" weight="bold" />
+            </div>
+            <div>
+              <h1 className="text-base font-semibold tracking-tight text-ds-text">Create proposal</h1>
+              <p className="mt-0.5 text-xs uppercase tracking-[0.1em] text-ds-text-muted">Ingest • context • validation</p>
             </div>
           </div>
         </div>
-      </header>
+      </AppHeader>
 
-      {/* Navigation Steps */}
-      <div className="flex-shrink-0 border-b border-[#d1d5db] bg-white">
+      <div className="shrink-0 border-b border-ds-border bg-ds-shell/80 backdrop-blur-sm">
         <div className="w-full px-6 py-3">
           <div className="flex items-center gap-1">
             <StepIndicator
@@ -432,42 +429,33 @@ export default function CreateProposalClient({ user, existingProposal }: CreateP
               label="Ingest Solicitation"
               active={step === 'upload'}
               completed={step !== 'upload'}
-              icon={Upload}
+              icon={UploadSimple}
             />
             <StepConnector completed={step !== 'upload'} />
             <StepIndicator
               number={2}
               label="Organization Context"
               active={step === 'context'}
-              completed={step === 'proposal' || step === 'project'}
+              completed={step === 'proposal'}
               icon={FileText}
             />
-            <StepConnector completed={step === 'proposal' || step === 'project'} />
+            <StepConnector completed={step === 'proposal'} />
             <StepIndicator
               number={3}
               label="Review & Validate"
               active={step === 'proposal'}
-              completed={step === 'project'}
-              icon={BarChart3}
-            />
-            <StepConnector completed={step === 'project'} />
-            <StepIndicator
-              number={4}
-              label="Execution Plan"
-              active={step === 'project'}
               completed={false}
-              icon={CheckCircle2}
+              icon={ChartBar}
             />
           </div>
         </div>
       </div>
 
-      {/* Main Content Container - Fixed with Scroll */}
       <div className="flex-1 overflow-y-auto">
-        <div className="w-full px-6 py-4">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-            <div className={`${step === 'proposal' ? 'lg:col-span-3' : 'lg:col-span-4'}`}>
-              <div className="bg-white border border-[#d1d5db] p-6">
+        <div className="w-full px-6 py-8">
+          <div className="w-full">
+            <div>
+              <div className="overflow-hidden rounded-ds-md border border-ds-border bg-ds-surface p-8 shadow-ds-md">
                 {step === 'upload' && (
                   <PDFUpload 
                     onUploadComplete={async (uploadedBAA) => {
@@ -494,151 +482,130 @@ export default function CreateProposalClient({ user, existingProposal }: CreateP
                         onComplete={handleProposalGenerated}
                         onError={handleGenerationError}
                       />
-                    ) : proposal && proposal.sections && proposal.sections.length > 0 ? (
-                      <>
-                        <ProposalView
+                    ) :                       proposal && proposal.sections && proposal.sections.length > 0 ? (
+                      <div className="-m-8">
+                        <ProposalEditor
                           proposal={proposal}
                           baa={baa}
+                          proposalId={proposalId || undefined}
+                          collaborators={collaborators}
+                          onAddCollaborator={async (email, role) => {
+                            if (!proposalId) {
+                              alert('Save the proposal first before inviting collaborators.');
+                              return;
+                            }
+                            try {
+                              const response = await fetch('/api/invite-collaborator', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ proposalId, email, role: 'viewer' }),
+                              });
+                              const result = await response.json();
+                              if (response.ok) {
+                                const collabResponse = await fetch(`/api/get-collaborators?proposalId=${proposalId}`);
+                                const collabData = await collabResponse.json();
+                                if (collabData.success) {
+                                  const owner: import('@/types').User = {
+                                    id: user.id,
+                                    name: user.email?.split('@')[0] || 'User',
+                                    email: user.email || '',
+                                    role: 'admin',
+                                    organizationId: '',
+                                  };
+                                  const invitedUsers: import('@/types').User[] = collabData.data.map((c: any) => ({
+                                    id: c.id,
+                                    name: c.email.split('@')[0],
+                                    email: c.email,
+                                    role: c.role as import('@/types').User['role'],
+                                    organizationId: '',
+                                  }));
+                                  setCollaborators([owner, ...invitedUsers]);
+                                  if (result.invitationLink) {
+                                    alert(`Invitation sent!\n\nLink: ${result.invitationLink}`);
+                                  } else {
+                                    alert(`Invitation sent to ${email}`);
+                                  }
+                                }
+                              } else {
+                                alert(result.error === 'Collaborator already invited'
+                                  ? `${email} has already been invited.`
+                                  : `Failed: ${result.error}`);
+                              }
+                            } catch {
+                              alert('Failed to send invitation. Please try again.');
+                            }
+                          }}
+                          onSave={async (updated) => {
+                            setProposal(updated);
+                            if (proposalId) {
+                              await fetch('/api/save-proposal', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  proposalId,
+                                  generatedOutput: JSON.stringify(updated),
+                                }),
+                              });
+                            }
+                          }}
                           onAward={async () => {
-                            setStep('project');
-                            await updateProposalStep('project', baa, organizationContext || undefined, proposal);
+                            if (!proposalId) {
+                              alert('Save the proposal first, then try again.');
+                              return;
+                            }
+                            const res = await fetch(`/api/proposals/${proposalId}/award`, { method: 'POST' });
+                            const data = await res.json().catch(() => ({}));
+                            if (!res.ok) {
+                              alert(data.error ?? 'Could not mark as awarded');
+                              return;
+                            }
+                            router.push(data.redirectTo ?? `/dashboard/projects/${proposalId}/pm`);
+                            router.refresh();
                           }}
                         />
-                        <div className="mt-4 pt-4 border-t border-[#d1d5db] flex justify-end gap-2">
-                          <button
-                            onClick={() => router.push('/dashboard')}
-                            className="px-4 py-2 bg-[#f3f4f6] text-[#374151] text-sm font-medium hover:bg-[#e5e7eb] transition-colors border border-[#d1d5db]"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={handleSaveProposal}
-                            className="px-4 py-2 bg-[#1a1a1a] text-white text-sm font-medium hover:bg-[#374151] transition-colors border border-[#1a1a1a]"
-                          >
-                            Save Proposal
-                          </button>
+                        <div className="flex justify-end gap-3 border-t border-ds-border px-8 py-5">
+                          <Button type="button" variant="secondary" onClick={() => router.push('/dashboard')}>
+                            Done
+                          </Button>
+                          <Button type="button" variant="primary" onClick={handleSaveProposal}>
+                            Save to dashboard
+                          </Button>
                         </div>
-                      </>
+                      </div>
                     ) : (
                       <div className="p-8 text-center">
-                        <p className="text-sm text-[#6b7280] mb-4">Proposal loaded but has no sections.</p>
+                        <p className="mb-5 text-[15px] text-ds-text-muted">Proposal loaded without sections.</p>
                         {proposal && (
                           <>
-                            <p className="text-xs text-[#9ca3af]">BAA: {baa.title}</p>
-                            <p className="text-xs text-[#9ca3af]">Proposal ID: {proposal.id}</p>
+                            <p className="mono text-xs text-ds-text-subtle">BAA: {baa.title}</p>
+                            <p className="mono mt-2 text-xs text-ds-text-subtle">Proposal ID: {proposal.id}</p>
                           </>
                         )}
                       </div>
                     )}
                   </div>
                 )}
-                {step === 'project' && proposal && (
-                  <div className="text-center py-12">
-                    <CheckCircle2 className="w-16 h-16 text-[#059669] mx-auto mb-4" />
-                    <h2 className="text-xl font-bold text-[#1a1a1a] mb-2">Proposal Awarded</h2>
-                    <p className="text-sm text-[#6b7280] mb-6">Project setup interface coming soon...</p>
-                    <button
-                      onClick={handleSaveProposal}
-                      className="px-4 py-2 bg-[#1a1a1a] text-white text-sm font-medium hover:bg-[#374151] transition-colors border border-[#1a1a1a]"
-                    >
-                      Save & Return to Dashboard
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
             
-            {step === 'proposal' && proposalId && (
-              <div className="lg:col-span-1">
-                <CollaborationPanel
-                  users={collaborators}
-                  currentUser={collaborators[0]}
-                  proposalId={proposalId}
-                  onAddUser={async (email, role) => {
-                    if (!proposalId) {
-                      alert('Please save the proposal first before inviting collaborators.');
-                      return;
-                    }
-
-                    try {
-                      const response = await fetch('/api/invite-collaborator', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          proposalId,
-                          email,
-                          role: 'viewer', // Force viewer for now
-                        }),
-                      });
-
-                      const result = await response.json();
-                      
-                      if (response.ok) {
-                        // Refresh collaborators list
-                        const collabResponse = await fetch(`/api/get-collaborators?proposalId=${proposalId}`);
-                        const collabData = await collabResponse.json();
-                        
-                        if (collabData.success) {
-                          const owner: User = {
-                            id: user.id,
-                            name: user.email?.split('@')[0] || 'User',
-                            email: user.email || '',
-                            role: 'admin',
-                            organizationId: '',
-                          };
-                          
-                          const invitedUsers: User[] = collabData.data.map((c: any) => ({
-                            id: c.id,
-                            name: c.email.split('@')[0],
-                            email: c.email,
-                            role: c.role as User['role'],
-                            organizationId: '',
-                          }));
-                          
-                          setCollaborators([owner, ...invitedUsers]);
-                          
-                          if (result.invitationLink) {
-                            alert(`Invitation sent to ${email}!\n\nInvitation link: ${result.invitationLink}\n\n(Check server logs if email service is not configured)`);
-                          } else {
-                            alert(`Invitation sent to ${email}`);
-                          }
-                        }
-                      } else {
-                        if (result.error === 'Collaborator already invited') {
-                          alert(`${email} has already been invited to this proposal.`);
-                        } else {
-                          alert(`Failed to invite collaborator: ${result.error}`);
-                        }
-                      }
-                    } catch (error) {
-                      console.error('Error inviting collaborator:', error);
-                      alert('Failed to send invitation. Please try again.');
-                    }
-                  }}
-                />
-              </div>
-            )}
           </div>
         </div>
       </div>
 
-      {/* System Status Footer */}
-      <footer className="flex-shrink-0 border-t border-[#d1d5db] bg-white">
-        <div className="w-full px-6 py-2">
-          <div className="flex items-center justify-between text-xs text-[#6b7280]">
-            <div className="flex items-center gap-4">
-              <span>Build: v0.1.0-prototype</span>
-              <span>•</span>
-              <span>Environment: Development</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span>System Status: Operational</span>
-              <span>•</span>
-              <span>Last Updated: {new Date().toLocaleDateString()}</span>
-            </div>
+      <AppFooter>
+        <div className="flex w-full flex-wrap items-center justify-between gap-4 px-6 py-3 text-[11px] uppercase tracking-[0.06em] text-ds-text-subtle">
+          <div className="flex flex-wrap gap-4">
+            <span>Build v0.1.0</span>
+            <span>/</span>
+            <span>Development sandbox</span>
+          </div>
+          <div className="flex flex-wrap gap-4">
+            <span>Operational</span>
+            <span>/</span>
+            <span suppressHydrationWarning>{new Date().toLocaleDateString()}</span>
           </div>
         </div>
-      </footer>
+      </AppFooter>
     </div>
   );
 }
@@ -659,23 +626,23 @@ function StepIndicator({
   return (
     <div className="flex items-center gap-2">
       <div
-        className={`w-7 h-7 flex items-center justify-center border text-xs font-medium ${
+        className={`flex h-7 w-7 items-center justify-center rounded-ds-sm border text-xs font-semibold ${
           active
-            ? 'bg-[#1a1a1a] border-[#1a1a1a] text-white'
+            ? 'border-ds-accent bg-ds-accent text-ds-page shadow-ds-sm'
             : completed
-            ? 'bg-[#374151] border-[#374151] text-white'
-            : 'bg-white border-[#d1d5db] text-[#6b7280]'
+              ? 'border-ds-primary bg-ds-primary text-white shadow-ds-sm'
+              : 'border-ds-border bg-ds-surface-elevated/40 text-ds-text-muted'
         }`}
       >
         {completed ? (
-          <CheckCircle2 className="w-4 h-4" />
+          <CheckCircle className="w-4 h-4" weight="bold" />
         ) : (
           <span>{number}</span>
         )}
       </div>
       <span
-        className={`text-xs font-medium ${
-          active ? 'text-[#1a1a1a]' : completed ? 'text-[#374151]' : 'text-[#6b7280]'
+        className={`font-mono text-[10px] font-semibold uppercase tracking-[0.1em] ${
+          active ? 'text-ds-text' : completed ? 'text-ds-text-secondary' : 'text-ds-text-muted'
         }`}
       >
         {label}
@@ -687,8 +654,8 @@ function StepIndicator({
 function StepConnector({ completed }: { completed: boolean }) {
   return (
     <div
-      className={`w-12 h-px mx-2 ${
-        completed ? 'bg-[#374151]' : 'bg-[#d1d5db]'
+      className={`mx-2 h-px w-12 ${
+        completed ? 'bg-ds-accent/80' : 'bg-ds-border'
       }`}
     />
   );

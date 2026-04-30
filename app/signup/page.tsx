@@ -3,6 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { CardSection } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ButtonLink } from '@/components/ui/button';
+import { Input, Label } from '@/components/ui/input';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -40,112 +44,103 @@ export default function SignupPage() {
 
       if (error) throw error;
 
-      // Check if email confirmation is required
       if (data.user && !data.session) {
-        // Email confirmation required
         setError('Please check your email to confirm your account before signing in.');
-        // Show success message instead of error
         setTimeout(() => {
           router.push('/login');
         }, 3000);
         return;
       }
 
-      // If session exists, user is auto-confirmed (email confirmation disabled)
       if (data.session) {
         router.push('/dashboard');
         router.refresh();
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign up');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to sign up');
     } finally {
       setLoading(false);
     }
   };
 
+  const isInfoMessage = error?.includes('check your email');
+
   return (
-    <div className="h-screen flex items-center justify-center bg-[#f8f9fa]">
+    <div className="flex min-h-screen items-center justify-center bg-ds-page px-4 py-16">
       <div className="w-full max-w-md">
-        <div className="bg-white border border-[#d1d5db] p-6">
-          <div className="mb-4">
-            <h1 className="text-base font-semibold text-[#1a1a1a] mb-1">Create Account</h1>
-            <p className="text-xs text-[#6b7280]">BAA/RFP Proposal System</p>
-          </div>
+        <div className="mb-10 text-center">
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-ds-text">Create account</p>
+          <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.12em] text-ds-text-muted">
+            Request workspace access
+          </p>
+        </div>
 
-          <form onSubmit={handleSignup} className="space-y-3">
-            <div>
-              <label className="block text-xs font-medium text-[#374151] mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-[#d1d5db] text-sm focus:ring-1 focus:ring-[#2563eb] focus:border-[#2563eb] bg-white"
-                placeholder="user@example.com"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-[#374151] mb-1">
-                Password
-              </label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-[#d1d5db] text-sm focus:ring-1 focus:ring-[#2563eb] focus:border-[#2563eb] bg-white"
-                placeholder="••••••••"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-[#374151] mb-1">
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-[#d1d5db] text-sm focus:ring-1 focus:ring-[#2563eb] focus:border-[#2563eb] bg-white"
-                placeholder="••••••••"
-              />
-            </div>
-
-            {error && (
-              <div className={`p-2 border ${
-                error.includes('check your email') || error.includes('confirm')
-                  ? 'bg-[#eff6ff] border-[#bfdbfe]'
-                  : 'bg-[#fef2f2] border-[#fecaca]'
-              }`}>
-                <p className={`text-xs ${
-                  error.includes('check your email') || error.includes('confirm')
-                    ? 'text-[#1e40af]'
-                    : 'text-[#991b1b]'
-                }`}>{error}</p>
+        <div className="overflow-hidden border border-ds-border bg-ds-surface shadow-ds-md">
+          <CardSection>
+            <form onSubmit={handleSignup} className="space-y-4">
+              <div>
+                <Label htmlFor="signup-email">Email</Label>
+                <Input
+                  id="signup-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="mt-2"
+                />
               </div>
-            )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full px-4 py-2 bg-[#1a1a1a] text-white text-sm font-medium hover:bg-[#374151] transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-[#1a1a1a]"
-            >
-              {loading ? 'Creating account...' : 'Sign Up'}
-            </button>
-          </form>
+              <div>
+                <Label htmlFor="signup-password">Password</Label>
+                <Input
+                  id="signup-password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="mt-2"
+                />
+              </div>
 
-          <div className="mt-4 pt-4 border-t border-[#d1d5db]">
-            <p className="text-xs text-[#6b7280] text-center">
-              Already have an account?{' '}
-              <a href="/login" className="text-[#2563eb] hover:underline">
-                Sign in
-              </a>
-            </p>
-          </div>
+              <div>
+                <Label htmlFor="signup-confirm">Confirm password</Label>
+                <Input
+                  id="signup-confirm"
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="mt-2"
+                />
+              </div>
+
+              {error && (
+                <div
+                  role="alert"
+                  className={`rounded-ds-sm border px-3 py-2 text-sm ${
+                    isInfoMessage
+                      ? 'border-emerald-800/55 bg-emerald-950/25 text-emerald-100'
+                      : 'border-red-900/55 bg-red-950/35 text-red-200'
+                  }`}
+                >
+                  {error}
+                </div>
+              )}
+
+              <Button type="submit" variant="primary" disabled={loading} block>
+                {loading ? 'Creating account…' : 'Register'}
+              </Button>
+            </form>
+
+            <div className="mt-8 border-t border-ds-border pt-6 text-center">
+              <p className="text-xs text-ds-text-muted">
+                Already registered?{' '}
+                <ButtonLink href="/login" variant="ghost" prefetch={false} className="inline !px-0 !py-0 text-ds-accent">
+                  Sign in
+                </ButtonLink>
+              </p>
+            </div>
+          </CardSection>
         </div>
       </div>
     </div>

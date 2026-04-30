@@ -172,45 +172,117 @@ Generate a well-structured proposal with the following characteristics:
       ? baaText.substring(0, 100000) + '\n\n[Content truncated...]'
       : baaText;
     
-    // Parse organization context to extract key details for emphasis
+    // Parse organization context — supports both legacy and enhanced DARPA schema
     let orgDetails = '';
     try {
       const orgContext = parsedOrgContext;
-      
+
       if (orgContext.organization) {
+        const orgDisplayName =
+          orgContext.organization.legal_name ||
+          orgContext.organization.name ||
+          'the applying organization';
+        const institution =
+          orgContext.organization.institution_parent ||
+          orgContext.organization.institution || '';
+        const cage = orgContext.organization.cage_code || '';
+        const cmmc = orgContext.organization.cmmc_certification?.level || '';
+        const fsc = orgContext.organization.facility_security_clearance?.level || '';
+        const samStatus = orgContext.organization.sam_registration?.status || '';
+
+        const contact = orgContext.primary_contact || orgContext.organization.primary_contact;
+        const techPOC = orgContext.technical_poc;
+
+        const priorDARPA: any[] = orgContext.research_profile?.prior_darpa_awards || [];
+        const priorPubs: any[] = orgContext.research_profile?.prior_publications || [];
+        const subawardees: any[] = orgContext.subawardees_and_partners || [];
+        const infra = orgContext.research_profile?.technical_infrastructure;
+
+        const techGoalLines = (orgContext.project_goals?.technical_goals || [])
+          .map((g: any) => (typeof g === 'string' ? g : `${g.title}: ${g.description || ''}`))
+          .join('; ');
+        const outcomeLines = (orgContext.project_goals?.expected_outcomes || [])
+          .map((o: any) => (typeof o === 'string' ? o : o.deliverable || ''))
+          .join('; ');
+
         orgDetails = `
-ORGANIZATION DETAILS (YOU MUST USE THESE THROUGHOUT THE PROPOSAL):
-- Organization Name: ${orgContext.organization.name}
-- Institution: ${orgContext.organization.institution}
-- Type: ${orgContext.organization.type}
-- Primary Contact: ${orgContext.organization.primary_contact?.name || 'N/A'} (${orgContext.organization.primary_contact?.role || 'N/A'})
+ORGANIZATION DETAILS (REFERENCE THE ORGANIZATION BY NAME IN EVERY SECTION — AT LEAST 3-5 TIMES PER MAJOR SECTION):
+- Organization: ${orgDisplayName}${institution ? ` (${institution})` : ''}
+- Type: ${orgContext.organization.type || 'N/A'}
+${cage ? `- CAGE Code: ${cage}` : ''}${cmmc ? ` | CMMC Level ${cmmc}` : ''}${fsc ? ` | Facility Clearance: ${fsc}` : ''}${samStatus ? ` | SAM: ${samStatus}` : ''}
 - Website: ${orgContext.organization.website || 'N/A'}
+- Description: ${orgContext.organization.description || 'N/A'}
 
-TEAM MEMBERS (MENTION EACH BY NAME WITH THEIR EXPERTISE):
-${orgContext.team?.map((member: any, idx: number) => 
-  `- ${member.name || `Team Member ${idx + 1}`}: ${member.role || 'Researcher'} - Expertise: ${Array.isArray(member.expertise) ? member.expertise.join(', ') : 'N/A'} (${member.allocation_percent || 0}% allocation)`
-).join('\n') || 'No team members specified'}
+POINTS OF CONTACT:
+- Primary: ${contact?.name || 'N/A'} (${contact?.title || contact?.role || 'N/A'}) — ${contact?.email || ''}
+${techPOC?.name ? `- Technical POC: ${techPOC.name} (${techPOC.title || 'N/A'}) — ${techPOC.background_summary || ''}` : ''}
 
-RESEARCH PROFILE (INCORPORATE THESE INTO THE PROPOSAL):
+TEAM MEMBERS (CITE EACH BY FULL NAME AND CREDENTIALS — THEY STRENGTHEN EVERY TECHNICAL SECTION):
+${(orgContext.team || []).map((member: any) => {
+  const clearance = member.security_clearance?.level || 'None';
+  const edu = member.education
+    ? `${member.education.degree || ''} ${member.education.field || ''}${member.education.institution ? ` (${member.education.institution})` : ''}`.trim()
+    : '';
+  const pubs = member.publications_last_3_years
+    ? `${member.publications_last_3_years} pubs last 3 yrs`
+    : '';
+  return `- ${member.name}: ${member.title || member.role} | ${member.allocation_percent}% effort | Clearance: ${clearance}${edu ? ` | ${edu}` : ''}${pubs ? ` | ${pubs}` : ''}
+  Expertise: ${Array.isArray(member.expertise) ? member.expertise.join(', ') : 'N/A'}${member.relevant_experience ? `\n  Background: ${member.relevant_experience}` : ''}`;
+}).join('\n') || 'No team members specified'}
+
+RESEARCH PROFILE:
 - Focus Areas: ${Array.isArray(orgContext.research_profile?.focus_areas) ? orgContext.research_profile.focus_areas.join(', ') : 'N/A'}
-- Prior Experience: ${orgContext.research_profile?.prior_experience || 'N/A'}
+- Research Description: ${orgContext.research_profile?.research_description || orgContext.research_profile?.prior_experience || 'N/A'}
 - Key Capabilities: ${Array.isArray(orgContext.research_profile?.key_capabilities) ? orgContext.research_profile.key_capabilities.join(', ') : 'N/A'}
+${infra ? `- Computing Resources: ${infra.computing_resources || 'N/A'}
+- Lab Facilities: ${infra.laboratory_facilities || 'N/A'}
+- Software Tools: ${infra.software_tools || 'N/A'}` : ''}
+
+${priorDARPA.length > 0 ? `PRIOR DARPA AWARDS (CITE THESE TO ESTABLISH CREDIBILITY — VERY IMPORTANT):
+${priorDARPA.map((a: any) => `- ${a.program_name} (${a.award_number || 'N/A'}): $${(a.award_amount_usd || 0).toLocaleString()} | ${a.status || ''} | ${a.outcomes || ''}`).join('\n')}` : ''}
+
+${priorPubs.length > 0 ? `KEY PUBLICATIONS (REFERENCE TO DEMONSTRATE TECHNICAL DEPTH):
+${priorPubs.slice(0, 6).map((p: any) => `- "${p.title}" (${p.venue || ''}, ${p.year || ''})${p.relevance_to_proposal ? ` — ${p.relevance_to_proposal}` : ''}`).join('\n')}` : ''}
+
+${subawardees.length > 0 ? `SUBAWARDEES & PARTNERS (DESCRIBE THEIR ROLES IN RELEVANT SECTIONS):
+${subawardees.map((s: any) => `- ${s.organization_name}: ${s.role_description || ''} | $${(s.award_amount_usd || 0).toLocaleString()} | CMMC Lvl ${s.cmmc_level_required || 'N/A'}`).join('\n')}` : ''}
 
 FUNDING PLAN:
-- Total Requested: $${orgContext.funding_plan?.total_requested_usd?.toLocaleString() || 'N/A'}
-${orgContext.funding_plan?.breakdown?.map((item: any) => `- ${item.category}: $${item.amount_usd?.toLocaleString() || '0'} - ${item.notes || ''}`).join('\n') || ''}
+- Total Requested: $${(orgContext.funding_plan?.total_requested_usd || 0).toLocaleString()}
+- Period: ${orgContext.funding_plan?.period_of_performance_months || 'N/A'} months (${orgContext.funding_plan?.period_start_date || ''} – ${orgContext.funding_plan?.period_end_date || ''})
+- Instrument: ${orgContext.funding_plan?.requested_instrument_type || 'N/A'}
+${orgContext.funding_plan?.cost_share_contributed_usd ? `- Cost Share: $${orgContext.funding_plan.cost_share_contributed_usd.toLocaleString()} (${orgContext.funding_plan.cost_share_percent || 0}%) — ${orgContext.funding_plan.cost_share_description || ''}` : ''}
+${(orgContext.funding_plan?.breakdown || []).map((item: any) => `- ${item.category}: $${(item.amount_usd || 0).toLocaleString()} (${item.percent_of_total || 0}%) — ${item.notes || ''}`).join('\n')}
 
 PROJECT GOALS:
 - Primary Objective: ${orgContext.project_goals?.primary_objective || 'N/A'}
-- Technical Goals: ${Array.isArray(orgContext.project_goals?.technical_goals) ? orgContext.project_goals.technical_goals.join(', ') : 'N/A'}
-- Expected Outcomes: ${Array.isArray(orgContext.project_goals?.expected_outcomes) ? orgContext.project_goals.expected_outcomes.join(', ') : 'N/A'}
+${orgContext.project_goals?.fundamental_research_claim ? `- Fundamental Research: YES — ${orgContext.project_goals.fundamental_research_justification || 'results will be published without restriction'}` : ''}
+- Technical Goals: ${techGoalLines || 'N/A'}
+- Expected Outcomes: ${outcomeLines || 'N/A'}
+${orgContext.project_goals?.relationship_to_i2o_thrust_areas?.length
+  ? `- I2O Alignment: ${orgContext.project_goals.relationship_to_i2o_thrust_areas.map((t: any) => `${t.thrust_area}: ${t.alignment}`).join(' | ')}`
+  : ''}
+
+COMPLIANCE STATUS:
+- Export Control: ${orgContext.compliance_and_constraints?.export_control?.applicable !== undefined
+  ? (orgContext.compliance_and_constraints.export_control.applicable
+    ? `Applicable (${orgContext.compliance_and_constraints.export_control.categories || ''})`
+    : 'Not Applicable')
+  : (orgContext.compliance_and_constraints?.export_control_applicable ? 'Applicable' : 'Not Applicable')}
+- Classified Work: ${orgContext.compliance_and_constraints?.security_requirements?.classified_work !== undefined
+  ? (orgContext.compliance_and_constraints.security_requirements.classified_work ? 'Yes' : 'No')
+  : 'Not specified'}
+${orgContext.compliance_and_constraints?.special_considerations ? `- Special Considerations: ${orgContext.compliance_and_constraints.special_considerations}` : ''}
 `;
       }
     } catch (e) {
       orgDetails = `\nORGANIZATION CONTEXT (raw): ${orgContextText}`;
     }
-    
-    const orgName = parsedOrgContext?.organization?.name || 'the applying organization';
+
+    const orgName =
+      parsedOrgContext?.organization?.legal_name ||
+      parsedOrgContext?.organization?.name ||
+      'the applying organization';
     
     // Log what we're sending for debugging
     console.log('📋 BAA Content Summary:');
@@ -426,12 +498,26 @@ DO NOT combine sections. DO NOT skip sections. Generate all ${totalSections} sec
           controller.enqueue(encoder.encode(`data: ${data}\n\n`));
         };
         
+        let currentSectionTitle = '';
+
+        const sendSectionStart = (sectionIndex: number, sectionTitle: string) => {
+          currentSectionTitle = sectionTitle;
+          const data = JSON.stringify({
+            type: 'section-start',
+            sectionIndex,
+            sectionTitle,
+            totalSections,
+          });
+          controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+        };
+
         const sendChunkUpdate = (chunkCount: number, totalChars: number) => {
           const data = JSON.stringify({ 
             type: 'chunk-update', 
             chunkCount, 
             totalChars,
-            message: `📦 Received ${chunkCount} chunks, ${totalChars} chars so far`
+            sectionTitle: currentSectionTitle,
+            message: `chunks ${chunkCount} / ${totalChars.toLocaleString()} chars`
           });
           controller.enqueue(encoder.encode(`data: ${data}\n\n`));
         };
@@ -470,6 +556,11 @@ DO NOT combine sections. DO NOT skip sections. Generate all ${totalSections} sec
           sendProgress(10, 'Generating proposal content...');
           console.log('✅ OpenAI stream created, receiving chunks...');
 
+          // Announce the first section immediately
+          if (sectionsToGenerate.length > 0) {
+            sendSectionStart(1, sectionsToGenerate[0]);
+          }
+
           let fullText = '';
           let lastProgress = 10;
           let sectionCount = 0;
@@ -502,9 +593,14 @@ DO NOT combine sections. DO NOT skip sections. Generate all ${totalSections} sec
               const newSectionCount = (fullText.match(/\}\s*,\s*\{/g) || []).length + 1;
               if (newSectionCount > sectionCount) {
                 sectionCount = newSectionCount;
+                // Announce the next section that is now being generated
+                const nextSectionTitle = sectionsToGenerate[sectionCount] ?? '';
+                if (nextSectionTitle) {
+                  sendSectionStart(sectionCount + 1, nextSectionTitle);
+                }
                 sendProgress(
                   Math.min(90, 10 + (sectionCount / totalSections) * 80),
-                  `Generated ${sectionCount} of ${totalSections} sections...`
+                  `Completed ${sectionCount} of ${totalSections} sections`
                 );
               } else if (textProgress - lastProgress > 5) {
                 lastProgress = textProgress;

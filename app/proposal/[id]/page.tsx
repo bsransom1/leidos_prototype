@@ -5,8 +5,9 @@ import ProposalDetailClient from './proposal-detail-client';
 export default async function ProposalDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -14,12 +15,10 @@ export default async function ProposalDetailPage({
     redirect('/login');
   }
 
-  // Fetch proposal
   const { data: proposal, error } = await supabase
     .from('proposals')
     .select('*')
-    .eq('id', params.id)
-    .eq('user_id', user.id)
+    .eq('id', id)
     .single();
 
   if (error || !proposal) {

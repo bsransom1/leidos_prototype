@@ -1,20 +1,24 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import type { Metadata } from 'next';
+import { IBM_Plex_Sans, IBM_Plex_Mono } from 'next/font/google';
+import './globals.css';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const ibmPlexSans = IBM_Plex_Sans({
+  variable: '--font-sans-body',
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: '--font-mono-body',
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
-  title: "BAA/RFP Proposal System",
-  description: "Internal system for solicitation analysis and proposal generation",
+  title: 'P.A.S.S. — Proposal Automation Service System',
+  description: 'Solicitation analysis and compliant proposal generation for government BAA/RFP programs.',
 };
 
 export default function RootLayout({
@@ -24,11 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-      </body>
+      <body className={`${ibmPlexSans.variable} ${ibmPlexMono.variable} ds-app antialiased`}>{children}</body>
     </html>
   );
 }

@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
 import SharedProposalView from './shared-proposal-client';
 
 export default async function SharedProposalPage({
@@ -20,12 +19,22 @@ export default async function SharedProposalPage({
 
   if (collaboratorError || !collaborator) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f9fafb]">
-        <div className="bg-white border border-[#d1d5db] p-6 max-w-md w-full">
-          <h1 className="text-lg font-semibold text-[#1a1a1a] mb-2">Invalid Invitation</h1>
-          <p className="text-sm text-[#6b7280]">
-            This invitation link is invalid or has expired. Please contact the proposal owner for a new invitation.
-          </p>
+      <div className="min-h-screen flex items-center justify-center bg-ds-page px-4">
+        <div className="w-full max-w-md border border-ds-border bg-ds-surface shadow-ds-md">
+          <div className="h-[3px] bg-gradient-to-r from-ds-primary to-ds-accent" />
+          <div className="px-8 py-7">
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-ds-text-muted mb-3">
+              Access Error
+            </p>
+            <h1 className="text-lg font-bold text-ds-text mb-3">Invalid or expired invitation</h1>
+            <p className="text-sm leading-relaxed text-ds-text-muted">
+              This invitation link is invalid, has expired, or has already been used.
+              Contact the proposal owner to request a new link.
+            </p>
+          </div>
+          <div className="border-t border-ds-border bg-ds-shell/40 px-8 py-3">
+            <p className="font-mono text-[10px] text-ds-text-muted">LEIDOS GENAI · PROPOSAL INTELLIGENCE</p>
+          </div>
         </div>
       </div>
     );

@@ -1,8 +1,8 @@
-# Leidos GenAI BAA & RFP Proposal Assistant
+# P.A.S.S. — Proposal Automation Service System
 
-A web-based AI system that helps research organizations analyze government BAAs/RFPs, generate competitive proposals, assess proposal strength, and manage post-award project execution.
+A web-based AI assistant for research organizations to analyze government BAAs/RFPs, generate structured proposal drafts, score confidence, collaborate with viewers, and manage post-award program data.
 
-**Internal Platform** - Authentication and database storage via Supabase.
+**Internal prototype** — Authentication and persistence via Supabase.
 
 ## Features
 
@@ -22,6 +22,7 @@ A web-based AI system that helps research organizations analyze government BAAs/
    - Generates structured proposal drafts aligned to BAA outline
    - Uses organizational context to tailor content
    - Section-by-section generation with compliance checking
+   - **Export**: Download the full proposal as a Word (`.docx`) file formatted for DARPA Stage 1 review (Times New Roman, 1" margins); edit in Word before final submission
 
 4. **Proposal Quality Feedback**
    - Grammarly-like inline highlights
@@ -49,7 +50,7 @@ A web-based AI system that helps research organizations analyze government BAAs/
 - **Framework**: Next.js 16 with App Router (single app in `app/`; no separate Vite bundle)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
-- **UI Components**: Lucide React (icons)
+- **Icons**: Phosphor React (Bold)
 - **PDF Processing**: pdf2json
 - **File Upload**: react-dropzone
 
@@ -69,20 +70,12 @@ npm install
 
 ### Environment Setup
 
-1. Create a Supabase project at https://supabase.com
-2. Create `.env.local` file with:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=your_project_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-   OPENAI_API_KEY=your_openai_api_key
-   ```
+1. Copy `.env.example` to `.env.local` and set values (see **Environment Variables** below).
 
-3. Run the database schema:
-   - Go to Supabase Dashboard → SQL Editor
-   - Run the SQL from `supabase/schema.sql`
-   - This creates the `proposals` table with RLS policies
-
-### Development
+2. In Supabase **SQL Editor**, run migrations in order:
+   - `supabase/migrations/20260130120000_leidos_full_schema.sql` (base schema & RLS)
+   - `supabase/migration_pm_post_award.sql` (post-award PM tables, if you use awarding)
+   - `supabase/fix_shared_proposal_anon_access.sql` (anonymous shared proposal links via `anon`; required for external viewers without login)
 
 ```bash
 npm run dev
@@ -122,7 +115,7 @@ leidos_prototype/
 ├── components/
 │   ├── PDFUpload.tsx            # PDF upload component
 │   ├── OrganizationContextJSONUpload.tsx  # JSON context upload
-│   ├── ProposalView.tsx         # Proposal display with feedback
+│   ├── ProposalEditor.tsx       # Rich-text section editing (Tiptap)
 │   ├── ConfidenceScore.tsx      # Confidence visualization
 │   ├── CollaborationPanel.tsx   # User collaboration UI
 │   └── ProposalGenerationLoader.tsx  # Loading component with progress
@@ -131,7 +124,9 @@ leidos_prototype/
 │   └── validation.ts            # JSON validation logic
 ├── middleware.ts                # Route protection
 ├── supabase/
-│   └── schema.sql               # Database schema
+│   ├── migrations/              # SQL migrations (run in Supabase SQL Editor)
+│   ├── migration_pm_post_award.sql
+│   └── fix_shared_proposal_anon_access.sql
 ├── types/
 │   ├── index.ts                 # TypeScript type definitions
 │   └── organization-context.ts # Organization context types
@@ -200,12 +195,6 @@ RESEND_API_KEY=your_resend_api_key  # Optional: Get from https://resend.com
 NEXT_PUBLIC_APP_URL=http://localhost:3000  # or your production URL
 ```
 
-## Database Setup
-
-1. **Create `proposals` table**: Run `supabase/migration_add_collaborators.sql` in Supabase SQL Editor
-2. **Create `proposal_collaborators` table**: Run `supabase/migration_add_collaborators.sql` (includes both tables)
-3. **Fix RLS policies** (if needed): Run `supabase/FIX_COLLABORATORS_NOW.sql` if you encounter permission errors
-
 ## Collaboration Features
 
 The platform supports inviting collaborators to view proposals:
@@ -230,6 +219,18 @@ The platform supports inviting collaborators to view proposals:
 - Authentication required for all protected routes
 - Users can resume proposals from any step
 - Markdown rendering for proposal content (bold, bullets, headers, etc.)
+
+## Post-award program management (PM)
+
+After **Mark awarded**, navigate to **`/dashboard/projects/[proposalId]/pm`**. Owners can still open the proposal document view from PM or `/proposal/[id]`.
+
+1. Run `supabase/migration_pm_post_award.sql` in Supabase SQL Editor where applicable.
+
+2. Proposal owner operates as PM admin; collaborator roles map from `proposal_collaborators`.
+
+3. **PM API** routes live under `/api/projects/[projectId]/...` (overview, milestones, risks, budget, deliverables).
+
+4. **Award**: `POST /api/proposals/[proposalId]/award` seeds baseline PM data where implemented.
 
 ## Deployment
 
@@ -258,4 +259,4 @@ The platform supports inviting collaborators to view proposals:
 
 ## License
 
-Private prototype for Leidos GenAI BAA & RFP Proposal Assistant.
+Private prototype — P.A.S.S. (Proposal Automation Service System).

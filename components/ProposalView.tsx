@@ -1,10 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle2, AlertCircle, XCircle, TrendingUp, Award, MessageSquare } from 'lucide-react';
+import { CheckCircle, WarningCircle, XCircle, TrendUp, Medal, ChatText, DownloadSimple } from '@phosphor-icons/react';
 import ReactMarkdown from 'react-markdown';
-import { Proposal, BAA, ProposalSection } from '@/types';
+import type { Proposal, BAA, ProposalSection } from '@/types';
 import ConfidenceScore from './ConfidenceScore';
+import { buildProposalSubmissionDocx, downloadProposalDocx } from '@/lib/proposal-export-docx';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/cn';
 
 interface ProposalViewProps {
   proposal: Proposal;
@@ -14,118 +17,120 @@ interface ProposalViewProps {
 
 export default function ProposalView({ proposal, baa, onAward }: ProposalViewProps) {
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
+  const [downloadBusy, setDownloadBusy] = useState(false);
+
+  const handleDownloadSubmission = async () => {
+    if (!proposal.sections?.length) {
+      alert('No proposal sections to export yet.');
+      return;
+    }
+    setDownloadBusy(true);
+    try {
+      const blob = await buildProposalSubmissionDocx(proposal, baa);
+      downloadProposalDocx(blob, proposal.title);
+    } catch (e) {
+      console.error(e);
+      alert('Could not generate the Word document. Try again.');
+    } finally {
+      setDownloadBusy(false);
+    }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'strong':
-        return <CheckCircle2 className="w-5 h-5 text-green-500" />;
+        return <CheckCircle className="h-5 w-5 shrink-0 text-emerald-400" weight="bold" />;
       case 'needs-improvement':
-        return <AlertCircle className="w-5 h-5 text-yellow-500" />;
+        return <WarningCircle className="h-5 w-5 shrink-0 text-amber-300" weight="bold" />;
       case 'weak':
-        return <XCircle className="w-5 h-5 text-orange-500" />;
+        return <XCircle className="h-5 w-5 shrink-0 text-orange-400" weight="bold" />;
       default:
-        return <XCircle className="w-5 h-5 text-red-500" />;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'strong':
-        return 'bg-[#ecfdf5] border-[#a7f3d0] text-[#065f46]';
-      case 'needs-improvement':
-        return 'bg-[#fffbeb] border-[#fde68a] text-[#92400e]';
-      case 'weak':
-        return 'bg-[#fff7ed] border-[#fed7aa] text-[#9a3412]';
-      default:
-        return 'bg-[#fef2f2] border-[#fecaca] text-[#991b1b]';
+        return <XCircle className="h-5 w-5 shrink-0 text-red-400" weight="bold" />;
     }
   };
 
   return (
     <div className="w-full">
-      {/* Header with Overall Confidence */}
-      <div className="mb-4">
-        <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#d1d5db]">
+      <div className="mb-8 border-b border-ds-border pb-6">
+        <div className="mb-4 flex flex-col gap-4 pb-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-base font-semibold text-[#1a1a1a] mb-1">{proposal.title}</h2>
-            <p className="text-xs text-[#6b7280]">Generated from: {baa.title}</p>
+            <h2 className="ds-h3 mb-2 text-ds-text">{proposal.title}</h2>
+            <p className="mono text-[13px] text-ds-text-muted">Source solicitation: {baa.title}</p>
           </div>
-          <button
-            onClick={onAward}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#059669] text-white text-xs font-medium hover:bg-[#047857] transition-colors border border-[#059669]"
-          >
-            <Award className="w-3.5 h-3.5" />
-            Mark as Awarded
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" variant="secondary" disabled={downloadBusy || !proposal.sections?.length} className="!text-xs" onClick={handleDownloadSubmission}>
+              <DownloadSimple className="h-3.5 w-3.5" weight="bold" />
+              {downloadBusy ? 'Preparing…' : 'Export submission package'}
+            </Button>
+            <Button type="button" variant="primary" className="!border-emerald-800/60 !bg-emerald-900/65 !shadow-none hover:!brightness-110" onClick={onAward}>
+              <Medal className="h-3.5 w-3.5" weight="bold" />
+              Mark awarded
+            </Button>
+          </div>
         </div>
 
         <ConfidenceScore score={proposal.overallConfidence} />
       </div>
 
-      {/* Sections List */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        {/* Sidebar - Section Navigation */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-1">
-          <div className="bg-[#f9fafb] border border-[#d1d5db] p-3 sticky top-0">
-            <h3 className="text-xs font-semibold text-[#1a1a1a] mb-3">Proposal Sections</h3>
-            <div className="space-y-1.5">
+          <div className="sticky top-4 rounded-ds-md border border-ds-border bg-ds-surface-elevated/50 p-3 shadow-ds-sm">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.1em] text-ds-text-muted">
+              Proposal sections
+            </h3>
+            <div className="space-y-2">
               {proposal.sections && proposal.sections.length > 0 ? (
                 proposal.sections.map((section) => (
-                <button
-                  key={section.id}
-                  onClick={() => setSelectedSection(section.id)}
-                  className={`w-full text-left p-2 border transition-colors ${
-                    selectedSection === section.id
-                      ? 'bg-[#eff6ff] border-[#3b82f6]'
-                      : 'bg-white border-[#d1d5db] hover:border-[#9ca3af]'
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-1">
-                    <span className="text-xs font-medium text-[#1a1a1a] line-clamp-1">
-                      {section.title}
-                    </span>
-                    <span className="flex-shrink-0 ml-2">{getStatusIcon(section.status)}</span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-[#6b7280] mono">
-                      {section.confidence || 0}%
-                    </span>
-                    {section.feedback && section.feedback.length > 0 && (
-                      <span className="text-xs text-[#2563eb] flex items-center gap-1">
-                        <MessageSquare className="w-3 h-3" />
-                        {section.feedback.length}
-                      </span>
+                  <button
+                    key={section.id}
+                    type="button"
+                    onClick={() => setSelectedSection(section.id)}
+                    className={cn(
+                      'w-full rounded-ds-sm border p-3 text-left transition-colors',
+                      selectedSection === section.id
+                        ? 'border-ds-accent/60 bg-ds-accent/10 shadow-ds-sm'
+                        : 'border-ds-border bg-ds-page/25 hover:border-ds-border-strong'
                     )}
-                  </div>
-                </button>
-              ))
+                  >
+                    <div className="mb-1 flex items-start justify-between gap-2">
+                      <span className="line-clamp-2 text-xs font-medium text-ds-text">{section.title}</span>
+                      <span className="ml-1 shrink-0">{getStatusIcon(section.status)}</span>
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <span className="mono text-[11px] text-ds-text-muted">{section.confidence || 0}%</span>
+                      {section.feedback && section.feedback.length > 0 && (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-ds-info">
+                          <ChatText className="h-3 w-3" weight="bold" />
+                          {section.feedback.length}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))
               ) : (
-                <div className="p-4 text-center text-xs text-[#6b7280]">
-                  No sections available. The proposal may still be generating.
+                <div className="p-6 text-center text-xs text-ds-text-muted">
+                  No sections yet — generation may still be running.
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* Main Content - Section Details */}
         <div className="lg:col-span-2">
           {selectedSection ? (
             (() => {
               const section = proposal.sections?.find((s) => s.id === selectedSection);
               if (!section) {
                 return (
-                  <div className="text-center py-8 text-[#6b7280] border border-[#d1d5db] bg-[#f9fafb] p-6">
-                    <p className="text-xs">Section not found</p>
-                  </div>
+                  <EmptyPanel>
+                    Section not found.
+                  </EmptyPanel>
                 );
               }
               return <SectionDetail section={section} />;
             })()
           ) : (
-            <div className="text-center py-8 text-[#6b7280] border border-[#d1d5db] bg-[#f9fafb] p-6">
-              <p className="text-xs">Select a section to view details</p>
-            </div>
+            <EmptyPanel>Select a section to inspect drafting quality and citations.</EmptyPanel>
           )}
         </div>
       </div>
@@ -133,180 +138,144 @@ export default function ProposalView({ proposal, baa, onAward }: ProposalViewPro
   );
 }
 
+function EmptyPanel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-ds-md border border-dashed border-ds-border bg-ds-page/30 py-12 text-center">
+      <p className="text-sm text-ds-text-muted">{children}</p>
+    </div>
+  );
+}
+
 function SectionDetail({ section }: { section: ProposalSection }) {
-  const getStatusColor = (status: string) => {
+  const getLocalStatusColor = (status: string) => {
     switch (status) {
       case 'strong':
-        return 'bg-[#ecfdf5] border-[#a7f3d0] text-[#065f46]';
+        return 'border-emerald-800/60 bg-emerald-950/40 text-emerald-200';
       case 'needs-improvement':
-        return 'bg-[#fffbeb] border-[#fde68a] text-[#92400e]';
+        return 'border-amber-700/55 bg-amber-950/40 text-amber-100';
       case 'weak':
-        return 'bg-[#fff7ed] border-[#fed7aa] text-[#9a3412]';
+        return 'border-orange-700/55 bg-orange-950/35 text-orange-100';
       default:
-        return 'bg-[#fef2f2] border-[#fecaca] text-[#991b1b]';
+        return 'border-red-800/55 bg-red-950/35 text-red-200';
     }
   };
 
   return (
-    <div className="bg-white border border-[#d1d5db] p-4">
-      {/* Section Header */}
-      <div className="mb-3 pb-2 border-b border-[#d1d5db]">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold text-[#1a1a1a]">{section.title}</h3>
-          <span
-            className={`px-2 py-0.5 text-xs font-medium border ${getStatusColor(
-              section.status
-            )}`}
-          >
+    <div className="rounded-ds-md border border-ds-border bg-ds-page/35 p-5 shadow-ds-sm">
+      <div className="mb-4 pb-4 border-b border-ds-border">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-[15px] font-semibold text-ds-text">{section.title}</h3>
+          <span className={`rounded-ds-sm border px-2 py-0.5 text-xs font-medium ${getLocalStatusColor(section.status)}`}>
             {section.status.replace('-', ' ')}
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5">
-            <TrendingUp className="w-3.5 h-3.5 text-[#6b7280]" />
-            <span className="text-xs text-[#6b7280]">
-              Confidence: <span className="font-medium mono">{section.confidence || 0}%</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <TrendUp className="h-3.5 w-3.5 text-ds-text-muted" weight="bold" />
+            <span className="text-xs text-ds-text-muted">
+              Confidence: <span className="mono font-semibold text-ds-text">{section.confidence ?? 0}%</span>
             </span>
           </div>
           {section.required && (
-            <span className="text-xs px-1.5 py-0.5 bg-[#eff6ff] text-[#1e40af] border border-[#bfdbfe]">
+            <span className="border border-ds-accent/40 bg-ds-accent/10 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-amber-200">
               Required
             </span>
           )}
         </div>
       </div>
 
-      {/* Section Content */}
-      <div className="mb-3">
-        <h4 className="text-xs font-semibold text-[#374151] mb-2">Content</h4>
-        <div className="bg-[#f9fafb] border border-[#d1d5db] p-3">
-          <div className="text-xs text-[#374151] leading-relaxed prose prose-sm max-w-none">
+      <div className="mb-5">
+        <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-ds-text-muted">Draft body</h4>
+        <div className="rounded-ds-md border border-ds-border bg-ds-shell/40 p-4">
+          <div className="leading-relaxed [&_h1]:mt-4 [&_h1]:text-base [&_h1]:font-semibold [&_h1]:text-ds-text [&_h2]:mt-3 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:text-ds-text [&_h3]:mt-2 [&_h3]:text-xs [&_h3]:font-semibold [&_h3]:text-ds-text text-[13px] text-ds-text-secondary">
             {section.content ? (
               <ReactMarkdown
                 components={{
-                  // Bold text
-                  strong: ({ children }) => (
-                    <strong className="font-semibold text-[#1a1a1a]">{children}</strong>
-                  ),
-                  // Paragraphs
-                  p: ({ children }) => (
-                    <p className="mb-3 last:mb-0">{children}</p>
-                  ),
-                  // Unordered lists (bullet points)
-                  ul: ({ children, ...props }: any) => {
-                    const depth = props.depth || 0;
+                  strong: ({ children }) => <strong className="font-semibold text-ds-text">{children}</strong>,
+                  p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+                  ul: ({ children, ...props }: { children?: React.ReactNode; depth?: number }) => {
+                    const depth = (props as { depth?: number }).depth || 0;
                     const indentClass = depth === 0 ? 'ml-6' : depth === 1 ? 'ml-10' : 'ml-14';
                     return (
-                      <ul className={`list-disc list-outside ${indentClass} mb-3 space-y-1.5 last:mb-0`}>
-                        {children}
-                      </ul>
+                      <ul className={`list-outside list-disc ${indentClass} mb-3 space-y-1.5 last:mb-0`}>{children}</ul>
                     );
                   },
-                  // Ordered lists (numbered)
-                  ol: ({ children, ...props }: any) => {
-                    const depth = props.depth || 0;
+                  ol: ({ children, ...props }: { children?: React.ReactNode; depth?: number }) => {
+                    const depth = (props as { depth?: number }).depth || 0;
                     const indentClass = depth === 0 ? 'ml-6' : depth === 1 ? 'ml-10' : 'ml-14';
                     return (
-                      <ol className={`list-decimal list-outside ${indentClass} mb-3 space-y-1.5 last:mb-0`}>
-                        {children}
-                      </ol>
+                      <ol className={`list-outside list-decimal ${indentClass} mb-3 space-y-1.5 last:mb-0`}>{children}</ol>
                     );
                   },
-                  // List items
-                  li: ({ children }) => (
-                    <li className="pl-1.5 leading-relaxed">{children}</li>
-                  ),
-                  // Headers
+                  li: ({ children }) => <li className="pl-1.5 leading-relaxed">{children}</li>,
                   h1: ({ children }) => (
-                    <h1 className="text-base font-semibold text-[#1a1a1a] mb-2 mt-4 first:mt-0">
-                      {children}
-                    </h1>
+                    <h1 className="mb-2 mt-4 text-base font-semibold text-ds-text first:mt-0">{children}</h1>
                   ),
                   h2: ({ children }) => (
-                    <h2 className="text-sm font-semibold text-[#1a1a1a] mb-2 mt-3 first:mt-0">
-                      {children}
-                    </h2>
+                    <h2 className="mb-2 mt-3 text-sm font-semibold text-ds-text first:mt-0">{children}</h2>
                   ),
                   h3: ({ children }) => (
-                    <h3 className="text-xs font-semibold text-[#1a1a1a] mb-1.5 mt-2 first:mt-0">
-                      {children}
-                    </h3>
+                    <h3 className="mb-1.5 mt-2 text-xs font-semibold text-ds-text first:mt-0">{children}</h3>
                   ),
-                  // Code blocks
-                  code: ({ children, className }) => {
+                  code: ({ children, className }: { children?: React.ReactNode; className?: string }) => {
                     const isInline = !className;
                     return isInline ? (
-                      <code className="bg-[#f3f4f6] px-1 py-0.5 rounded text-[#dc2626] font-mono text-[11px]">
+                      <code className="rounded bg-ds-surface-elevated/80 px-1 py-0.5 font-mono text-[11px] text-amber-200">
                         {children}
                       </code>
                     ) : (
                       <code className={className}>{children}</code>
                     );
                   },
-                  // Blockquotes
                   blockquote: ({ children }) => (
-                    <blockquote className="border-l-4 border-[#d1d5db] pl-3 italic text-[#6b7280] my-3">
-                      {children}
-                    </blockquote>
+                    <blockquote className="my-3 border-l-4 border-ds-border pl-3 italic text-ds-text-muted">{children}</blockquote>
                   ),
-                  // Horizontal rule
-                  hr: () => (
-                    <hr className="my-4 border-t border-[#d1d5db]" />
-                  ),
+                  hr: () => <hr className="my-4 border-t border-ds-border" />,
                 }}
               >
                 {section.content}
               </ReactMarkdown>
             ) : (
-              <p className="text-[#6b7280]">No content available for this section.</p>
+              <p className="text-sm text-ds-text-muted">No draft text for this section.</p>
             )}
           </div>
         </div>
       </div>
 
-      {/* Feedback */}
       {section.feedback && section.feedback.length > 0 && (
         <div>
-          <h4 className="text-xs font-semibold text-[#374151] mb-2">Analysis & Recommendations</h4>
-          <div className="space-y-2">
+          <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-ds-text-muted">
+            Analysis & recommendations
+          </h4>
+          <div className="space-y-3">
             {section.feedback.map((fb, index) => (
               <div
                 key={fb.id || `feedback-${section.id}-${index}`}
-                className={`p-3 border ${
-                  fb.type === 'strength'
-                    ? 'bg-[#ecfdf5] border-[#a7f3d0]'
-                    : fb.type === 'improvement'
-                    ? 'bg-[#eff6ff] border-[#bfdbfe]'
-                    : 'bg-[#fef2f2] border-[#fecaca]'
-                }`}
+                className={cn(
+                  'rounded-ds-sm border p-3',
+                  fb.type === 'strength' && 'border-emerald-800/60 bg-emerald-950/25',
+                  fb.type === 'improvement' && 'border-blue-900/55 bg-blue-950/25',
+                  fb.type === 'removal' && 'border-red-900/55 bg-red-950/25'
+                )}
               >
                 <div className="flex items-start gap-2">
-                  {fb.type === 'strength' && (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#059669] mt-0.5 flex-shrink-0" />
-                  )}
-                  {fb.type === 'improvement' && (
-                    <AlertCircle className="w-3.5 h-3.5 text-[#2563eb] mt-0.5 flex-shrink-0" />
-                  )}
-                  {fb.type === 'removal' && (
-                    <XCircle className="w-3.5 h-3.5 text-[#dc2626] mt-0.5 flex-shrink-0" />
-                  )}
-                  <div className="flex-1">
+                  {fb.type === 'strength' && <CheckCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" weight="bold" />}
+                  {fb.type === 'improvement' && <WarningCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-300" weight="bold" />}
+                  {fb.type === 'removal' && <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-300" weight="bold" />}
+                  <div className="min-w-0 flex-1">
                     <p
-                      className={`text-xs ${
-                        fb.type === 'strength'
-                          ? 'text-[#065f46]'
-                          : fb.type === 'improvement'
-                          ? 'text-[#1e40af]'
-                          : 'text-[#991b1b]'
-                      }`}
+                      className={cn(
+                        'text-xs leading-relaxed',
+                        fb.type === 'strength' && 'text-emerald-100',
+                        fb.type === 'improvement' && 'text-blue-100',
+                        fb.type === 'removal' && 'text-red-100'
+                      )}
                     >
                       {fb.text}
                     </p>
                     {fb.suggestion && (
-                      <p className="text-xs text-[#6b7280] mt-1.5">
-                        Recommendation: {fb.suggestion}
-                      </p>
+                      <p className="mt-2 text-[11px] text-ds-text-muted">Recommendation: {fb.suggestion}</p>
                     )}
                   </div>
                 </div>

@@ -133,7 +133,11 @@ export async function POST(request: NextRequest) {
           const requirements = extractRequirements(text);
           const deadlines = extractDeadlines(text);
           const structure = extractStructure(text);
-          
+          const technologySignals = extractTechnologySignals(text);
+          const ingestSummary = buildIngestSummary(text);
+          const noticeNumbers = extractNoticeNumbers(text);
+          const titleInferred = inferSolicitationTitle(text, file.name.replace(/\.pdf$/i, ''));
+
           console.log('📊 Parsed results:');
           console.log('  Sections:', sections.length);
           console.log('  Requirements:', requirements.length);
@@ -142,14 +146,18 @@ export async function POST(request: NextRequest) {
 
           resolve(NextResponse.json({
             id: `baa-${Date.now()}`,
-            title: file.name.replace('.pdf', ''),
+            title: titleInferred,
             fileName: file.name,
             uploadedAt: new Date().toISOString(),
             sections,
             requirements,
             deadlines,
             structure,
-            rawText: text, // CRITICAL: Always include rawText
+            rawText: text,
+            pageCount: Array.isArray(pdfData?.Pages) ? pdfData.Pages.length : undefined,
+            technologySignals,
+            ingestSummary,
+            noticeNumbers,
           }));
         } catch (error) {
           console.error('Error processing PDF data:', error);
@@ -173,7 +181,7 @@ function parseBAASections(text: string) {
   const sections: any[] = [];
   const lines = text.split('\n');
   let currentSection: any = null;
-  let level = 0;
+  const level = 0;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -236,35 +244,71 @@ function extractRequirements(text: string) {
 }
 
 function extractDeadlines(text: string) {
-  const deadlines: any[] = [];
-  const datePatterns = [
-    /(?:deadline|due date|submission date)[^:]*:\s*([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})/gi,
-    /([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})/g,
-  ];
+  const deadlines: {
+    id: string;
+    description: string;
+    date: string;
+    type: 'submission' | 'question' | 'other';
+  }[] = [];
+  const pushDeadline = (
+    snippet: string,
+    dateStr: string,
+    type: 'submission' | 'question' | 'other' = 'other',
+  ) => {
+    if (deadlines.length >= 12) return;
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return;
+      const desc = snippet.replace(/\s+/g, ' ').trim().slice(0, 140);
+      deadlines.push({
+        id: `deadline-${deadlines.length + 1}`,
+        description: desc || dateStr,
+        date: date.toISOString(),
+        type:
+          /\b(question|questions?|Qs|FAQ|information)\b/i.test(snippet)
+            ? 'question'
+            : /\b(submit|submission|proposal|white paper|abstract|response due)\b/i.test(snippet)
+              ? 'submission'
+              : type,
+      });
+    } catch {
+      /* skip */
+    }
+  };
 
-  datePatterns.forEach(pattern => {
-    const matches = Array.from(text.matchAll(pattern));
-    matches.forEach((match, index) => {
-      if (index < 5) { // Limit to 5 deadlines
-        const dateStr = match[1] || match[0];
-        try {
-          const date = new Date(dateStr);
-          if (!isNaN(date.getTime())) {
-            deadlines.push({
-              id: `deadline-${deadlines.length + 1}`,
-              description: match[0].substring(0, 100),
-              date: date.toISOString(),
-              type: match[0].toLowerCase().includes('question') ? 'question' : 'submission',
-            });
-          }
-        } catch (e) {
-          // Invalid date, skip
-        }
-      }
-    });
+  const labeled = [
+    ...text.matchAll(
+      /(?:deadline|due date|closing|submission|white\s*paper|abstract|full\s*proposal|questions?\s*due|Amendment)[^:.\n]{0,80}:\s*([A-Z][a-z]+\s+\d{1,2},?\s+\d{4}|\d{4}-\d{2}-\d{2})/gi,
+    ),
+  ];
+  labeled.forEach((m) => {
+    const ctx = m[0];
+    const dateStr = m[1];
+    pushDeadline(ctx, dateStr);
   });
 
-  return deadlines;
+  const isoDates = [...text.matchAll(/\b(20[2-3]\d-\d{2}-\d{2})\b/g)];
+  isoDates.slice(0, 8).forEach((m) => {
+    const idx = m.index ?? 0;
+    const ctx = text.slice(Math.max(0, idx - 70), Math.min(text.length, idx + 18));
+    pushDeadline(ctx, m[1], 'other');
+  });
+
+  const loose = [...text.matchAll(/([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})/g)];
+  loose.forEach((m) => {
+    if (deadlines.length >= 12) return;
+    const idx = m.index ?? 0;
+    const ctx = text.slice(Math.max(0, idx - 60), Math.min(text.length, idx + m[0].length + 10));
+    pushDeadline(ctx, m[1], 'other');
+  });
+
+  const seen = new Set<string>();
+  return deadlines.filter((d) => {
+    const k = d.date.slice(0, 10);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
 }
 
 function extractStructure(text: string) {
@@ -280,4 +324,89 @@ function extractStructure(text: string) {
   }
 
   return structure.slice(0, 30); // Limit to 30 sections
+}
+
+const TECH_SIGNAL_PATTERNS: Array<{ label: string; pattern: RegExp }> = [
+  { label: 'AI / machine learning', pattern: /artificial intelligence|machine learning|\bAI\b(?!\.)|\bML\b|deep learning|neural nets?|large language|\bLLM\b|generative AI|foundation models/i },
+  { label: 'Cybersecurity & zero trust', pattern: /cybersecurity|zero trust|supply chain risk|encryption|ZTNA|boundary protection|intrusion|\bIAM\b|risk management framework/i },
+  { label: 'Cloud & DevSecOps', pattern: /\bAWS\b|Amazon Web Services|\bGCP\b|\bAzure\b|Kubernetes|\bK8s\b|containers?|Infrastructure as Code|CI\/CD|DevSecOps|multi-?cloud|hybrid cloud/i },
+  { label: 'Data & analytics', pattern: /data analytics|big data|data fusion|streaming analytics|ontology|graph database|\bETL\b|data warehouse|telemetry/i },
+  { label: 'Autonomy / robotics', pattern: /\bUAS\b|\bUA\b|autonomous systems|robotics|unmanned aerial/i },
+  { label: 'Networking & SATCOM', pattern: /SATCOM|Tactical edge|WAN|LTE|mesh network|MPLS|software-?defined (network|radio)|5G|\bSDN\b/i },
+  { label: 'Modeling & simulation', pattern: /modeling and simulation|M&S|digital engineering|digital twin|\bMBSE\b|validation and verification/i },
+  { label: 'Software engineering', pattern: /software development|microservices|API-first|interop|open architecture|middleware|microkernel/i },
+  { label: 'Test & evaluation', pattern: /test and evaluation|T&E|verification and validation|\bIV&V\b|qualification|accreditation/i },
+  { label: 'Human-systems integration', pattern: /human[- ]systems|UX|usability|human factors|training systems|workload/i },
+  { label: 'Hardware / sensors', pattern: /RF sensing|EO\/IR|signature|antenna|ASIC|FPGA|hardware assurance/i },
+  { label: 'Trust & assurance', pattern: /formal methods|assurance|provenance|attestation|tamper resistance|high assurance/i },
+];
+
+function extractTechnologySignals(text: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const { label, pattern } of TECH_SIGNAL_PATTERNS) {
+    if (pattern.test(text) && !seen.has(label)) {
+      seen.add(label);
+      out.push(label);
+    }
+  }
+  return out.slice(0, 14);
+}
+
+function inferSolicitationTitle(text: string, fallbackBase: string): string {
+  const lines = text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+  for (const line of lines.slice(0, 48)) {
+    const clean = line.replace(/^[\s•\-–:]+/, '');
+    if (clean.length < 24 || clean.length > 260) continue;
+    if (/^page\s*\d|^table of contents|^\d+$|^\*{3,}|^-{3,}/i.test(clean)) continue;
+    if (/^[A-Z\s]{18,}$/.test(clean) && clean.length < 120) continue;
+    return clean.slice(0, 240);
+  }
+  return fallbackBase || 'Imported solicitation';
+}
+
+function buildIngestSummary(text: string, maxLen = 520): string {
+  const collapsed = text.replace(/\s+/g, ' ').trim();
+  if (!collapsed) return '';
+  const hardCap = Math.min(maxLen * 3, collapsed.length);
+  const chunk = collapsed.slice(0, hardCap);
+  const sentences = chunk.split(/(?<=[.!?])\s+/).filter((s) => s.length > 12);
+  let out = '';
+  for (const s of sentences) {
+    const next = out ? `${out} ${s}` : s;
+    if (next.length > maxLen) break;
+    out = next;
+  }
+  if (!out) {
+    out = collapsed.slice(0, maxLen);
+  }
+  if (collapsed.length > out.length + 20) {
+    out = `${out.replace(/\s+$/, '')}…`;
+  }
+  return out;
+}
+
+function extractNoticeNumbers(text: string): string[] {
+  const patterns = [
+    /\bFA[0-9]{3,4}-[0-9]{2}-[0-9A-Z-]{3,}\b/gi,
+    /\bW[0-9]{2}[A-Z][0-9]-[0-9A-Z]{2}-[0-9]{4,6}\b/gi,
+    /\bHR[0-9]{3}[0-9A-Z.-]{4,}\b/gi,
+    /\bBAA[-\s#:]*([0-9A-Z][0-9A-Z./-]{4,})\b/gi,
+    /\bBroad Agency Announcement[\s#:]*([0-9A-Z][0-9A-Z./-]{4,})\b/gi,
+  ];
+  const found = new Set<string>();
+  for (const re of patterns) {
+    let m: RegExpExecArray | null;
+    const r = new RegExp(re.source, re.flags);
+    while ((m = r.exec(text)) !== null) {
+      const raw = (m[1] || m[0]).trim();
+      if (raw.length >= 5 && raw.length <= 64) {
+        found.add(raw.replace(/\s+/g, ' '));
+      }
+    }
+  }
+  return [...found].slice(0, 10);
 }
