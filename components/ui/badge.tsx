@@ -4,13 +4,12 @@ import { cn } from '@/lib/cn';
 export type BadgeTone = 'default' | 'positive' | 'warning' | 'danger' | 'info' | 'accent';
 
 const toneClass: Record<BadgeTone, string> = {
-  default:
-    'border-ds-border bg-ds-surface-elevated/80 text-ds-text-secondary',
-  positive: 'border-emerald-800/60 bg-emerald-950/50 text-emerald-300',
-  warning:  'border-amber-700/50 bg-amber-950/40 text-amber-200',
-  danger:   'border-red-800/55 bg-red-950/40 text-red-300',
-  info:     'border-blue-900/45 bg-[#0c1e3a]/80 text-blue-200',
-  accent:   'border-ds-accent/45 bg-[#2a1e04]/70 text-amber-200',
+  default:  'border-gray-200 bg-gray-100 text-gray-600',
+  positive: 'border-emerald-300 bg-emerald-50 text-emerald-700',
+  warning:  'border-amber-300 bg-amber-50 text-amber-700',
+  danger:   'border-red-300 bg-red-50 text-red-600',
+  info:     'border-blue-300 bg-blue-50 text-blue-700',
+  accent:   'border-violet-300 bg-violet-50 text-violet-700',
 };
 
 export function Badge({

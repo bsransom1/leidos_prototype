@@ -47,11 +47,11 @@ export default function CollaborationPanel({
   const getRoleTone = (role: User['role']) => {
     switch (role) {
       case 'admin':
-        return 'border-blue-800/55 bg-blue-950/40 text-blue-200';
+        return 'border-blue-300 bg-blue-50 text-blue-700';
       case 'editor':
-        return 'border-blue-900/55 bg-[#132347]/85 text-blue-50';
+        return 'border-indigo-300 bg-indigo-50 text-indigo-700';
       case 'viewer':
-        return 'border-ds-border bg-ds-shell/55 text-ds-text-secondary';
+        return 'border-gray-200 bg-gray-100 text-gray-500';
     }
   };
 

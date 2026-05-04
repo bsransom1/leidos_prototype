@@ -138,7 +138,7 @@ export default function PDFUpload({ onUploadComplete, onContinue }: PDFUploadPro
           <div className="flex items-center justify-center gap-3">
             <CheckCircle className="h-5 w-5 text-emerald-400" weight="bold" aria-hidden />
             <div className="text-left">
-              <p className="text-[13px] font-semibold text-emerald-200">Solicitation ingest complete</p>
+              <p className="text-[13px] font-semibold text-emerald-700">Solicitation ingest complete</p>
               <p className="mono text-[11px] text-ds-text-muted">
                 Review extract fidelity below — then continue to org context.
               </p>
@@ -160,8 +160,8 @@ export default function PDFUpload({ onUploadComplete, onContinue }: PDFUploadPro
       </div>
 
       {error && (
-        <div className="mt-4 border border-red-900/55 bg-red-950/35 px-4 py-3">
-          <p className="text-sm font-semibold text-red-200">{error}</p>
+        <div className="mt-4 border border-red-300 bg-red-50 px-4 py-3">
+          <p className="text-sm font-semibold text-red-600">{error}</p>
         </div>
       )}
 

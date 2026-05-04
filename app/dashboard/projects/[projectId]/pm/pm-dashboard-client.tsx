@@ -79,11 +79,11 @@ const MILESTONE_STATUS_COLORS: Record<string, string> = {
 };
 
 const DELIVERABLE_STATUS: Record<string, string> = {
-  not_started: 'border border-ds-border bg-ds-shell/65 text-ds-text-secondary',
-  in_progress: 'border border-blue-900/55 bg-[#132347]/85 text-blue-50',
-  submitted: 'border border-amber-800/65 bg-amber-950/40 text-amber-100',
-  accepted: 'border border-emerald-800/65 bg-emerald-950/40 text-emerald-200',
-  overdue: 'border border-red-900/55 bg-red-950/35 text-red-200',
+  not_started: 'border border-gray-200 bg-gray-100 text-gray-500',
+  in_progress: 'border border-blue-300 bg-blue-50 text-blue-700',
+  submitted: 'border border-amber-300 bg-amber-50 text-amber-700',
+  accepted: 'border border-emerald-300 bg-emerald-50 text-emerald-700',
+  overdue: 'border border-red-300 bg-red-50 text-red-600',
 };
 
 export default function PmDashboardClient({
@@ -297,7 +297,7 @@ export default function PmDashboardClient({
               Proposal Doc
               <ArrowRight className="w-3 h-3" weight="bold" />
             </Link>
-            <span className="border border-emerald-800/60 bg-emerald-950/40 px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-emerald-200">
+            <span className="border border-emerald-300 bg-emerald-50 px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-emerald-700">
               Awarded
             </span>
           </div>
@@ -589,10 +589,10 @@ export default function PmDashboardClient({
                         <span
                           className={
                             p.health === 'green'
-                              ? 'text-emerald-300'
+                              ? 'text-emerald-600'
                               : p.health === 'yellow'
-                                ? 'text-amber-300'
-                                : 'text-red-300'
+                                ? 'text-amber-600'
+                                : 'text-red-500'
                           }
                         >
                           {p.health}
@@ -718,7 +718,7 @@ export default function PmDashboardClient({
                   {risksPayload.risks.map((r) => (
                     <tr
                       key={r.id}
-                      className={`border-t border-ds-border ${r.score >= 49 ? 'bg-red-950/35 ring-2 ring-red-700/35' : ''}`}
+                      className={`border-t border-ds-border ${r.score >= 49 ? 'bg-red-50 ring-2 ring-red-300' : ''}`}
                     >
                       <td className="px-3 py-2 font-medium">{r.title}</td>
                       <td className="px-3 py-2">{r.category}</td>

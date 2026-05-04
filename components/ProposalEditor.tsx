@@ -50,15 +50,15 @@ function statusIcon(status: string) {
 }
 
 function roleIcon(role: User['role']) {
-  if (role === 'admin') return <Shield className="h-3 w-3 text-blue-300" weight="bold" />;
-  if (role === 'editor') return <PencilSimple className="h-3 w-3 text-ds-accent" weight="bold" />;
-  return <Eye className="h-3 w-3 text-ds-text-muted" weight="bold" />;
+  if (role === 'admin') return <Shield className="h-3 w-3 text-blue-600" weight="bold" />;
+  if (role === 'editor') return <PencilSimple className="h-3 w-3 text-indigo-600" weight="bold" />;
+  return <Eye className="h-3 w-3 text-gray-400" weight="bold" />;
 }
 
 function roleBadgeClass(role: User['role']) {
-  if (role === 'admin') return 'border-blue-800/55 bg-blue-950/40 text-blue-200';
-  if (role === 'editor') return 'border-blue-900/55 bg-[#132347]/85 text-blue-50';
-  return 'border-ds-border bg-ds-shell/55 text-ds-text-secondary';
+  if (role === 'admin') return 'border-blue-300 bg-blue-50 text-blue-700';
+  if (role === 'editor') return 'border-indigo-300 bg-indigo-50 text-indigo-700';
+  return 'border-gray-200 bg-gray-100 text-gray-500';
 }
 
 // ── Collaborator floating panel ────────────────────────────────────────────────
@@ -180,6 +180,76 @@ function CollabOverlay({
   );
 }
 
+// ── Outline floating panel (replaces left sidebar) ────────────────────────────
+
+function OutlineOverlay({
+  sections,
+  titles,
+  dirty,
+  onNavigate,
+  onClose,
+  anchorRect,
+}: {
+  sections: ProposalSection[];
+  titles: Record<string, string>;
+  dirty: Set<string>;
+  onNavigate: (sectionId: string) => void;
+  onClose: () => void;
+  anchorRect: DOMRect | null;
+}) {
+  const top = anchorRect ? anchorRect.bottom + 8 : 80;
+  const right = anchorRect ? window.innerWidth - anchorRect.right : 24;
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40" onClick={onClose} />
+
+      <div
+        className="fixed z-50 w-72 overflow-hidden border border-ds-border bg-ds-surface shadow-[0_8px_32px_rgba(0,0,0,0.55)] backdrop-blur-sm"
+        style={{ top, right }}
+      >
+        <div className="flex items-center justify-between border-b border-ds-border px-4 py-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-3.5 w-3.5 text-emerald-400" weight="bold" />
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-ds-text-muted">
+              Outline · {sections.length}
+            </span>
+          </div>
+          <button type="button" onClick={onClose} className="text-ds-text-muted hover:text-ds-text transition-colors">
+            <X className="h-3.5 w-3.5" weight="bold" />
+          </button>
+        </div>
+
+        <ul className="max-h-72 overflow-y-auto py-1">
+          {sections.map((s, i) => (
+            <li key={s.id}>
+              <button
+                type="button"
+                onClick={() => {
+                  onNavigate(s.id);
+                  onClose();
+                }}
+                className="flex w-full items-center gap-2 px-4 py-2 text-left hover:bg-ds-shell/60 transition-colors group"
+              >
+                <span className="font-mono text-[9px] text-ds-text-subtle w-4 shrink-0">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                {statusIcon(s.status)}
+                <span className="flex-1 truncate font-mono text-[10px] text-ds-text-secondary group-hover:text-ds-text leading-tight">
+                  {titles[s.id] || s.title}
+                </span>
+                {dirty.has(s.id) && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-ds-accent shrink-0" title="Unsaved changes" />
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </>
+  );
+}
+
 // ── Format toolbar ────────────────────────────────────────────────────────────
 
 function ToolbarButton({
@@ -206,8 +276,8 @@ function ToolbarButton({
       }}
       className={`flex h-6 min-w-[1.5rem] items-center justify-center px-1 font-mono text-[11px] font-semibold transition-colors disabled:opacity-40 ${
         active
-          ? 'bg-ds-primary/25 text-ds-text border border-ds-primary/50'
-          : 'text-ds-text-secondary hover:bg-ds-shell/70 hover:text-ds-text border border-transparent'
+          ? 'bg-blue-100 text-blue-700 border border-blue-300'
+          : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800 border border-transparent'
       }`}
     >
       {children}
@@ -216,7 +286,7 @@ function ToolbarButton({
 }
 
 function ToolbarDivider() {
-  return <div className="mx-1 h-4 w-px bg-ds-border" />;
+  return <div className="mx-1 h-4 w-px bg-gray-200" />;
 }
 
 function FormatToolbar({
@@ -235,7 +305,7 @@ function FormatToolbar({
   const e = activeEditor;
 
   return (
-    <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-ds-border bg-ds-surface-elevated/95 px-3 py-1.5 backdrop-blur-sm">
+    <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-gray-200 bg-white/95 px-6 py-1.5 backdrop-blur-sm shadow-sm">
       <div className="flex flex-wrap items-center gap-0.5">
         {/* History */}
         <ToolbarButton
@@ -316,7 +386,7 @@ function FormatToolbar({
       {/* Right: save + award */}
       <div className="flex items-center gap-2 shrink-0">
         {dirtyCount > 0 && (
-          <span className="font-mono text-[10px] text-ds-text-muted">
+          <span className="font-mono text-[10px] text-gray-400">
             {dirtyCount} unsaved
           </span>
         )}
@@ -325,7 +395,7 @@ function FormatToolbar({
           onMouseDown={(e) => e.preventDefault()}
           onClick={onSave}
           disabled={saving || dirtyCount === 0}
-          className="inline-flex items-center gap-1.5 border border-ds-primary bg-ds-primary/20 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-ds-text hover:bg-ds-primary/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-1.5 border border-blue-600 bg-blue-600 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-white hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {saving ? (
             <CircleNotch className="h-3 w-3 animate-spin" weight="bold" />
@@ -339,7 +409,7 @@ function FormatToolbar({
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={onAward}
-            className="inline-flex items-center gap-1.5 border border-emerald-800/60 bg-emerald-900/40 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-emerald-200 hover:brightness-110 transition-[filter]"
+            className="inline-flex items-center gap-1.5 border border-emerald-600 bg-emerald-600 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-white hover:bg-emerald-700 transition-colors"
           >
             <Medal className="h-3 w-3" weight="bold" />
             Mark awarded
@@ -397,31 +467,31 @@ function SectionEditor({
   return (
     <article
       id={`section-${section.id}`}
-      className="scroll-mt-24 border border-ds-border bg-ds-surface"
+      className="scroll-mt-24 border border-gray-200 bg-white shadow-sm"
     >
       {/* Section header */}
-      <div className="flex items-center gap-3 border-b border-ds-border bg-ds-surface-elevated/50 px-5 py-2.5">
-        <span className="font-mono text-[10px] text-ds-text-muted w-5 shrink-0 text-right">
+      <div className="flex items-center gap-3 border-b border-gray-200 bg-gray-50 px-5 py-2.5">
+        <span className="font-mono text-[10px] text-gray-400 w-5 shrink-0 text-right">
           {String(sectionIndex + 1).padStart(2, '0')}
         </span>
         {readOnly ? (
-          <h3 className="flex-1 text-[13px] font-semibold text-ds-text">{titleOverride}</h3>
+          <h3 className="flex-1 text-[13px] font-semibold text-gray-900">{titleOverride}</h3>
         ) : (
           <input
             type="text"
             value={titleOverride}
             onChange={(e) => onTitleChange(section.id, e.target.value)}
-            className="flex-1 bg-transparent text-[13px] font-semibold text-ds-text placeholder:text-ds-text-muted focus:outline-none"
+            className="flex-1 bg-transparent text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 focus:outline-none"
             placeholder="Section title"
           />
         )}
         <div className="flex items-center gap-1.5 shrink-0">
           {statusIcon(section.status)}
           {section.confidence != null && (
-            <span className="font-mono text-[10px] text-ds-text-muted">{section.confidence}%</span>
+            <span className="font-mono text-[10px] text-gray-400">{section.confidence}%</span>
           )}
           {section.required && (
-            <span className="border border-ds-accent/35 bg-ds-accent/10 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wide text-amber-300">
+            <span className="border border-amber-300 bg-amber-50 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wide text-amber-700">
               Required
             </span>
           )}
@@ -453,6 +523,9 @@ export default function ProposalEditor({ proposal, baa, onSave, onAward, readOnl
   const [showCollab, setShowCollab] = useState(false);
   const [collabAnchor, setCollabAnchor] = useState<DOMRect | null>(null);
   const shareButtonRef = useRef<HTMLButtonElement>(null);
+  const [showOutline, setShowOutline] = useState(false);
+  const [outlineAnchor, setOutlineAnchor] = useState<DOMRect | null>(null);
+  const outlineButtonRef = useRef<HTMLButtonElement>(null);
 
   // Re-render toolbar when active editor's selection/transaction changes
   useEffect(() => {
@@ -494,10 +567,19 @@ export default function ProposalEditor({ proposal, baa, onSave, onAward, readOnl
   };
 
   const handleShareClick = () => {
+    setShowOutline(false);
     if (shareButtonRef.current) {
       setCollabAnchor(shareButtonRef.current.getBoundingClientRect());
     }
     setShowCollab((v) => !v);
+  };
+
+  const handleOutlineClick = () => {
+    setShowCollab(false);
+    if (outlineButtonRef.current) {
+      setOutlineAnchor(outlineButtonRef.current.getBoundingClientRect());
+    }
+    setShowOutline((v) => !v);
   };
 
   const sections = proposal.sections || [];
@@ -514,37 +596,55 @@ export default function ProposalEditor({ proposal, baa, onSave, onAward, readOnl
             </p>
           </div>
 
-          {/* Share / collaborators button */}
-          <button
-            ref={shareButtonRef}
-            type="button"
-            onClick={handleShareClick}
-            className="flex shrink-0 items-center gap-2 border border-ds-border bg-ds-shell/60 px-3 py-1.5 transition-colors hover:bg-ds-shell hover:border-ds-accent/40"
-          >
-            {/* Collaborator avatar chips */}
-            {collaborators.length > 0 && (
-              <div className="flex -space-x-1.5">
-                {collaborators.slice(0, 3).map((u) => (
-                  <div
-                    key={u.id}
-                    title={u.email}
-                    className="flex h-5 w-5 items-center justify-center border border-ds-surface bg-ds-primary font-mono text-[9px] font-bold uppercase text-white"
-                  >
-                    {u.name.charAt(0)}
-                  </div>
-                ))}
-                {collaborators.length > 3 && (
-                  <div className="flex h-5 w-5 items-center justify-center border border-ds-surface bg-ds-shell font-mono text-[9px] text-ds-text-muted">
-                    +{collaborators.length - 3}
-                  </div>
-                )}
-              </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {/* Outline — same pattern as Share; opens floating section navigator */}
+            {sections.length > 0 && (
+              <button
+                ref={outlineButtonRef}
+                type="button"
+                onClick={handleOutlineClick}
+                className="flex shrink-0 items-center gap-2 border border-ds-border bg-ds-shell/60 px-3 py-1.5 transition-colors hover:bg-ds-shell hover:border-emerald-600/35"
+                title="Jump to section"
+              >
+                <CheckCircle className="h-3.5 w-3.5 text-emerald-400" weight="bold" />
+                <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-ds-text-secondary">
+                  Outline
+                </span>
+              </button>
             )}
-            <Users className="h-3.5 w-3.5 text-ds-text-secondary" weight="bold" />
-            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-ds-text-secondary">
-              {collaborators.length > 0 ? `${collaborators.length}` : 'Share'}
-            </span>
-          </button>
+
+            {/* Share / collaborators button */}
+            <button
+              ref={shareButtonRef}
+              type="button"
+              onClick={handleShareClick}
+              className="flex shrink-0 items-center gap-2 border border-ds-border bg-ds-shell/60 px-3 py-1.5 transition-colors hover:bg-ds-shell hover:border-ds-accent/40"
+            >
+              {/* Collaborator avatar chips */}
+              {collaborators.length > 0 && (
+                <div className="flex -space-x-1.5">
+                  {collaborators.slice(0, 3).map((u) => (
+                    <div
+                      key={u.id}
+                      title={u.email}
+                      className="flex h-5 w-5 items-center justify-center border border-ds-surface bg-ds-primary font-mono text-[9px] font-bold uppercase text-white"
+                    >
+                      {u.name.charAt(0)}
+                    </div>
+                  ))}
+                  {collaborators.length > 3 && (
+                    <div className="flex h-5 w-5 items-center justify-center border border-ds-surface bg-ds-shell font-mono text-[9px] text-ds-text-muted">
+                      +{collaborators.length - 3}
+                    </div>
+                  )}
+                </div>
+              )}
+              <Users className="h-3.5 w-3.5 text-ds-text-secondary" weight="bold" />
+              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-ds-text-secondary">
+                {collaborators.length > 0 ? `${collaborators.length}` : 'Share'}
+              </span>
+            </button>
+          </div>
         </div>
 
         <div className="mt-3">
@@ -562,6 +662,17 @@ export default function ProposalEditor({ proposal, baa, onSave, onAward, readOnl
         />
       )}
 
+      {showOutline && sections.length > 0 && (
+        <OutlineOverlay
+          sections={sections}
+          titles={titles}
+          dirty={dirty}
+          onNavigate={scrollToSection}
+          onClose={() => setShowOutline(false)}
+          anchorRect={outlineAnchor}
+        />
+      )}
+
       {/* Sticky format toolbar */}
       {!readOnly && (
         <FormatToolbar
@@ -573,41 +684,8 @@ export default function ProposalEditor({ proposal, baa, onSave, onAward, readOnl
         />
       )}
 
-      {/* Two-column: outline + sections */}
-      <div className="flex flex-1 min-h-0">
-        {/* Outline sidebar */}
-        <nav className="w-52 shrink-0 border-r border-ds-border bg-ds-shell/40 sticky top-0 self-start max-h-[calc(100vh-14rem)] overflow-y-auto">
-          <div className="px-3 py-2.5 border-b border-ds-border">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-ds-text-muted">
-              Outline · {sections.length}
-            </p>
-          </div>
-          <ul className="py-1">
-            {sections.map((s, i) => (
-              <li key={s.id}>
-                <button
-                  type="button"
-                  onClick={() => scrollToSection(s.id)}
-                  className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-ds-shell/60 transition-colors group"
-                >
-                  <span className="font-mono text-[9px] text-ds-text-subtle w-4 shrink-0">
-                    {String(i + 1).padStart(2, '0')}
-                  </span>
-                  {statusIcon(s.status)}
-                  <span className="flex-1 truncate font-mono text-[10px] text-ds-text-secondary group-hover:text-ds-text leading-tight">
-                    {titles[s.id] || s.title}
-                  </span>
-                  {dirty.has(s.id) && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-ds-accent shrink-0" title="Unsaved changes" />
-                  )}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        {/* Main section editors */}
-        <div className="flex-1 min-w-0 space-y-4 p-6 bg-ds-page/60">
+      <div className="flex flex-1 min-h-0 flex-col">
+        <div className="flex-1 min-w-0 space-y-4 p-6 bg-gray-100">
           {sections.length === 0 ? (
             <div className="py-20 text-center">
               <p className="text-sm text-ds-text-muted">No sections generated yet.</p>

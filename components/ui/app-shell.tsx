@@ -45,7 +45,7 @@ export function PassBrand({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
     <div className={cn('flex items-center', dims.gap)}>
       <div
         className={cn(
-          'flex shrink-0 items-center justify-center border border-ds-primary/70 bg-gradient-to-br from-ds-primary via-ds-primary to-[#1e3a6e] p-1.5',
+          'flex shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-ds-primary/30 bg-gradient-to-br from-ds-primary via-ds-primary to-[#312e81] p-1.5',
           'shadow-[0_0_14px_rgba(37,99,235,0.25)]',
           dims.box,
         )}
@@ -76,7 +76,7 @@ export function AppLogoRow({
   return (
     <div className="flex flex-wrap items-start justify-between gap-4 px-5 py-2.5">
       <div className="flex min-w-0 items-center gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-ds-primary/70 bg-gradient-to-br from-ds-primary via-ds-primary to-[#1e3a6e] p-1.5 shadow-[0_0_10px_rgba(37,99,235,0.2)]">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-ds-primary/30 bg-gradient-to-br from-ds-primary via-ds-primary to-[#312e81] p-1.5 shadow-[0_0_10px_rgba(79,70,229,0.2)]">
           <PassIcon className="h-full w-full" />
         </div>
         <div className="min-w-0">
@@ -160,8 +160,8 @@ export function SidebarNavItem({
       className={cn(
         'flex items-center gap-3 border px-3 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] transition-colors',
         active
-          ? 'border-ds-accent/50 bg-ds-accent/10 text-amber-200'
-          : 'border-transparent text-ds-text-muted hover:border-ds-border hover:bg-white/[0.03] hover:text-ds-text-secondary',
+          ? 'border-ds-primary/30 bg-ds-primary/8 text-ds-primary'
+          : 'border-transparent text-ds-text-muted hover:border-ds-border hover:bg-ds-shell hover:text-ds-text',
       )}
     >
       {Icon ? <Icon className="h-3.5 w-3.5 shrink-0 opacity-80" weight="bold" aria-hidden /> : null}

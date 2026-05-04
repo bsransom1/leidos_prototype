@@ -484,7 +484,7 @@ function ProposalRow({
             title="Delete proposal"
             onClick={(e) => onDelete(p.id, e)}
             disabled={isDeleting}
-            className="rounded-ds-sm p-1.5 text-red-300/60 hover:text-red-300 hover:bg-red-950/40 transition-colors disabled:opacity-40"
+            className="rounded-ds-sm p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
           >
             <Trash className="h-3.5 w-3.5" weight="bold" />
           </button>

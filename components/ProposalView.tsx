@@ -62,7 +62,7 @@ export default function ProposalView({ proposal, baa, onAward }: ProposalViewPro
               <DownloadSimple className="h-3.5 w-3.5" weight="bold" />
               {downloadBusy ? 'Preparing…' : 'Export submission package'}
             </Button>
-            <Button type="button" variant="primary" className="!border-emerald-800/60 !bg-emerald-900/65 !shadow-none hover:!brightness-110" onClick={onAward}>
+            <Button type="button" variant="primary" className="!border-emerald-600 !bg-emerald-600 !shadow-none hover:!bg-emerald-700" onClick={onAward}>
               <Medal className="h-3.5 w-3.5" weight="bold" />
               Mark awarded
             </Button>
@@ -150,13 +150,13 @@ function SectionDetail({ section }: { section: ProposalSection }) {
   const getLocalStatusColor = (status: string) => {
     switch (status) {
       case 'strong':
-        return 'border-emerald-800/60 bg-emerald-950/40 text-emerald-200';
+        return 'border-emerald-300 bg-emerald-50 text-emerald-700';
       case 'needs-improvement':
-        return 'border-amber-700/55 bg-amber-950/40 text-amber-100';
+        return 'border-amber-300 bg-amber-50 text-amber-700';
       case 'weak':
-        return 'border-orange-700/55 bg-orange-950/35 text-orange-100';
+        return 'border-orange-300 bg-orange-50 text-orange-700';
       default:
-        return 'border-red-800/55 bg-red-950/35 text-red-200';
+        return 'border-red-300 bg-red-50 text-red-600';
     }
   };
 
@@ -178,7 +178,7 @@ function SectionDetail({ section }: { section: ProposalSection }) {
             </span>
           </div>
           {section.required && (
-            <span className="border border-ds-accent/40 bg-ds-accent/10 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-amber-200">
+            <span className="border border-amber-300 bg-amber-50 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-amber-700">
               Required
             </span>
           )}
@@ -221,7 +221,7 @@ function SectionDetail({ section }: { section: ProposalSection }) {
                   code: ({ children, className }: { children?: React.ReactNode; className?: string }) => {
                     const isInline = !className;
                     return isInline ? (
-                      <code className="rounded bg-ds-surface-elevated/80 px-1 py-0.5 font-mono text-[11px] text-amber-200">
+                      <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-[11px] text-gray-700">
                         {children}
                       </code>
                     ) : (
@@ -254,15 +254,15 @@ function SectionDetail({ section }: { section: ProposalSection }) {
                 key={fb.id || `feedback-${section.id}-${index}`}
                 className={cn(
                   'rounded-ds-sm border p-3',
-                  fb.type === 'strength' && 'border-emerald-800/60 bg-emerald-950/25',
-                  fb.type === 'improvement' && 'border-blue-900/55 bg-blue-950/25',
-                  fb.type === 'removal' && 'border-red-900/55 bg-red-950/25'
+                  fb.type === 'strength' && 'border-emerald-200 bg-emerald-50',
+                  fb.type === 'improvement' && 'border-blue-200 bg-blue-50',
+                  fb.type === 'removal' && 'border-red-200 bg-red-50'
                 )}
               >
                 <div className="flex items-start gap-2">
-                  {fb.type === 'strength' && <CheckCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" weight="bold" />}
-                  {fb.type === 'improvement' && <WarningCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-300" weight="bold" />}
-                  {fb.type === 'removal' && <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-300" weight="bold" />}
+                  {fb.type === 'strength' && <CheckCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" weight="bold" />}
+                  {fb.type === 'improvement' && <WarningCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-500" weight="bold" />}
+                  {fb.type === 'removal' && <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" weight="bold" />}
                   <div className="min-w-0 flex-1">
                     <p
                       className={cn(

@@ -72,8 +72,8 @@ function CompliancePill({ ok, label }: { ok: boolean; label: string }) {
     <span
       className={`inline-flex items-center gap-1 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] ${
         ok
-          ? 'bg-emerald-900/30 text-emerald-300 border border-emerald-700/40'
-          : 'bg-red-900/30 text-red-300 border border-red-700/40'
+          ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
+          : 'bg-red-50 text-red-600 border border-red-300'
       }`}
     >
       {ok ? <CheckCircle className="w-2.5 h-2.5" weight="bold" /> : <XCircle className="w-2.5 h-2.5" weight="bold" />}
@@ -274,8 +274,8 @@ function OrgContextProfile({ data }: { data: OrganizationContextJSON }) {
                 {team.map((m, i) => {
                   const clr = m.security_clearance?.level;
                   const clrColor =
-                    clr === 'Top Secret' ? 'text-red-300' :
-                    clr === 'Secret' ? 'text-amber-300' :
+                    clr === 'Top Secret' ? 'text-red-600' :
+                    clr === 'Secret' ? 'text-amber-600' :
                     'text-ds-text-muted';
                   const eduStr = m.education
                     ? `${m.education.degree || ''} ${m.education.field || ''}${m.education.institution ? ` · ${m.education.institution}` : ''}`.trim()
@@ -671,9 +671,9 @@ export default function OrganizationContextJSONUpload({
           isDragActive
             ? 'border-ds-accent bg-ds-accent/5'
             : validationResult?.valid
-            ? 'border-emerald-700/60 bg-emerald-950/20'
+            ? 'border-emerald-400 bg-emerald-50'
             : validationResult && !validationResult.valid
-            ? 'border-red-700/60 bg-red-950/15'
+            ? 'border-red-400 bg-red-50'
             : 'border-ds-border bg-ds-shell/30 hover:border-ds-border-strong'
         } ${isValidating ? 'cursor-not-allowed opacity-50' : ''}`}
       >
@@ -687,12 +687,12 @@ export default function OrganizationContextJSONUpload({
         ) : validationResult?.valid ? (
           <div className="flex items-center justify-center gap-2 py-2">
             <CheckCircle className="h-4 w-4 text-emerald-400" weight="bold" />
-            <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-emerald-200">Schema valid — drop a new file to replace</span>
+            <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-emerald-700">Schema valid — drop a new file to replace</span>
           </div>
         ) : validationResult && !validationResult.valid ? (
           <div className="flex items-center justify-center gap-2 py-2">
             <XCircle className="h-4 w-4 text-red-400" weight="bold" />
-            <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-red-200">Validation failed — see errors below</span>
+            <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-red-600">Validation failed — see errors below</span>
           </div>
         ) : (
           <div className="flex items-center justify-center gap-3 py-2">
@@ -711,16 +711,16 @@ export default function OrganizationContextJSONUpload({
 
       {/* Validation errors */}
       {validationResult && !validationResult.valid && validationResult.errors.length > 0 && (
-        <div className="border border-red-900/50 bg-red-950/20 p-3">
-          <h3 className="flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-wide text-red-200 mb-2">
+        <div className="border border-red-300 bg-red-50 p-3">
+          <h3 className="flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-wide text-red-600 mb-2">
             <WarningCircle className="w-3.5 h-3.5" weight="bold" />
             {validationResult.errors.length} Validation Error{validationResult.errors.length !== 1 ? 's' : ''}
           </h3>
           <ul className="space-y-1 max-h-48 overflow-y-auto">
             {validationResult.errors.map((err, i) => (
               <li key={i} className="text-[11px]">
-                <span className="font-mono font-semibold text-red-300">{err.path}:</span>{' '}
-                <span className="text-red-400">{err.message}</span>
+                <span className="font-mono font-semibold text-red-600">{err.path}:</span>{' '}
+                <span className="text-red-500">{err.message}</span>
               </li>
             ))}
           </ul>
@@ -739,7 +739,7 @@ export default function OrganizationContextJSONUpload({
                   if (onContinue) onContinue();
                 }
               }}
-              className="flex items-center gap-1.5 border border-emerald-700/60 bg-[#059669] px-4 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-white transition-colors hover:bg-[#047857]"
+              className="flex items-center gap-1.5 border border-emerald-600 bg-emerald-600 px-4 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-white transition-colors hover:bg-emerald-700"
             >
               <CheckCircle className="w-3.5 h-3.5" weight="bold" />
               Continue to Review &amp; Plan

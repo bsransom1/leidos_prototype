@@ -9,15 +9,15 @@ interface ConfidenceScoreProps {
 
 export default function ConfidenceScore({ score, previousScore }: ConfidenceScoreProps) {
   const getScoreColor = (s: number) => {
-    if (s >= 80) return 'text-emerald-300';
-    if (s >= 65) return 'text-amber-300';
-    return 'text-red-300';
+    if (s >= 80) return 'text-emerald-600';
+    if (s >= 65) return 'text-amber-600';
+    return 'text-red-500';
   };
 
   const getScoreBand = (s: number) => {
-    if (s >= 80) return 'border-emerald-800/50 bg-emerald-950/30';
-    if (s >= 65) return 'border-amber-800/50 bg-amber-950/30';
-    return 'border-red-900/45 bg-red-950/35';
+    if (s >= 80) return 'border-emerald-200 bg-emerald-50';
+    if (s >= 65) return 'border-amber-200 bg-amber-50';
+    return 'border-red-200 bg-red-50';
   };
 
   const trend = (): 'up' | 'down' | 'neutral' | null => {
@@ -42,16 +42,16 @@ export default function ConfidenceScore({ score, previousScore }: ConfidenceScor
               <div className="flex items-center gap-2 text-xs">
                 {t === 'up' && previousScore !== undefined && (
                   <>
-                    <TrendUp className="h-4 w-4 text-emerald-400" weight="bold" />
-                    <span className="mono font-medium text-emerald-300">
+                    <TrendUp className="h-4 w-4 text-emerald-500" weight="bold" />
+                    <span className="mono font-medium text-emerald-600">
                       +{(score - previousScore).toFixed(0)} pts
                     </span>
                   </>
                 )}
                 {t === 'down' && previousScore !== undefined && (
                   <>
-                    <TrendDown className="h-4 w-4 text-red-300" weight="bold" />
-                    <span className="mono font-medium text-red-200">
+                    <TrendDown className="h-4 w-4 text-red-500" weight="bold" />
+                    <span className="mono font-medium text-red-500">
                       {(score - previousScore).toFixed(0)} pts
                     </span>
                   </>

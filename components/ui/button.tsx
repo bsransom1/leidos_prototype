@@ -8,18 +8,17 @@ export type DSButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive';
 
 const variantClasses: Record<DSButtonVariant, string> = {
   primary:
-    'border border-ds-primary bg-ds-primary text-white hover:bg-ds-primary-hover hover:border-ds-primary-hover active:brightness-90 shadow-ds-sm disabled:opacity-50',
+    'border border-ds-primary bg-ds-primary text-white hover:bg-ds-primary-hover hover:border-ds-primary-hover active:brightness-95 shadow-ds-sm disabled:opacity-50',
   secondary:
-    'border border-ds-border bg-transparent text-ds-text-secondary hover:bg-white/[0.05] hover:border-ds-border-strong disabled:opacity-50',
+    'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50',
   ghost:
-    'border border-transparent bg-transparent text-ds-text-muted hover:text-ds-text hover:bg-white/[0.04] disabled:opacity-50',
+    'border border-transparent bg-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-100 disabled:opacity-50',
   destructive:
-    'border border-red-900/70 bg-transparent text-red-400 hover:bg-red-950/40 disabled:opacity-50',
+    'border border-red-300 bg-transparent text-red-600 hover:bg-red-50 hover:border-red-400 disabled:opacity-50',
 };
 
-/** Uppercase stencil-style shell — consistent with military/defense UI conventions */
 const shell =
-  'inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 px-4 py-1.5 text-center text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors rounded-ds-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ds-accent focus-visible:ring-offset-1 focus-visible:ring-offset-ds-page [&:disabled]:pointer-events-none [&:disabled]:opacity-50';
+  'inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 px-4 py-1.5 text-center text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors rounded-ds-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-primary focus-visible:ring-offset-2 focus-visible:ring-offset-ds-page [&:disabled]:pointer-events-none [&:disabled]:opacity-50';
 
 export function Button(props: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: DSButtonVariant;

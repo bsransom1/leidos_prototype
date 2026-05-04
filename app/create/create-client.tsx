@@ -414,42 +414,48 @@ export default function CreateProposalClient({ user, existingProposal }: CreateP
               <FileText className="h-5 w-5 text-white" weight="bold" />
             </div>
             <div>
-              <h1 className="text-base font-semibold tracking-tight text-ds-text">Create proposal</h1>
-              <p className="mt-0.5 text-xs uppercase tracking-[0.1em] text-ds-text-muted">Ingest • context • validation</p>
+              <h1 className="text-base font-semibold tracking-tight text-ds-text">
+                {existingProposal ? 'View proposal' : 'Create proposal'}
+              </h1>
+              <p className="mt-0.5 text-xs uppercase tracking-[0.1em] text-ds-text-muted">
+                {existingProposal ? 'Opened from dashboard' : 'Ingest • context • validation'}
+              </p>
             </div>
           </div>
         </div>
       </AppHeader>
 
-      <div className="shrink-0 border-b border-ds-border bg-ds-shell/80 backdrop-blur-sm">
-        <div className="w-full px-6 py-3">
-          <div className="flex items-center gap-1">
-            <StepIndicator
-              number={1}
-              label="Ingest Solicitation"
-              active={step === 'upload'}
-              completed={step !== 'upload'}
-              icon={UploadSimple}
-            />
-            <StepConnector completed={step !== 'upload'} />
-            <StepIndicator
-              number={2}
-              label="Organization Context"
-              active={step === 'context'}
-              completed={step === 'proposal'}
-              icon={FileText}
-            />
-            <StepConnector completed={step === 'proposal'} />
-            <StepIndicator
-              number={3}
-              label="Review & Validate"
-              active={step === 'proposal'}
-              completed={false}
-              icon={ChartBar}
-            />
+      {!existingProposal && (
+        <div className="shrink-0 border-b border-ds-border bg-ds-shell/80 backdrop-blur-sm">
+          <div className="w-full px-6 py-3">
+            <div className="flex items-center gap-1">
+              <StepIndicator
+                number={1}
+                label="Ingest Solicitation"
+                active={step === 'upload'}
+                completed={step !== 'upload'}
+                icon={UploadSimple}
+              />
+              <StepConnector completed={step !== 'upload'} />
+              <StepIndicator
+                number={2}
+                label="Organization Context"
+                active={step === 'context'}
+                completed={step === 'proposal'}
+                icon={FileText}
+              />
+              <StepConnector completed={step === 'proposal'} />
+              <StepIndicator
+                number={3}
+                label="Review & Validate"
+                active={step === 'proposal'}
+                completed={false}
+                icon={ChartBar}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div className="flex-1 overflow-y-auto">
         <div className="w-full px-6 py-8">
@@ -563,11 +569,21 @@ export default function CreateProposalClient({ user, existingProposal }: CreateP
                             router.refresh();
                           }}
                         />
-                        <div className="flex justify-end gap-3 border-t border-ds-border px-8 py-5">
-                          <Button type="button" variant="secondary" onClick={() => router.push('/dashboard')}>
+                        <div className="flex justify-end gap-3 border-t border-gray-200 bg-white px-6 py-4 shadow-[0_-1px_0_rgba(0,0,0,0.04)]">
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            className="border-gray-300 bg-white text-gray-800 hover:border-gray-400 hover:bg-gray-50 focus-visible:ring-offset-white"
+                            onClick={() => router.push('/dashboard')}
+                          >
                             Done
                           </Button>
-                          <Button type="button" variant="primary" onClick={handleSaveProposal}>
+                          <Button
+                            type="button"
+                            variant="primary"
+                            className="border-blue-600 bg-blue-600 text-white hover:border-blue-700 hover:bg-blue-700 focus-visible:ring-offset-white"
+                            onClick={handleSaveProposal}
+                          >
                             Save to dashboard
                           </Button>
                         </div>
@@ -628,7 +644,7 @@ function StepIndicator({
       <div
         className={`flex h-7 w-7 items-center justify-center rounded-ds-sm border text-xs font-semibold ${
           active
-            ? 'border-ds-accent bg-ds-accent text-ds-page shadow-ds-sm'
+            ? 'border-ds-accent bg-ds-accent text-white shadow-ds-sm'
             : completed
               ? 'border-ds-primary bg-ds-primary text-white shadow-ds-sm'
               : 'border-ds-border bg-ds-surface-elevated/40 text-ds-text-muted'

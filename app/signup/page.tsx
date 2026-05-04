@@ -119,8 +119,8 @@ export default function SignupPage() {
                   role="alert"
                   className={`rounded-ds-sm border px-3 py-2 text-sm ${
                     isInfoMessage
-                      ? 'border-emerald-800/55 bg-emerald-950/25 text-emerald-100'
-                      : 'border-red-900/55 bg-red-950/35 text-red-200'
+                      ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                      : 'border-red-300 bg-red-50 text-red-600'
                   }`}
                 >
                   {error}
