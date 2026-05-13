@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { buildProposalSubmissionDocx, downloadProposalDocx } from '@/lib/proposal-export-docx';
 import { canEdit, isAdmin, type PmRole } from '@/lib/pm-access';
 import ConfidenceScore from '@/components/ConfidenceScore';
+import type { Editor } from '@tiptap/core';
 
 interface ProposalDetailClientProps {
   proposal: {
@@ -89,6 +90,7 @@ export default function ProposalDetailClient({ proposal, user, effectiveRole }: 
   const baaData: BAA = JSON.parse(proposal.baa_input);
   const noticeTag = baaData.noticeNumbers?.[0] ?? '';
   const [outlineOpen, setOutlineOpen] = useState(false);
+  const [activeEditor, setActiveEditor] = useState<Editor | null>(null);
 
   const handleExportDocx = async () => {
     if (!proposalData.sections?.length) {
@@ -174,7 +176,7 @@ export default function ProposalDetailClient({ proposal, user, effectiveRole }: 
     <div className="flex h-screen flex-col bg-ds-page">
       {/* Sticky header chrome */}
       <div className="sticky top-0 z-30 border-b border-ds-border bg-ds-header/95 backdrop-blur-sm">
-        <div className="px-6 py-3 flex items-start justify-between gap-4">
+        <div className="px-5 py-2 flex items-start justify-between gap-4">
           {/* Left */}
           <div className="flex min-w-0 items-start gap-3">
             <BackLink
@@ -246,23 +248,52 @@ export default function ProposalDetailClient({ proposal, user, effectiveRole }: 
               {proposalData.overallConfidence}% confidence
             </span>
 
-            {/* Collaborator avatar chips (display only; manage inside editor) */}
+            {/* Share / collaborators button (double-click like legacy) */}
             {collaborators.length > 0 && (
-              <div className="hidden sm:flex -space-x-1.5">
-                {collaborators.slice(0, 3).map((u) => (
-                  <div
-                    key={u.id}
-                    title={u.email}
-                    className="flex h-6 w-6 items-center justify-center border border-ds-header bg-ds-primary font-mono text-[10px] font-bold uppercase text-white"
-                  >
-                    {u.name.charAt(0)}
-                  </div>
-                ))}
-                {collaborators.length > 3 && (
-                  <div className="flex h-6 w-6 items-center justify-center border border-ds-header bg-ds-shell font-mono text-[10px] text-ds-text-muted">
-                    +{collaborators.length - 3}
-                  </div>
-                )}
+              <button
+                type="button"
+                title="Collaborators"
+                onClick={(e) => {
+                  const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                  editorRef.current?.openCollaborators(rect);
+                }}
+                onDoubleClick={(e) => {
+                  const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                  editorRef.current?.openCollaborators(rect);
+                }}
+                className="hidden sm:inline-flex h-7 w-7 items-center justify-center rounded-ds-sm border border-ds-border bg-ds-primary font-mono text-[10px] font-bold uppercase text-white"
+              >
+                {collaborators[0]?.name?.charAt(0) ?? 'U'}
+              </button>
+            )}
+
+            {/* Compact formatting controls in header (editable only) */}
+            {!documentReadOnly && activeEditor && (
+              <div className="hidden lg:flex items-center gap-1 rounded-ds-sm border border-ds-border bg-ds-surface px-1 py-0.5">
+                <button
+                  type="button"
+                  className="h-6 w-6 font-mono text-[11px] font-semibold text-ds-text-muted hover:text-ds-text"
+                  onMouseDown={(e) => { e.preventDefault(); activeEditor.chain().focus().toggleBold().run(); }}
+                  title="Bold"
+                >
+                  B
+                </button>
+                <button
+                  type="button"
+                  className="h-6 w-6 font-mono text-[11px] font-semibold text-ds-text-muted hover:text-ds-text italic"
+                  onMouseDown={(e) => { e.preventDefault(); activeEditor.chain().focus().toggleItalic().run(); }}
+                  title="Italic"
+                >
+                  I
+                </button>
+                <button
+                  type="button"
+                  className="h-6 w-6 font-mono text-[11px] font-semibold text-ds-text-muted hover:text-ds-text underline"
+                  onMouseDown={(e) => { e.preventDefault(); activeEditor.chain().focus().toggleUnderline().run(); }}
+                  title="Underline"
+                >
+                  U
+                </button>
               </div>
             )}
 
@@ -357,9 +388,9 @@ export default function ProposalDetailClient({ proposal, user, effectiveRole }: 
       {/* Body: canvas + outline sidebar */}
       <div className="flex flex-1 min-h-0 overflow-hidden bg-ds-page">
         <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6">
-          <div className="mx-auto max-w-[min(816px,100%)]">
+          <div className="mx-auto w-full max-w-[816px]">
             <div className="bg-white shadow-[0_1px_4px_rgba(0,0,0,0.10)] border border-ds-border/60 rounded-[4px]">
-              <div className="px-24 py-24">
+              <div className="px-8 py-12 sm:px-16 sm:py-16 lg:px-24 lg:py-24">
                 <ProposalEditor
                   ref={editorRef}
                   proposal={proposalData}
@@ -370,6 +401,8 @@ export default function ProposalDetailClient({ proposal, user, effectiveRole }: 
                   proposalId={proposal.id}
                   collaborators={collaborators}
                   ownerUserId={user.id}
+                  onActiveEditorChange={setActiveEditor}
+                  disableFloatingSelectionToolbar
                   onAddCollaborator={
                     adminPermitted
                       ? async (email, role) => {

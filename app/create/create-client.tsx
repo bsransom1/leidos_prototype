@@ -10,6 +10,7 @@ import OrganizationContextJSONUpload from '@/components/OrganizationContextJSONU
 import ProposalEditor, { type ProposalEditorHandle } from '@/components/ProposalEditor';
 import ConfidenceScore from '@/components/ConfidenceScore';
 import { DownloadSimple, FloppyDisk, Medal, ListNumbers } from '@phosphor-icons/react';
+import type { Editor } from '@tiptap/core';
 import ProposalGenerationLoader from '@/components/ProposalGenerationLoader';
 import { BAA, OrganizationContext, Proposal, User } from '@/types';
 import { User as SupabaseUser } from '@supabase/supabase-js';
@@ -429,6 +430,7 @@ export default function CreateProposalClient({ user, existingProposal, effective
   const [exportBusy, setExportBusy] = useState(false);
   const editorRef = useRef<ProposalEditorHandle>(null);
   const [outlineOpen, setOutlineOpen] = useState(false);
+  const [activeEditor, setActiveEditor] = useState<Editor | null>(null);
 
   const handleExportDocx = async () => {
     if (!proposal || !baa || !proposal.sections?.length) {
@@ -538,7 +540,7 @@ export default function CreateProposalClient({ user, existingProposal, effective
                       <div className="-m-8">
                         {/* Document shell matches /proposal/[id] */}
                         <div className="sticky top-0 z-30 border-b border-ds-border bg-ds-header/95 backdrop-blur-sm">
-                          <div className="px-6 py-3 flex items-start justify-between gap-4">
+                          <div className="px-5 py-2 flex items-start justify-between gap-4">
                             <div className="min-w-0">
                               <p className="text-[13px] font-semibold text-ds-text">View Proposal</p>
                               <p className="mt-0.5 text-[10px] font-mono uppercase tracking-[0.12em] text-ds-text-muted">
@@ -564,6 +566,50 @@ export default function CreateProposalClient({ user, existingProposal, effective
                               <span className="hidden lg:inline font-mono text-[10px] text-ds-text-muted">
                                 {proposal.overallConfidence}% confidence
                               </span>
+
+                              {/* Share / collaborators button */}
+                              {collaborators.length > 0 && (
+                                <button
+                                  type="button"
+                                  title="Collaborators"
+                                  onClick={(e) => editorRef.current?.openCollaborators((e.currentTarget as HTMLButtonElement).getBoundingClientRect())}
+                                  onDoubleClick={(e) => editorRef.current?.openCollaborators((e.currentTarget as HTMLButtonElement).getBoundingClientRect())}
+                                  className="hidden sm:inline-flex h-7 w-7 items-center justify-center rounded-ds-sm border border-ds-border bg-ds-primary font-mono text-[10px] font-bold uppercase text-white"
+                                >
+                                  {collaborators[0]?.name?.charAt(0) ?? 'U'}
+                                </button>
+                              )}
+
+                              {/* Compact formatting controls in header (editable only) */}
+                              {canEdit(effectiveRole) && activeEditor && (
+                                <div className="hidden lg:flex items-center gap-1 rounded-ds-sm border border-ds-border bg-ds-surface px-1 py-0.5">
+                                  <button
+                                    type="button"
+                                    className="h-6 w-6 font-mono text-[11px] font-semibold text-ds-text-muted hover:text-ds-text"
+                                    onMouseDown={(e) => { e.preventDefault(); activeEditor.chain().focus().toggleBold().run(); }}
+                                    title="Bold"
+                                  >
+                                    B
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="h-6 w-6 font-mono text-[11px] font-semibold text-ds-text-muted hover:text-ds-text italic"
+                                    onMouseDown={(e) => { e.preventDefault(); activeEditor.chain().focus().toggleItalic().run(); }}
+                                    title="Italic"
+                                  >
+                                    I
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="h-6 w-6 font-mono text-[11px] font-semibold text-ds-text-muted hover:text-ds-text underline"
+                                    onMouseDown={(e) => { e.preventDefault(); activeEditor.chain().focus().toggleUnderline().run(); }}
+                                    title="Underline"
+                                  >
+                                    U
+                                  </button>
+                                </div>
+                              )}
+
                               <Button
                                 type="button"
                                 variant="secondary"
@@ -625,7 +671,7 @@ export default function CreateProposalClient({ user, existingProposal, effective
                           <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6">
                             <div className="mx-auto w-full max-w-[816px]">
                               <div className="bg-white shadow-[0_1px_4px_rgba(0,0,0,0.10)] border border-ds-border/60 rounded-[4px]">
-                                <div className="px-24 py-24">
+                                <div className="px-8 py-12 sm:px-16 sm:py-16 lg:px-24 lg:py-24">
                                   <ProposalEditor
                                     ref={editorRef}
                                     proposal={proposal}
@@ -633,6 +679,8 @@ export default function CreateProposalClient({ user, existingProposal, effective
                                     proposalId={proposalId || undefined}
                                     collaborators={collaborators}
                                     ownerUserId={user.id}
+                                    onActiveEditorChange={setActiveEditor}
+                                    disableFloatingSelectionToolbar
                                     onCollaboratorRoleChange={
                                       isAdmin(effectiveRole) && proposalId
                                         ? async (collaboratorId, role) => {

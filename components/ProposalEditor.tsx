@@ -12,7 +12,6 @@ import {
   CheckCircle,
   WarningCircle,
   XCircle,
-  Users,
   UserPlus,
   X,
   Shield,
@@ -28,6 +27,7 @@ import { isAdmin, type PmRole } from '@/lib/pm-access';
 
 export type ProposalEditorHandle = {
   save: () => Promise<void>;
+  openCollaborators: (anchorRect: DOMRect) => void;
   dirtyCount: number;
   saving: boolean;
 };
@@ -49,6 +49,10 @@ interface ProposalEditorProps {
   effectiveRole?: PmRole | null;
   onExportDocx?: () => void | Promise<void>;
   exportBusy?: boolean;
+  /** Surface the currently focused editor to the parent (for header toolbars). */
+  onActiveEditorChange?: (editor: Editor | null) => void;
+  /** When true, do not show the floating in-document selection toolbar. */
+  disableFloatingSelectionToolbar?: boolean;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -121,7 +125,6 @@ function CollabOverlay({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-ds-border px-4 py-3">
           <div className="flex items-center gap-2">
-            <Users className="h-3.5 w-3.5 text-ds-text-muted" weight="bold" />
             <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-ds-text-muted">
               Collaborators
             </span>
@@ -485,6 +488,8 @@ const ProposalEditor = forwardRef<ProposalEditorHandle, ProposalEditorProps>(fun
     effectiveRole,
     onExportDocx,
     exportBusy = false,
+    onActiveEditorChange,
+    disableFloatingSelectionToolbar,
   },
   ref
 ) {
@@ -497,6 +502,7 @@ const ProposalEditor = forwardRef<ProposalEditorHandle, ProposalEditorProps>(fun
   const isProposalAdmin = unrestricted || isAdmin(effectiveRole);
   const canManageCollaborators =
     isProposalAdmin && (!!onAddCollaborator || !!onCollaboratorRemove || !!onCollaboratorRoleChange);
+  const canOpenCollaborators = collaborators.length > 0;
   const [activeEditor, setActiveEditor] = useState<Editor | null>(null);
   const [, forceUpdate] = useState(0);
   const [selectionRect, setSelectionRect] = useState<DOMRect | null>(null);
@@ -510,7 +516,6 @@ const ProposalEditor = forwardRef<ProposalEditorHandle, ProposalEditorProps>(fun
   const [saving, setSaving] = useState(false);
   const [showCollab, setShowCollab] = useState(false);
   const [collabAnchor, setCollabAnchor] = useState<DOMRect | null>(null);
-  const shareButtonRef = useRef<HTMLButtonElement>(null);
   const dirtyCount = dirty.size;
 
   const handleSave = useCallback(async () => {
@@ -529,6 +534,10 @@ const ProposalEditor = forwardRef<ProposalEditorHandle, ProposalEditorProps>(fun
   useImperativeHandle(ref, () => ({
     save: async () => {
       await handleSave();
+    },
+    openCollaborators: (anchorRect: DOMRect) => {
+      setCollabAnchor(anchorRect);
+      setShowCollab(true);
     },
     dirtyCount,
     saving,
@@ -581,13 +590,6 @@ const ProposalEditor = forwardRef<ProposalEditorHandle, ProposalEditorProps>(fun
     setDirty((prev) => new Set(prev).add(id));
   }, []);
 
-  const handleShareClick = () => {
-    if (shareButtonRef.current) {
-      setCollabAnchor(shareButtonRef.current.getBoundingClientRect());
-    }
-    setShowCollab((v) => !v);
-  };
-
   const sections = proposal.sections || [];
 
   const selectionToolbar = useMemo(() => {
@@ -638,12 +640,12 @@ const ProposalEditor = forwardRef<ProposalEditorHandle, ProposalEditorProps>(fun
   return (
     <div className="flex flex-col min-h-0">
       {/* Collaborator floating overlay */}
-      {showCollab && canManageCollaborators && (
+      {showCollab && canOpenCollaborators && (
         <CollabOverlay
           collaborators={collaborators}
-          onAddCollaborator={onAddCollaborator}
-          onCollaboratorRoleChange={onCollaboratorRoleChange}
-          onCollaboratorRemove={onCollaboratorRemove}
+          onAddCollaborator={canManageCollaborators ? onAddCollaborator : undefined}
+          onCollaboratorRoleChange={canManageCollaborators ? onCollaboratorRoleChange : undefined}
+          onCollaboratorRemove={canManageCollaborators ? onCollaboratorRemove : undefined}
           ownerUserId={ownerUserId}
           onClose={() => setShowCollab(false)}
           anchorRect={collabAnchor}
@@ -652,7 +654,7 @@ const ProposalEditor = forwardRef<ProposalEditorHandle, ProposalEditorProps>(fun
 
       <div className="flex flex-1 min-h-0 flex-col">
         {/* Floating selection toolbar (custom positioning) */}
-        {!readOnly && activeEditor && selectionRect && selectionToolbar && (
+        {!disableFloatingSelectionToolbar && !readOnly && activeEditor && selectionRect && selectionToolbar && (
           <div
             className="fixed z-50"
             style={{
@@ -681,7 +683,10 @@ const ProposalEditor = forwardRef<ProposalEditorHandle, ProposalEditorProps>(fun
                   titleOverride={titles[section.id] ?? section.title}
                   onTitleChange={handleTitleChange}
                   onContentChange={handleContentChange}
-                  onFocus={setActiveEditor}
+                  onFocus={(ed) => {
+                    setActiveEditor(ed);
+                    onActiveEditorChange?.(ed);
+                  }}
                   readOnly={readOnly}
                 />
               ))}
