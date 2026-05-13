@@ -483,6 +483,11 @@ const ProposalEditor = forwardRef<ProposalEditorHandle, ProposalEditorProps>(fun
   },
   ref
 ) {
+  const PAGE_HEIGHT = 1008; // slightly shorter on-screen while keeping 8.5x11 feel
+  const PAGE_GAP = 64;
+  const PAGE_PAD_Y = 80;
+  const PAGE_PAD_X = 96;
+
   void proposalId;
   void baa;
   void onAward;
@@ -496,13 +501,14 @@ const ProposalEditor = forwardRef<ProposalEditorHandle, ProposalEditorProps>(fun
   const [activeEditor, setActiveEditor] = useState<Editor | null>(null);
   const [, forceUpdate] = useState(0);
   const [selectionRect, setSelectionRect] = useState<DOMRect | null>(null);
+  const docRef = useRef<HTMLDivElement | null>(null);
+  const [pages, setPages] = useState<string[][]>(() => [(proposal.sections || []).map((s) => s.id)]);
   const [titles, setTitles] = useState<Record<string, string>>(() =>
     Object.fromEntries((proposal.sections || []).map((s) => [s.id, s.title]))
   );
   const [contents, setContents] = useState<Record<string, string>>(() =>
     Object.fromEntries((proposal.sections || []).map((s) => [s.id, s.content || '']))
   );
-  const [docTitle, setDocTitle] = useState(() => proposal.title);
   const [dirty, setDirty] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [showCollab, setShowCollab] = useState(false);
@@ -516,11 +522,11 @@ const ProposalEditor = forwardRef<ProposalEditorHandle, ProposalEditorProps>(fun
       title: titles[s.id] ?? s.title,
       content: contents[s.id] ?? s.content,
     }));
-    const updatedProposal: Proposal = { ...proposal, title: docTitle.trim() || proposal.title, sections: updatedSections };
+    const updatedProposal: Proposal = { ...proposal, sections: updatedSections };
     await onSave(updatedProposal);
     setDirty(new Set());
     setSaving(false);
-  }, [onSave, proposal, titles, contents, docTitle]);
+  }, [onSave, proposal, titles, contents]);
 
   useImperativeHandle(ref, () => ({
     save: async () => {
@@ -570,6 +576,78 @@ const ProposalEditor = forwardRef<ProposalEditorHandle, ProposalEditorProps>(fun
       window.removeEventListener('scroll', handler, true);
     };
   }, [activeEditor, readOnly]);
+
+  // Layout-aware paging: render real page boxes and group whole sections into pages.
+  useEffect(() => {
+    const el = docRef.current;
+    if (!el) return;
+
+    const pageHeight = PAGE_HEIGHT; // includes padding
+    const pagePadY = PAGE_PAD_Y;
+    const contentHeight = pageHeight - pagePadY * 2;
+
+    let raf = 0;
+    let t: number | null = null;
+
+    const compute = () => {
+      raf = 0;
+      const container = docRef.current;
+      if (!container) return;
+
+      const wraps = Array.from(container.querySelectorAll<HTMLElement>('div[data-section-id]'));
+
+      const nextPages: string[][] = [];
+      let current: string[] = [];
+      let used = 0;
+
+      for (const wrap of wraps) {
+        const id = wrap.getAttribute('data-section-id') || '';
+        if (!id) continue;
+
+        const h = wrap.offsetHeight;
+        if (current.length > 0 && used + h > contentHeight) {
+          nextPages.push(current);
+          current = [];
+          used = 0;
+        }
+        current.push(id);
+        used += h;
+      }
+      if (current.length) nextPages.push(current);
+      if (nextPages.length === 0) nextPages.push([]);
+
+      setPages((prev) => {
+        if (prev.length !== nextPages.length) return nextPages;
+        for (let i = 0; i < prev.length; i++) {
+          const a = prev[i] || [];
+          const b = nextPages[i] || [];
+          if (a.length !== b.length) return nextPages;
+          for (let j = 0; j < a.length; j++) if (a[j] !== b[j]) return nextPages;
+        }
+        return prev;
+      });
+    };
+
+    const schedule = () => {
+      if (t != null) window.clearTimeout(t);
+      // throttle to prevent jitter while typing
+      t = window.setTimeout(() => {
+        if (raf) return;
+        raf = window.requestAnimationFrame(compute);
+      }, 120);
+    };
+
+    const ro = new ResizeObserver(() => schedule());
+    ro.observe(el);
+    schedule();
+
+    return () => {
+      if (t != null) window.clearTimeout(t);
+      if (raf) window.cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proposal.sections?.length, readOnly]);
 
   const handleTitleChange = useCallback((id: string, title: string) => {
     setTitles((prev) => ({ ...prev, [id]: title }));
@@ -665,40 +743,37 @@ const ProposalEditor = forwardRef<ProposalEditorHandle, ProposalEditorProps>(fun
               <p className="text-sm text-ds-text-muted">No sections generated yet.</p>
             </div>
           ) : (
-            <div className="space-y-0">
-              {/* Document title (in-canvas, used for export) */}
-              <div className="mb-10">
-                {readOnly ? (
-                  <h1 className="font-serif text-[22px] font-bold leading-tight text-slate-950">
-                    {docTitle}
-                  </h1>
-                ) : (
-                  <input
-                    type="text"
-                    value={docTitle}
-                    onChange={(e) => {
-                      setDocTitle(e.target.value);
-                      setDirty((prev) => new Set(prev).add('__doc_title__'));
-                    }}
-                    className="w-full bg-transparent font-serif text-[22px] font-bold leading-tight text-slate-950 placeholder:text-slate-400 focus:outline-none"
-                    placeholder="Proposal title"
-                    spellCheck={false}
-                  />
-                )}
-              </div>
-              {sections.map((section, index) => (
-                <SectionEditor
-                  key={section.id}
-                  section={section}
-                  titleOverride={titles[section.id] ?? section.title}
-                  onTitleChange={handleTitleChange}
-                  onContentChange={handleContentChange}
-                  onFocus={(ed) => {
-                    setActiveEditor(ed);
-                    onActiveEditorChange?.(ed);
-                  }}
-                  readOnly={readOnly}
-                />
+            <div ref={docRef} className="space-y-0">
+              {pages.map((page, pageIndex) => (
+                <div key={`pagewrap-${pageIndex}`}>
+                  <div
+                    className="border border-ds-border/60 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.10)] rounded-[4px]"
+                    style={{ minHeight: PAGE_HEIGHT }}
+                  >
+                    <div style={{ paddingLeft: PAGE_PAD_X, paddingRight: PAGE_PAD_X, paddingTop: PAGE_PAD_Y, paddingBottom: PAGE_PAD_Y }}>
+                      {page.map((sectionId) => {
+                        const section = sections.find((s) => s.id === sectionId);
+                        if (!section) return null;
+                        return (
+                          <div key={section.id} data-section-id={section.id}>
+                            <SectionEditor
+                              section={section}
+                              titleOverride={titles[section.id] ?? section.title}
+                              onTitleChange={handleTitleChange}
+                              onContentChange={handleContentChange}
+                              onFocus={(ed) => {
+                                setActiveEditor(ed);
+                                onActiveEditorChange?.(ed);
+                              }}
+                              readOnly={readOnly}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div style={{ height: PAGE_GAP }} aria-hidden="true" />
+                </div>
               ))}
             </div>
           )}

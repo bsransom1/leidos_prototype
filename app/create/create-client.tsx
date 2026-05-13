@@ -244,6 +244,13 @@ export default function CreateProposalClient({ user, existingProposal, effective
     }
   }, [proposalId, user.id, user.email, effectiveRole]);
 
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState<string>('');
+
+  useEffect(() => {
+    if (proposal?.title && !isEditingTitle) setTitleDraft(proposal.title);
+  }, [proposal?.title, isEditingTitle]);
+
   // Load collaborators when proposalId is available
   useEffect(() => {
     void mergeCollaboratorsFromApi();
@@ -471,7 +478,72 @@ export default function CreateProposalClient({ user, existingProposal, effective
           {/* Center */}
           {step === 'proposal' && proposal && baa ? (
             <div className="min-w-0 flex-1 flex flex-col items-center justify-center px-4">
-              <p className="ds-h3 truncate text-ds-text max-w-[42rem]">{proposal.title}</p>
+              {canEdit(effectiveRole) && proposalId ? (
+                isEditingTitle ? (
+                  <div className="flex min-w-0 items-center gap-2">
+                    <input
+                      value={titleDraft}
+                      onChange={(e) => setTitleDraft(e.target.value)}
+                      className="max-w-xl min-w-[12rem] bg-ds-surface/60 border border-ds-border rounded-ds-sm px-2 py-1 text-[13px] font-semibold text-ds-text focus:outline-none"
+                      autoFocus
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="!p-1.5"
+                      onClick={async () => {
+                        if (!proposalId || !proposal) return;
+                        const next = titleDraft.trim() || proposal.title;
+                        const res = await fetch('/api/save-proposal', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            proposalId,
+                            title: next,
+                            baaInput: JSON.stringify(baa),
+                            generatedOutput: JSON.stringify({ ...proposal, title: next }),
+                            currentStep: 'proposal',
+                          }),
+                        });
+                        if (!res.ok) {
+                          const j = await res.json().catch(() => ({}));
+                          alert(j.error ?? 'Could not rename proposal');
+                          return;
+                        }
+                        setProposal((prev) => (prev ? { ...prev, title: next } : prev));
+                        setIsEditingTitle(false);
+                      }}
+                    >
+                      SAVE
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="!p-1.5"
+                      onClick={() => {
+                        setTitleDraft(proposal.title);
+                        setIsEditingTitle(false);
+                      }}
+                    >
+                      CANCEL
+                    </Button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTitleDraft(proposal.title);
+                      setIsEditingTitle(true);
+                    }}
+                    className="ds-h3 truncate text-ds-text max-w-[42rem] text-left hover:text-ds-text-secondary cursor-text"
+                    title="Click to rename"
+                  >
+                    {proposal.title}
+                  </button>
+                )
+              ) : (
+                <p className="ds-h3 truncate text-ds-text max-w-[42rem]">{proposal.title}</p>
+              )}
               <div className="mt-1 flex items-center gap-2">
                 {(baa.noticeNumbers?.[0] ?? '') && (
                   <span className="border border-ds-border bg-ds-shell/60 px-1.5 py-0.5 font-mono text-[9px] text-ds-text-muted uppercase tracking-wide">
@@ -663,19 +735,17 @@ export default function CreateProposalClient({ user, existingProposal, effective
                     ) : proposal && proposal.sections && proposal.sections.length > 0 ? (
                       <div className="flex min-h-0 bg-ds-page">
                         <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6">
-                          <div className="mx-auto w-full max-w-[816px]">
-                            <div className="doc-page-breaks shadow-[0_1px_4px_rgba(0,0,0,0.10)] border border-ds-border/60 rounded-[4px]">
-                              <div className="px-8 py-12 sm:px-16 sm:py-16 lg:px-24 lg:py-24">
-                                <ProposalEditor
-                                  ref={editorRef}
-                                  proposal={proposal}
-                                  baa={baa}
-                                  proposalId={proposalId || undefined}
-                                  collaborators={collaborators}
-                                  ownerUserId={user.id}
-                                  onActiveEditorChange={setActiveEditor}
-                                  disableFloatingSelectionToolbar
-                                  onCollaboratorRoleChange={
+                          <div className="mx-auto w-full max-w-[860px]">
+                            <ProposalEditor
+                              ref={editorRef}
+                              proposal={proposal}
+                              baa={baa}
+                              proposalId={proposalId || undefined}
+                              collaborators={collaborators}
+                              ownerUserId={user.id}
+                              onActiveEditorChange={setActiveEditor}
+                              disableFloatingSelectionToolbar
+                              onCollaboratorRoleChange={
                                     isAdmin(effectiveRole) && proposalId
                                       ? async (collaboratorId, role) => {
                                           const res = await fetch(
@@ -694,8 +764,8 @@ export default function CreateProposalClient({ user, existingProposal, effective
                                           await mergeCollaboratorsFromApi();
                                         }
                                       : undefined
-                                  }
-                                  onCollaboratorRemove={
+                              }
+                              onCollaboratorRemove={
                                     isAdmin(effectiveRole) && proposalId
                                       ? async (collaboratorId) => {
                                           setCollaborators((prev) => prev.filter((u) => u.id !== collaboratorId));
@@ -717,12 +787,12 @@ export default function CreateProposalClient({ user, existingProposal, effective
                                           }
                                         }
                                       : undefined
-                                  }
-                                  readOnly={!canEdit(effectiveRole)}
-                                  effectiveRole={effectiveRole}
-                                  onExportDocx={handleExportDocx}
-                                  exportBusy={exportBusy}
-                                  onAddCollaborator={async (email, role) => {
+                              }
+                              readOnly={!canEdit(effectiveRole)}
+                              effectiveRole={effectiveRole}
+                              onExportDocx={handleExportDocx}
+                              exportBusy={exportBusy}
+                              onAddCollaborator={async (email, role) => {
                                     if (!proposalId) {
                                       alert('Save the proposal first before inviting collaborators.');
                                       return;
@@ -755,8 +825,8 @@ export default function CreateProposalClient({ user, existingProposal, effective
                                     } catch {
                                       alert('Failed to send invitation. Please try again.');
                                     }
-                                  }}
-                                  onSave={async (updated) => {
+                              }}
+                              onSave={async (updated) => {
                                     setProposal(updated);
                                     if (proposalId) {
                                       await fetch('/api/save-proposal', {
@@ -764,14 +834,13 @@ export default function CreateProposalClient({ user, existingProposal, effective
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({
                                           proposalId,
+                                          baaInput: JSON.stringify(baa),
                                           generatedOutput: JSON.stringify(updated),
                                         }),
                                       });
                                     }
                                   }}
                                 />
-                              </div>
-                            </div>
                           </div>
                         </div>
 

@@ -258,17 +258,20 @@ body {
 .doc-page-breaks {
   /* 11in at 96dpi minus typical browser print margins is variable; use 1056px as a practical guide. */
   --doc-page-height: 1056px;
-  --doc-page-gap: 56px;
+  /* Google Docs-like gap (~1.5cm–2cm) */
+  --doc-page-gap: 72px;
   background-color: #ffffff;
   background-image:
     repeating-linear-gradient(
       to bottom,
-      transparent 0,
-      transparent calc(var(--doc-page-height) - 1px),
+      /* page */
+      #ffffff 0,
+      #ffffff calc(var(--doc-page-height) - 1px),
       rgba(17, 24, 39, 0.08) calc(var(--doc-page-height) - 1px),
       rgba(17, 24, 39, 0.08) var(--doc-page-height),
-      transparent var(--doc-page-height),
-      transparent calc(var(--doc-page-height) + var(--doc-page-gap))
+      /* gap between pages */
+      #f3f4f6 var(--doc-page-height),
+      #f3f4f6 calc(var(--doc-page-height) + var(--doc-page-gap))
     );
   background-size: 100% calc(var(--doc-page-height) + var(--doc-page-gap));
   background-repeat: repeat;

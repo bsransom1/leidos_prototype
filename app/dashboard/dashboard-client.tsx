@@ -290,17 +290,8 @@ export default function DashboardClient({ user, proposals }: DashboardClientProp
       </div>
 
       <AppFooter>
-        <div className="flex w-full flex-wrap items-center justify-between gap-4 px-6 py-3 text-[11px] uppercase tracking-[0.06em] text-ds-text-subtle">
-          <div className="flex flex-wrap gap-4">
-            <span>Build v0.1.0 prototype</span>
-            <span className="text-ds-border-strong">/</span>
-            <span>Sandbox environment</span>
-          </div>
-          <div className="flex flex-wrap gap-4">
-            <span>Operational</span>
-            <span className="text-ds-border-strong">/</span>
-            <span suppressHydrationWarning>Updated {new Date().toLocaleDateString()}</span>
-          </div>
+        <div className="flex w-full flex-wrap items-center justify-end gap-4 px-6 py-3 text-[11px] uppercase tracking-[0.06em] text-ds-text-subtle">
+          <span suppressHydrationWarning>Updated {new Date().toLocaleDateString()}</span>
         </div>
       </AppFooter>
     </div>

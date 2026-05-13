@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Trash, PencilSimple, FloppyDisk, X, SquaresFour, DownloadSimple, Medal, ListNumbers, Users } from '@phosphor-icons/react';
+import { ArrowLeft, ArrowRight, Trash, FloppyDisk, X, SquaresFour, DownloadSimple, Medal, ListNumbers, Users } from '@phosphor-icons/react';
 import ProposalEditor, { type ProposalEditorHandle } from '@/components/ProposalEditor';
 import type { BAA, Proposal, User as AppUser } from '@/types';
 import type { User } from '@supabase/supabase-js';
@@ -87,7 +87,7 @@ export default function ProposalDetailClient({ proposal, user, effectiveRole }: 
   const [isDeleting, setIsDeleting] = useState(false);
   const [exportBusy, setExportBusy] = useState(false);
   const [proposalData, setProposalData] = useState<Proposal>(() => JSON.parse(proposal.generated_output));
-  const baaData: BAA = JSON.parse(proposal.baa_input);
+  const [baaData, setBaaData] = useState<BAA>(() => JSON.parse(proposal.baa_input));
   const noticeTag = baaData.noticeNumbers?.[0] ?? '';
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [activeEditor, setActiveEditor] = useState<Editor | null>(null);
@@ -125,7 +125,7 @@ export default function ProposalDetailClient({ proposal, user, effectiveRole }: 
       body: JSON.stringify({
         proposalId: proposal.id,
         title: updated.title,
-        baaInput: proposal.baa_input,
+        baaInput: JSON.stringify(baaData),
         generatedOutput: JSON.stringify(updated),
         status: proposal.status,
         currentStep: 'proposal',
@@ -146,7 +146,7 @@ export default function ProposalDetailClient({ proposal, user, effectiveRole }: 
       body: JSON.stringify({
         proposalId: proposal.id,
         title,
-        baaInput: proposal.baa_input,
+        baaInput: JSON.stringify(baaData),
         generatedOutput: proposal.generated_output,
         status: proposal.status,
         currentStep: 'proposal',
@@ -216,17 +216,16 @@ export default function ProposalDetailClient({ proposal, user, effectiveRole }: 
                 </div>
               ) : (
                 <>
-                  <p className="ds-h3 truncate text-ds-text max-w-[42rem]">{proposalData.title}</p>
-                  {editPermitted && (
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingTitle(true)}
-                      className="text-ds-text-muted hover:text-ds-text-secondary shrink-0 rounded-ds-sm p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-accent"
-                      title="Rename proposal"
-                    >
-                      <PencilSimple className="h-3.5 w-3.5" weight="bold" aria-hidden />
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => editPermitted && setIsEditingTitle(true)}
+                    className={`ds-h3 truncate max-w-[42rem] text-left ${
+                      editPermitted ? 'text-ds-text hover:text-ds-text-secondary cursor-text' : 'text-ds-text cursor-default'
+                    }`}
+                    title={editPermitted ? 'Click to rename' : undefined}
+                  >
+                    {proposalData.title}
+                  </button>
                 </>
               )}
             </div>
@@ -388,95 +387,87 @@ export default function ProposalDetailClient({ proposal, user, effectiveRole }: 
       {/* Body: canvas + outline sidebar */}
       <div className="flex flex-1 min-h-0 overflow-hidden bg-ds-page">
         <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6">
-          <div className="mx-auto w-full max-w-[816px]">
-            <div className="doc-page-breaks shadow-[0_1px_4px_rgba(0,0,0,0.10)] border border-ds-border/60 rounded-[4px]">
-              <div className="px-8 py-12 sm:px-16 sm:py-16 lg:px-24 lg:py-24">
-                <ProposalEditor
-                  ref={editorRef}
-                  proposal={proposalData}
-                  baa={baaData}
-                  onSave={handleSaveProposalContent}
-                  readOnly={documentReadOnly}
-                  effectiveRole={effectiveRole}
-                  proposalId={proposal.id}
-                  collaborators={collaborators}
-                  ownerUserId={user.id}
-                  onActiveEditorChange={setActiveEditor}
-                  disableFloatingSelectionToolbar
-                  onAddCollaborator={
-                    adminPermitted
-                      ? async (email, role) => {
-                          const response = await fetch('/api/invite-collaborator', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ proposalId: proposal.id, email, role }),
-                          });
-                          const result = await response.json();
-                          if (response.ok) {
-                            await mergeCollaboratorsFromApi();
-                            if (result.unchanged) {
-                              /* no-op */
-                            } else if (result.roleUpdated) {
-                              alert(
-                                result.emailSent
-                                  ? `Access updated to ${role}. A new invitation email was sent.`
-                                  : `Access updated to ${role}.`,
-                              );
-                            } else if (result.invitationLink) {
-                              alert(`Invitation sent!\n\nLink: ${result.invitationLink}`);
-                            }
-                          } else {
-                            alert(result.error ?? 'Invite failed');
-                          }
-                        }
-                      : undefined
-                  }
-                  onCollaboratorRoleChange={
-                    adminPermitted
-                      ? async (collaboratorId, role) => {
-                          const res = await fetch(
-                            `/api/proposals/${proposal.id}/collaborators/${collaboratorId}`,
-                            {
-                              method: 'PATCH',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ role }),
-                            },
+          <div className="mx-auto w-full max-w-[780px]">
+            <ProposalEditor
+              ref={editorRef}
+              proposal={proposalData}
+              baa={baaData}
+              onSave={handleSaveProposalContent}
+              readOnly={documentReadOnly}
+              effectiveRole={effectiveRole}
+              proposalId={proposal.id}
+              collaborators={collaborators}
+              ownerUserId={user.id}
+              onActiveEditorChange={setActiveEditor}
+              disableFloatingSelectionToolbar
+              onAddCollaborator={
+                adminPermitted
+                  ? async (email, role) => {
+                      const response = await fetch('/api/invite-collaborator', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ proposalId: proposal.id, email, role }),
+                      });
+                      const result = await response.json();
+                      if (response.ok) {
+                        await mergeCollaboratorsFromApi();
+                        if (result.unchanged) {
+                          /* no-op */
+                        } else if (result.roleUpdated) {
+                          alert(
+                            result.emailSent
+                              ? `Access updated to ${role}. A new invitation email was sent.`
+                              : `Access updated to ${role}.`,
                           );
-                          const j = await res.json().catch(() => ({}));
-                          if (!res.ok) {
-                            alert(j.error ?? 'Could not update collaborator role');
-                            return;
-                          }
+                        } else if (result.invitationLink) {
+                          alert(`Invitation sent!\n\nLink: ${result.invitationLink}`);
+                        }
+                      } else {
+                        alert(result.error ?? 'Invite failed');
+                      }
+                    }
+                  : undefined
+              }
+              onCollaboratorRoleChange={
+                adminPermitted
+                  ? async (collaboratorId, role) => {
+                      const res = await fetch(`/api/proposals/${proposal.id}/collaborators/${collaboratorId}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ role }),
+                      });
+                      const j = await res.json().catch(() => ({}));
+                      if (!res.ok) {
+                        alert(j.error ?? 'Could not update collaborator role');
+                        return;
+                      }
+                      await mergeCollaboratorsFromApi();
+                    }
+                  : undefined
+              }
+              onCollaboratorRemove={
+                adminPermitted
+                  ? async (collaboratorId) => {
+                      setCollaborators((prev) => prev.filter((u) => u.id !== collaboratorId));
+                      try {
+                        const res = await fetch(`/api/proposals/${proposal.id}/collaborators/${collaboratorId}`, {
+                          method: 'DELETE',
+                        });
+                        const j = await res.json().catch(() => ({}));
+                        if (!res.ok) {
                           await mergeCollaboratorsFromApi();
+                          alert(j.error ?? 'Could not remove collaborator');
+                          return;
                         }
-                      : undefined
-                  }
-                  onCollaboratorRemove={
-                    adminPermitted
-                      ? async (collaboratorId) => {
-                          setCollaborators((prev) => prev.filter((u) => u.id !== collaboratorId));
-                          try {
-                            const res = await fetch(
-                              `/api/proposals/${proposal.id}/collaborators/${collaboratorId}`,
-                              { method: 'DELETE' },
-                            );
-                            const j = await res.json().catch(() => ({}));
-                            if (!res.ok) {
-                              await mergeCollaboratorsFromApi();
-                              alert(j.error ?? 'Could not remove collaborator');
-                              return;
-                            }
-                            await mergeCollaboratorsFromApi();
-                          } catch {
-                            await mergeCollaboratorsFromApi();
-                            alert('Could not remove collaborator');
-                          }
-                        }
-                      : undefined
-                  }
-                />
-              </div>
-            </div>
+                        await mergeCollaboratorsFromApi();
+                      } catch {
+                        await mergeCollaboratorsFromApi();
+                        alert('Could not remove collaborator');
+                      }
+                    }
+                  : undefined
+              }
+            />
           </div>
         </div>
 
