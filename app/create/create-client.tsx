@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { UploadSimple, FileText, ChartBar, CheckCircle, ArrowLeft } from '@phosphor-icons/react';
 import { AppFooter, AppHeader, BackLink } from '@/components/ui/app-shell';
 import { Button } from '@/components/ui/button';
 import PDFUpload from '@/components/PDFUpload';
 import OrganizationContextJSONUpload from '@/components/OrganizationContextJSONUpload';
-import ProposalEditor from '@/components/ProposalEditor';
+import ProposalEditor, { type ProposalEditorHandle } from '@/components/ProposalEditor';
+import ConfidenceScore from '@/components/ConfidenceScore';
+import { DownloadSimple, FloppyDisk, Medal, ListNumbers } from '@phosphor-icons/react';
 import ProposalGenerationLoader from '@/components/ProposalGenerationLoader';
 import { BAA, OrganizationContext, Proposal, User } from '@/types';
 import { User as SupabaseUser } from '@supabase/supabase-js';
@@ -425,6 +427,8 @@ export default function CreateProposalClient({ user, existingProposal, effective
   };
 
   const [exportBusy, setExportBusy] = useState(false);
+  const editorRef = useRef<ProposalEditorHandle>(null);
+  const [outlineOpen, setOutlineOpen] = useState(false);
 
   const handleExportDocx = async () => {
     if (!proposal || !baa || !proposal.sections?.length) {
@@ -532,143 +536,258 @@ export default function CreateProposalClient({ user, existingProposal, effective
                       />
                     ) : proposal && proposal.sections && proposal.sections.length > 0 ? (
                       <div className="-m-8">
-                        <ProposalEditor
-                          proposal={proposal}
-                          baa={baa}
-                          proposalId={proposalId || undefined}
-                          collaborators={collaborators}
-                          ownerUserId={user.id}
-                          onCollaboratorRoleChange={
-                            isAdmin(effectiveRole) && proposalId
-                              ? async (collaboratorId, role) => {
-                                  const res = await fetch(
-                                    `/api/proposals/${proposalId}/collaborators/${collaboratorId}`,
-                                    {
-                                      method: 'PATCH',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ role }),
-                                    },
-                                  );
-                                  const j = await res.json().catch(() => ({}));
-                                  if (!res.ok) {
-                                    alert(j.error ?? 'Could not update collaborator role');
-                                    return;
-                                  }
-                                  await mergeCollaboratorsFromApi();
-                                }
-                              : undefined
-                          }
-                          onCollaboratorRemove={
-                            isAdmin(effectiveRole) && proposalId
-                              ? async (collaboratorId) => {
-                                  setCollaborators((prev) => prev.filter((u) => u.id !== collaboratorId));
-                                  try {
-                                    const res = await fetch(
-                                      `/api/proposals/${proposalId}/collaborators/${collaboratorId}`,
-                                      { method: 'DELETE' },
-                                    );
-                                    const j = await res.json().catch(() => ({}));
-                                    if (!res.ok) {
-                                      await mergeCollaboratorsFromApi();
-                                      alert(j.error ?? 'Could not remove collaborator');
-                                      return;
+                        {/* Document shell matches /proposal/[id] */}
+                        <div className="sticky top-0 z-30 border-b border-ds-border bg-ds-header/95 backdrop-blur-sm">
+                          <div className="px-6 py-3 flex items-start justify-between gap-4">
+                            <div className="min-w-0">
+                              <p className="text-[13px] font-semibold text-ds-text">View Proposal</p>
+                              <p className="mt-0.5 text-[10px] font-mono uppercase tracking-[0.12em] text-ds-text-muted">
+                                OPENED FROM DASHBOARD
+                              </p>
+                            </div>
+
+                            <div className="min-w-0 flex-1 flex flex-col items-center justify-center px-4">
+                              <p className="ds-h3 truncate text-ds-text max-w-[42rem]">{proposal.title}</p>
+                              <div className="mt-1 flex items-center gap-2">
+                                {(baa.noticeNumbers?.[0] ?? '') && (
+                                  <span className="border border-ds-border bg-ds-shell/60 px-1.5 py-0.5 font-mono text-[9px] text-ds-text-muted uppercase tracking-wide">
+                                    {baa.noticeNumbers?.[0]}
+                                  </span>
+                                )}
+                                <span className="font-mono text-[10px] text-ds-text-subtle truncate max-w-[48rem]">
+                                  {baa.title || '—'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="hidden lg:inline font-mono text-[10px] text-ds-text-muted">
+                                {proposal.overallConfidence}% confidence
+                              </span>
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                className="!px-3 !py-1.5 !text-[10px] !font-mono !uppercase !tracking-[0.1em]"
+                                onClick={() => setOutlineOpen((v) => !v)}
+                              >
+                                <ListNumbers className="h-3.5 w-3.5" weight="bold" aria-hidden />
+                                Outline
+                              </Button>
+                              <div className="hidden md:flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  className="!px-3 !py-1.5 !text-[10px] !font-mono !uppercase !tracking-[0.1em]"
+                                  onClick={() => void handleExportDocx()}
+                                  disabled={exportBusy}
+                                >
+                                  <DownloadSimple className="h-3.5 w-3.5" weight="bold" aria-hidden />
+                                  {exportBusy ? 'Preparing…' : 'Export'}
+                                </Button>
+                                {canEdit(effectiveRole) && (
+                                  <Button
+                                    type="button"
+                                    variant="primary"
+                                    className="!px-3 !py-1.5 !text-[10px] !font-mono !uppercase !tracking-[0.1em]"
+                                    onClick={() => void editorRef.current?.save()}
+                                  >
+                                    <FloppyDisk className="h-3.5 w-3.5" weight="bold" aria-hidden />
+                                    Save
+                                  </Button>
+                                )}
+                                {isAdmin(effectiveRole) && (
+                                  <Button
+                                    type="button"
+                                    variant="secondary"
+                                    className="!px-3 !py-1.5 !text-[10px] !font-mono !uppercase !tracking-[0.1em]"
+                                    onClick={async () => {
+                                      if (!proposalId) return;
+                                      const res = await fetch(`/api/proposals/${proposalId}/award`, { method: 'POST' });
+                                      const data = await res.json().catch(() => ({}));
+                                      if (!res.ok) {
+                                        alert(data.error ?? 'Could not mark as awarded');
+                                        return;
+                                      }
+                                      router.push(data.redirectTo ?? `/dashboard/projects/${proposalId}/pm`);
+                                      router.refresh();
+                                    }}
+                                  >
+                                    <Medal className="h-3.5 w-3.5" weight="bold" aria-hidden />
+                                    Mark Awarded
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex min-h-0 bg-ds-page">
+                          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6">
+                            <div className="mx-auto w-full max-w-[816px]">
+                              <div className="bg-white shadow-[0_1px_4px_rgba(0,0,0,0.10)] border border-ds-border/60 rounded-[4px]">
+                                <div className="px-24 py-24">
+                                  <ProposalEditor
+                                    ref={editorRef}
+                                    proposal={proposal}
+                                    baa={baa}
+                                    proposalId={proposalId || undefined}
+                                    collaborators={collaborators}
+                                    ownerUserId={user.id}
+                                    onCollaboratorRoleChange={
+                                      isAdmin(effectiveRole) && proposalId
+                                        ? async (collaboratorId, role) => {
+                                            const res = await fetch(
+                                              `/api/proposals/${proposalId}/collaborators/${collaboratorId}`,
+                                              {
+                                                method: 'PATCH',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ role }),
+                                              },
+                                            );
+                                            const j = await res.json().catch(() => ({}));
+                                            if (!res.ok) {
+                                              alert(j.error ?? 'Could not update collaborator role');
+                                              return;
+                                            }
+                                            await mergeCollaboratorsFromApi();
+                                          }
+                                        : undefined
                                     }
-                                    await mergeCollaboratorsFromApi();
-                                  } catch {
-                                    await mergeCollaboratorsFromApi();
-                                    alert('Could not remove collaborator');
-                                  }
-                                }
-                              : undefined
-                          }
-                          readOnly={!canEdit(effectiveRole)}
-                          effectiveRole={effectiveRole}
-                          onExportDocx={handleExportDocx}
-                          exportBusy={exportBusy}
-                          onAddCollaborator={async (email, role) => {
-                            if (!proposalId) {
-                              alert('Save the proposal first before inviting collaborators.');
-                              return;
-                            }
-                            try {
-                              const response = await fetch('/api/invite-collaborator', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ proposalId, email, role }),
-                              });
-                              const result = await response.json();
-                              if (response.ok) {
-                                await mergeCollaboratorsFromApi();
-                                if (result.unchanged) {
-                                  // Already this role — list refreshed only
-                                } else if (result.roleUpdated) {
-                                  alert(
-                                    result.emailSent
-                                      ? `Access updated to ${role}. A new invitation email was sent.`
-                                      : `Access updated to ${role}.`,
-                                  );
-                                } else if (result.invitationLink) {
-                                  alert(`Invitation sent!\n\nLink: ${result.invitationLink}`);
-                                } else {
-                                  alert(`Invitation sent to ${email}`);
-                                }
-                              } else {
-                                alert(`Failed: ${result.error ?? response.statusText}`);
-                              }
-                            } catch {
-                              alert('Failed to send invitation. Please try again.');
-                            }
-                          }}
-                          onSave={async (updated) => {
-                            setProposal(updated);
-                            if (proposalId) {
-                              await fetch('/api/save-proposal', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  proposalId,
-                                  generatedOutput: JSON.stringify(updated),
-                                }),
-                              });
-                            }
-                          }}
-                          onAward={
-                            isAdmin(effectiveRole)
-                              ? async () => {
-                                  if (!proposalId) {
-                                    alert('Save the proposal first, then try again.');
-                                    return;
-                                  }
-                                  const res = await fetch(`/api/proposals/${proposalId}/award`, { method: 'POST' });
-                                  const data = await res.json().catch(() => ({}));
-                                  if (!res.ok) {
-                                    alert(data.error ?? 'Could not mark as awarded');
-                                    return;
-                                  }
-                                  router.push(data.redirectTo ?? `/dashboard/projects/${proposalId}/pm`);
-                                  router.refresh();
-                                }
-                              : undefined
-                          }
-                        />
-                        <div className="flex justify-end gap-3 border-t border-gray-200 bg-white px-6 py-4 shadow-[0_-1px_0_rgba(0,0,0,0.04)]">
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            className="border-gray-300 bg-white text-gray-800 hover:border-gray-400 hover:bg-gray-50 focus-visible:ring-offset-white"
-                            onClick={() => router.push('/dashboard')}
-                          >
-                            Done
-                          </Button>
-                          {canEdit(effectiveRole) && (
-                            <Button
-                              type="button"
-                              variant="primary"
-                              className="border-blue-600 bg-blue-600 text-white hover:border-blue-700 hover:bg-blue-700 focus-visible:ring-offset-white"
-                              onClick={handleSaveProposal}
-                            >
-                              Save to dashboard
-                            </Button>
+                                    onCollaboratorRemove={
+                                      isAdmin(effectiveRole) && proposalId
+                                        ? async (collaboratorId) => {
+                                            setCollaborators((prev) => prev.filter((u) => u.id !== collaboratorId));
+                                            try {
+                                              const res = await fetch(
+                                                `/api/proposals/${proposalId}/collaborators/${collaboratorId}`,
+                                                { method: 'DELETE' },
+                                              );
+                                              const j = await res.json().catch(() => ({}));
+                                              if (!res.ok) {
+                                                await mergeCollaboratorsFromApi();
+                                                alert(j.error ?? 'Could not remove collaborator');
+                                                return;
+                                              }
+                                              await mergeCollaboratorsFromApi();
+                                            } catch {
+                                              await mergeCollaboratorsFromApi();
+                                              alert('Could not remove collaborator');
+                                            }
+                                          }
+                                        : undefined
+                                    }
+                                    readOnly={!canEdit(effectiveRole)}
+                                    effectiveRole={effectiveRole}
+                                    onExportDocx={handleExportDocx}
+                                    exportBusy={exportBusy}
+                                    onAddCollaborator={async (email, role) => {
+                                      if (!proposalId) {
+                                        alert('Save the proposal first before inviting collaborators.');
+                                        return;
+                                      }
+                                      try {
+                                        const response = await fetch('/api/invite-collaborator', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ proposalId, email, role }),
+                                        });
+                                        const result = await response.json();
+                                        if (response.ok) {
+                                          await mergeCollaboratorsFromApi();
+                                          if (result.unchanged) {
+                                            // Already this role — list refreshed only
+                                          } else if (result.roleUpdated) {
+                                            alert(
+                                              result.emailSent
+                                                ? `Access updated to ${role}. A new invitation email was sent.`
+                                                : `Access updated to ${role}.`,
+                                            );
+                                          } else if (result.invitationLink) {
+                                            alert(`Invitation sent!\n\nLink: ${result.invitationLink}`);
+                                          } else {
+                                            alert(`Invitation sent to ${email}`);
+                                          }
+                                        } else {
+                                          alert(`Failed: ${result.error ?? response.statusText}`);
+                                        }
+                                      } catch {
+                                        alert('Failed to send invitation. Please try again.');
+                                      }
+                                    }}
+                                    onSave={async (updated) => {
+                                      setProposal(updated);
+                                      if (proposalId) {
+                                        await fetch('/api/save-proposal', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({
+                                            proposalId,
+                                            generatedOutput: JSON.stringify(updated),
+                                          }),
+                                        });
+                                      }
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {outlineOpen && (
+                            <>
+                              <button
+                                type="button"
+                                className="fixed inset-0 z-20 bg-black/30 lg:hidden"
+                                onClick={() => setOutlineOpen(false)}
+                                aria-label="Close outline"
+                              />
+                              <aside className="fixed right-0 top-[57px] z-30 h-[calc(100vh-57px)] w-[280px] border-l border-ds-border bg-ds-surface overflow-y-auto lg:static lg:top-0 lg:h-auto lg:z-auto">
+                                <div className="px-4 py-4 border-b border-ds-border">
+                                  <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-ds-text-muted">
+                                    Outline
+                                  </p>
+                                  <div className="mt-3">
+                                    <ConfidenceScore score={proposal.overallConfidence} />
+                                  </div>
+                                </div>
+                                <ul className="py-2">
+                                  {(proposal.sections || []).map((s, idx) => (
+                                    <li key={s.id}>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          document
+                                            .getElementById(`section-${s.id}`)
+                                            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                          if (window.innerWidth < 1024) setOutlineOpen(false);
+                                        }}
+                                        className="w-full px-4 py-2 text-left hover:bg-ds-shell/60 transition-colors"
+                                      >
+                                        <div className="flex items-start gap-2">
+                                          <span className="mt-[2px] font-mono text-[10px] text-ds-text-subtle tabular-nums w-6 shrink-0">
+                                            {String(idx + 1).padStart(2, '0')}
+                                          </span>
+                                          <div className="min-w-0 flex-1">
+                                            <p className="text-[12px] font-semibold text-ds-text truncate">{s.title}</p>
+                                            <div className="mt-1 flex flex-wrap items-center gap-2">
+                                              <span className="font-mono text-[10px] text-ds-text-muted">
+                                                {s.confidence}% confidence
+                                              </span>
+                                              {s.required && (
+                                                <span className="border border-amber-300 bg-amber-50 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wide text-amber-700">
+                                                  Required
+                                                </span>
+                                              )}
+                                              <span className="font-mono text-[10px] text-ds-text-subtle">{s.status}</span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </button>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </aside>
+                            </>
                           )}
                         </div>
                       </div>
