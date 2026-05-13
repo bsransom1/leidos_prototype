@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import UnderlineExt from '@tiptap/extension-underline';
@@ -9,29 +9,28 @@ import { Markdown } from 'tiptap-markdown';
 import type { Editor } from '@tiptap/core';
 import type { Proposal, BAA, ProposalSection, User } from '@/types';
 import {
-  FloppyDisk,
-  CircleNotch,
-  Medal,
   CheckCircle,
   WarningCircle,
   XCircle,
-  ArrowCounterClockwise,
-  ArrowClockwise,
   Users,
   UserPlus,
   X,
   Shield,
   PencilSimple,
   Eye,
-  DownloadSimple,
   Trash,
 } from '@phosphor-icons/react';
-import ConfidenceScore from './ConfidenceScore';
 import { fieldClass } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { isAdmin, type PmRole } from '@/lib/pm-access';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+
+export type ProposalEditorHandle = {
+  save: () => Promise<void>;
+  dirtyCount: number;
+  saving: boolean;
+};
 
 interface ProposalEditorProps {
   proposal: Proposal;
@@ -384,153 +383,6 @@ function ToolbarDivider() {
   return <div className="mx-1 h-4 w-px bg-gray-200" />;
 }
 
-function FormatToolbar({
-  activeEditor,
-  saving,
-  dirtyCount,
-  onSave,
-  onAward,
-  onExportDocx,
-  exportBusy,
-}: {
-  activeEditor: Editor | null;
-  saving: boolean;
-  dirtyCount: number;
-  onSave: () => void;
-  onAward?: () => void;
-  onExportDocx?: () => void | Promise<void>;
-  exportBusy?: boolean;
-}) {
-  const e = activeEditor;
-
-  return (
-    <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-gray-200 bg-white/95 px-6 py-1.5 backdrop-blur-sm shadow-sm">
-      <div className="flex flex-wrap items-center gap-0.5">
-        {/* History */}
-        <ToolbarButton
-          title="Undo (⌘Z)"
-          disabled={!e?.can().undo()}
-          onClick={() => e?.chain().focus().undo().run()}
-        >
-          <ArrowCounterClockwise className="h-3.5 w-3.5" weight="bold" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="Redo (⌘⇧Z)"
-          disabled={!e?.can().redo()}
-          onClick={() => e?.chain().focus().redo().run()}
-        >
-          <ArrowClockwise className="h-3.5 w-3.5" weight="bold" />
-        </ToolbarButton>
-
-        <ToolbarDivider />
-
-        {/* Inline marks */}
-        <ToolbarButton title="Bold (⌘B)" active={!!e?.isActive('bold')} onClick={() => e?.chain().focus().toggleBold().run()}>
-          B
-        </ToolbarButton>
-        <ToolbarButton title="Italic (⌘I)" active={!!e?.isActive('italic')} onClick={() => e?.chain().focus().toggleItalic().run()}>
-          <em>I</em>
-        </ToolbarButton>
-        <ToolbarButton title="Underline (⌘U)" active={!!e?.isActive('underline')} onClick={() => e?.chain().focus().toggleUnderline().run()}>
-          <span className="underline">U</span>
-        </ToolbarButton>
-        <ToolbarButton title="Strikethrough" active={!!e?.isActive('strike')} onClick={() => e?.chain().focus().toggleStrike().run()}>
-          <span className="line-through">S</span>
-        </ToolbarButton>
-
-        <ToolbarDivider />
-
-        {/* Headings */}
-        <ToolbarButton title="Heading 1" active={!!e?.isActive('heading', { level: 1 })} onClick={() => e?.chain().focus().toggleHeading({ level: 1 }).run()}>
-          H1
-        </ToolbarButton>
-        <ToolbarButton title="Heading 2" active={!!e?.isActive('heading', { level: 2 })} onClick={() => e?.chain().focus().toggleHeading({ level: 2 }).run()}>
-          H2
-        </ToolbarButton>
-        <ToolbarButton title="Heading 3" active={!!e?.isActive('heading', { level: 3 })} onClick={() => e?.chain().focus().toggleHeading({ level: 3 }).run()}>
-          H3
-        </ToolbarButton>
-
-        <ToolbarDivider />
-
-        {/* Lists */}
-        <ToolbarButton title="Bullet list" active={!!e?.isActive('bulletList')} onClick={() => e?.chain().focus().toggleBulletList().run()}>
-          • List
-        </ToolbarButton>
-        <ToolbarButton title="Ordered list" active={!!e?.isActive('orderedList')} onClick={() => e?.chain().focus().toggleOrderedList().run()}>
-          1. List
-        </ToolbarButton>
-
-        <ToolbarDivider />
-
-        {/* Blockquote */}
-        <ToolbarButton title="Blockquote" active={!!e?.isActive('blockquote')} onClick={() => e?.chain().focus().toggleBlockquote().run()}>
-          " Quote
-        </ToolbarButton>
-
-        <ToolbarDivider />
-
-        {/* Text align */}
-        <ToolbarButton title="Align left" active={!!e?.isActive({ textAlign: 'left' })} onClick={() => e?.chain().focus().setTextAlign('left').run()}>
-          ←
-        </ToolbarButton>
-        <ToolbarButton title="Align center" active={!!e?.isActive({ textAlign: 'center' })} onClick={() => e?.chain().focus().setTextAlign('center').run()}>
-          ↔
-        </ToolbarButton>
-        <ToolbarButton title="Align right" active={!!e?.isActive({ textAlign: 'right' })} onClick={() => e?.chain().focus().setTextAlign('right').run()}>
-          →
-        </ToolbarButton>
-      </div>
-
-      {/* Right: export + save + award */}
-      <div className="flex items-center gap-2 shrink-0">
-        {onExportDocx && (
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => void onExportDocx()}
-            disabled={exportBusy}
-            className="inline-flex items-center gap-1.5 border border-gray-300 bg-gray-50 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <DownloadSimple className="h-3 w-3" weight="bold" />
-            {exportBusy ? 'Preparing…' : 'Export'}
-          </button>
-        )}
-        {dirtyCount > 0 && (
-          <span className="font-mono text-[10px] text-gray-400">
-            {dirtyCount} unsaved
-          </span>
-        )}
-        <button
-          type="button"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={onSave}
-          disabled={saving || dirtyCount === 0}
-          className="inline-flex items-center gap-1.5 border border-blue-600 bg-blue-600 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-white hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          {saving ? (
-            <CircleNotch className="h-3 w-3 animate-spin" weight="bold" />
-          ) : (
-            <FloppyDisk className="h-3 w-3" weight="bold" />
-          )}
-          {saving ? 'Saving…' : 'Save'}
-        </button>
-        {onAward && (
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={onAward}
-            className="inline-flex items-center gap-1.5 border border-emerald-600 bg-emerald-600 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-white hover:bg-emerald-700 transition-colors"
-          >
-            <Medal className="h-3 w-3" weight="bold" />
-            Mark awarded
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ── Section editor ─────────────────────────────────────────────────────────────
 
 function SectionEditor({
@@ -578,40 +430,36 @@ function SectionEditor({
   return (
     <article
       id={`section-${section.id}`}
-      className="scroll-mt-24 border border-gray-200 bg-white shadow-sm"
+      className="scroll-mt-24"
     >
-      {/* Section header */}
-      <div className="flex items-center gap-3 border-b border-gray-200 bg-gray-50 px-5 py-2.5">
-        <span className="font-mono text-[10px] text-gray-400 w-5 shrink-0 text-right">
+      <div className="relative">
+        {/* Margin section label (outside text margin) */}
+        <span
+          aria-hidden
+          className="absolute -left-14 top-1 font-mono text-[10px] text-ds-text-subtle tabular-nums"
+        >
           {String(sectionIndex + 1).padStart(2, '0')}
         </span>
+
+        {/* In-document heading */}
         {readOnly ? (
-          <h3 className="flex-1 text-[13px] font-semibold text-gray-900">{titleOverride}</h3>
+          <h2 className="text-[15px] font-bold tracking-tight text-ds-text mt-10 first:mt-0">
+            {titleOverride}
+          </h2>
         ) : (
           <input
             type="text"
             value={titleOverride}
             onChange={(e) => onTitleChange(section.id, e.target.value)}
-            className="flex-1 bg-transparent text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 focus:outline-none"
+            className="mt-10 first:mt-0 w-full bg-transparent text-[15px] font-bold tracking-tight text-ds-text placeholder:text-ds-text-subtle focus:outline-none"
             placeholder="Section title"
           />
         )}
-        <div className="flex items-center gap-1.5 shrink-0">
-          {statusIcon(section.status)}
-          {section.confidence != null && (
-            <span className="font-mono text-[10px] text-gray-400">{section.confidence}%</span>
-          )}
-          {section.required && (
-            <span className="border border-amber-300 bg-amber-50 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wide text-amber-700">
-              Required
-            </span>
-          )}
-        </div>
-      </div>
 
-      {/* Editor content */}
-      <div className="px-8 py-5 prose-wrap">
-        <EditorContent editor={editor} />
+        {/* Editor content */}
+        <div className="mt-4 prose-wrap">
+          <EditorContent editor={editor} />
+        </div>
       </div>
     </article>
   );
@@ -619,29 +467,37 @@ function SectionEditor({
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export default function ProposalEditor({
-  proposal,
-  baa,
-  onSave,
-  onAward,
-  readOnly,
-  collaborators = [],
-  onAddCollaborator,
-  ownerUserId,
-  onCollaboratorRoleChange,
-  onCollaboratorRemove,
-  proposalId,
-  effectiveRole,
-  onExportDocx,
-  exportBusy = false,
-}: ProposalEditorProps) {
+const ProposalEditor = forwardRef<ProposalEditorHandle, ProposalEditorProps>(function ProposalEditor(
+  {
+    proposal,
+    baa,
+    onSave,
+    onAward,
+    readOnly,
+    collaborators = [],
+    onAddCollaborator,
+    ownerUserId,
+    onCollaboratorRoleChange,
+    onCollaboratorRemove,
+    proposalId,
+    effectiveRole,
+    onExportDocx,
+    exportBusy = false,
+  },
+  ref
+) {
   void proposalId;
+  void baa;
+  void onAward;
+  void onExportDocx;
+  void exportBusy;
   const unrestricted = effectiveRole === undefined || effectiveRole === null;
   const isProposalAdmin = unrestricted || isAdmin(effectiveRole);
   const canManageCollaborators =
     isProposalAdmin && (!!onAddCollaborator || !!onCollaboratorRemove || !!onCollaboratorRoleChange);
   const [activeEditor, setActiveEditor] = useState<Editor | null>(null);
   const [, forceUpdate] = useState(0);
+  const [selectionRect, setSelectionRect] = useState<DOMRect | null>(null);
   const [titles, setTitles] = useState<Record<string, string>>(() =>
     Object.fromEntries((proposal.sections || []).map((s) => [s.id, s.title]))
   );
@@ -653,21 +509,65 @@ export default function ProposalEditor({
   const [showCollab, setShowCollab] = useState(false);
   const [collabAnchor, setCollabAnchor] = useState<DOMRect | null>(null);
   const shareButtonRef = useRef<HTMLButtonElement>(null);
-  const [showOutline, setShowOutline] = useState(false);
-  const [outlineAnchor, setOutlineAnchor] = useState<DOMRect | null>(null);
-  const outlineButtonRef = useRef<HTMLButtonElement>(null);
+  const dirtyCount = dirty.size;
+
+  const handleSave = useCallback(async () => {
+    setSaving(true);
+    const updatedSections = (proposal.sections || []).map((s) => ({
+      ...s,
+      title: titles[s.id] ?? s.title,
+      content: contents[s.id] ?? s.content,
+    }));
+    const updatedProposal: Proposal = { ...proposal, sections: updatedSections };
+    await onSave(updatedProposal);
+    setDirty(new Set());
+    setSaving(false);
+  }, [onSave, proposal, titles, contents]);
+
+  useImperativeHandle(ref, () => ({
+    save: async () => {
+      await handleSave();
+    },
+    dirtyCount,
+    saving,
+  }), [dirtyCount, saving, handleSave]);
 
   // Re-render toolbar when active editor's selection/transaction changes
   useEffect(() => {
     if (!activeEditor) return;
-    const handler = () => forceUpdate((n) => n + 1);
+    const handler = () => {
+      forceUpdate((n) => n + 1);
+      if (readOnly) return;
+      try {
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) {
+          setSelectionRect(null);
+          return;
+        }
+        const range = sel.getRangeAt(0);
+        if (range.collapsed) {
+          setSelectionRect(null);
+          return;
+        }
+        const rect = range.getBoundingClientRect();
+        if (!rect || rect.width === 0 || rect.height === 0) {
+          setSelectionRect(null);
+          return;
+        }
+        setSelectionRect(rect);
+      } catch {
+        setSelectionRect(null);
+      }
+    };
     activeEditor.on('selectionUpdate', handler);
     activeEditor.on('transaction', handler);
+    window.addEventListener('scroll', handler, true);
     return () => {
       activeEditor.off('selectionUpdate', handler);
       activeEditor.off('transaction', handler);
+      window.removeEventListener('scroll', handler, true);
     };
-  }, [activeEditor]);
+  }, [activeEditor, readOnly]);
 
   const handleTitleChange = useCallback((id: string, title: string) => {
     setTitles((prev) => ({ ...prev, [id]: title }));
@@ -679,111 +579,62 @@ export default function ProposalEditor({
     setDirty((prev) => new Set(prev).add(id));
   }, []);
 
-  const handleSave = async () => {
-    setSaving(true);
-    const updatedSections = (proposal.sections || []).map((s) => ({
-      ...s,
-      title: titles[s.id] ?? s.title,
-      content: contents[s.id] ?? s.content,
-    }));
-    const updatedProposal: Proposal = { ...proposal, sections: updatedSections };
-    await onSave(updatedProposal);
-    setDirty(new Set());
-    setSaving(false);
-  };
-
-  const scrollToSection = (sectionId: string) => {
-    document.getElementById(`section-${sectionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
   const handleShareClick = () => {
-    setShowOutline(false);
     if (shareButtonRef.current) {
       setCollabAnchor(shareButtonRef.current.getBoundingClientRect());
     }
     setShowCollab((v) => !v);
   };
 
-  const handleOutlineClick = () => {
-    setShowCollab(false);
-    if (outlineButtonRef.current) {
-      setOutlineAnchor(outlineButtonRef.current.getBoundingClientRect());
-    }
-    setShowOutline((v) => !v);
-  };
-
   const sections = proposal.sections || [];
+
+  const selectionToolbar = useMemo(() => {
+    const e = activeEditor;
+    if (!e) return null;
+    return (
+      <div className="flex items-center gap-0.5 rounded-ds-sm border border-ds-border bg-ds-surface px-1.5 py-1 shadow-ds-sm">
+        <ToolbarButton title="Bold (⌘B)" active={!!e.isActive('bold')} onClick={() => e.chain().focus().toggleBold().run()}>
+          B
+        </ToolbarButton>
+        <ToolbarButton title="Italic (⌘I)" active={!!e.isActive('italic')} onClick={() => e.chain().focus().toggleItalic().run()}>
+          <em>I</em>
+        </ToolbarButton>
+        <ToolbarButton title="Underline (⌘U)" active={!!e.isActive('underline')} onClick={() => e.chain().focus().toggleUnderline().run()}>
+          <span className="underline">U</span>
+        </ToolbarButton>
+        <ToolbarButton title="Strikethrough" active={!!e.isActive('strike')} onClick={() => e.chain().focus().toggleStrike().run()}>
+          <span className="line-through">S</span>
+        </ToolbarButton>
+
+        <ToolbarDivider />
+
+        <ToolbarButton title="Heading 2" active={!!e.isActive('heading', { level: 2 })} onClick={() => e.chain().focus().toggleHeading({ level: 2 }).run()}>
+          H2
+        </ToolbarButton>
+        <ToolbarButton title="Heading 3" active={!!e.isActive('heading', { level: 3 })} onClick={() => e.chain().focus().toggleHeading({ level: 3 }).run()}>
+          H3
+        </ToolbarButton>
+
+        <ToolbarDivider />
+
+        <ToolbarButton title="Bullet list" active={!!e.isActive('bulletList')} onClick={() => e.chain().focus().toggleBulletList().run()}>
+          •
+        </ToolbarButton>
+        <ToolbarButton title="Ordered list" active={!!e.isActive('orderedList')} onClick={() => e.chain().focus().toggleOrderedList().run()}>
+          1.
+        </ToolbarButton>
+
+        <ToolbarDivider />
+
+        <ToolbarButton title="Blockquote" active={!!e.isActive('blockquote')} onClick={() => e.chain().focus().toggleBlockquote().run()}>
+          “”
+        </ToolbarButton>
+      </div>
+    );
+  }, [activeEditor]);
 
   return (
     <div className="flex flex-col min-h-0">
-      {/* Document title area */}
-      <div className="border-b border-ds-border px-8 py-5 bg-ds-surface">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-ds-text leading-tight">{proposal.title}</h1>
-            <p className="mt-1 font-mono text-[11px] text-ds-text-muted">
-              Solicitation: {baa.title || '—'}
-            </p>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-2">
-            {/* Outline — same pattern as Share; opens floating section navigator */}
-            {sections.length > 0 && (
-              <button
-                ref={outlineButtonRef}
-                type="button"
-                onClick={handleOutlineClick}
-                className="flex shrink-0 items-center gap-2 border border-ds-border bg-ds-shell/60 px-3 py-1.5 transition-colors hover:bg-ds-shell hover:border-emerald-600/35"
-                title="Jump to section"
-              >
-                <CheckCircle className="h-3.5 w-3.5 text-emerald-400" weight="bold" />
-                <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-ds-text-secondary">
-                  Outline
-                </span>
-              </button>
-            )}
-
-            {/* Share / collaborators button */}
-            {canManageCollaborators && (
-            <button
-              ref={shareButtonRef}
-              type="button"
-              onClick={handleShareClick}
-              className="flex shrink-0 items-center gap-2 border border-ds-border bg-ds-shell/60 px-3 py-1.5 transition-colors hover:bg-ds-shell hover:border-ds-accent/40"
-            >
-              {/* Collaborator avatar chips */}
-              {collaborators.length > 0 && (
-                <div className="flex -space-x-1.5">
-                  {collaborators.slice(0, 3).map((u) => (
-                    <div
-                      key={u.id}
-                      title={u.email}
-                      className="flex h-5 w-5 items-center justify-center border border-ds-surface bg-ds-primary font-mono text-[9px] font-bold uppercase text-white"
-                    >
-                      {u.name.charAt(0)}
-                    </div>
-                  ))}
-                  {collaborators.length > 3 && (
-                    <div className="flex h-5 w-5 items-center justify-center border border-ds-surface bg-ds-shell font-mono text-[9px] text-ds-text-muted">
-                      +{collaborators.length - 3}
-                    </div>
-                  )}
-                </div>
-              )}
-              <Users className="h-3.5 w-3.5 text-ds-text-secondary" weight="bold" />
-              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-ds-text-secondary">
-                {collaborators.length > 0 ? `${collaborators.length}` : 'Share'}
-              </span>
-            </button>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-3">
-          <ConfidenceScore score={proposal.overallConfidence} />
-        </div>
-      </div>
-
       {/* Collaborator floating overlay */}
       {showCollab && canManageCollaborators && (
         <CollabOverlay
@@ -797,85 +648,47 @@ export default function ProposalEditor({
         />
       )}
 
-      {showOutline && sections.length > 0 && (
-        <OutlineOverlay
-          sections={sections}
-          titles={titles}
-          dirty={dirty}
-          onNavigate={scrollToSection}
-          onClose={() => setShowOutline(false)}
-          anchorRect={outlineAnchor}
-        />
-      )}
-
-      {readOnly && onExportDocx && (
-        <div className="sticky top-0 z-10 flex items-center justify-end gap-2 border-b border-gray-200 bg-white/95 px-6 py-2 backdrop-blur-sm shadow-sm">
-          <button
-            type="button"
-            onClick={() => void onExportDocx()}
-            disabled={exportBusy || !proposal.sections?.length}
-            className="inline-flex items-center gap-1.5 border border-ds-border bg-ds-shell/80 px-3 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-ds-text-secondary hover:bg-ds-shell disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <DownloadSimple className="h-3.5 w-3.5" weight="bold" />
-            {exportBusy ? 'Preparing…' : 'Export submission package'}
-          </button>
-        </div>
-      )}
-
-      {/* Sticky format toolbar */}
-      {!readOnly && (
-        <FormatToolbar
-          activeEditor={activeEditor}
-          saving={saving}
-          dirtyCount={dirty.size}
-          onSave={handleSave}
-          onAward={onAward}
-          onExportDocx={onExportDocx}
-          exportBusy={exportBusy}
-        />
-      )}
-
       <div className="flex flex-1 min-h-0 flex-col">
-        <div className="flex-1 min-w-0 space-y-4 p-6 bg-gray-100">
+        {/* Floating selection toolbar (custom positioning) */}
+        {!readOnly && activeEditor && selectionRect && selectionToolbar && (
+          <div
+            className="fixed z-50"
+            style={{
+              left: Math.max(12, selectionRect.left + selectionRect.width / 2),
+              top: Math.max(12, selectionRect.top - 12),
+              transform: 'translate(-50%, -100%)',
+            }}
+          >
+            {selectionToolbar}
+          </div>
+        )}
+
+        {/* Document body (canvas wrapper is owned by parent) */}
+        <div className="flex-1 min-w-0">
           {sections.length === 0 ? (
             <div className="py-20 text-center">
               <p className="text-sm text-ds-text-muted">No sections generated yet.</p>
             </div>
           ) : (
-            sections.map((section, index) => (
-              <SectionEditor
-                key={section.id}
-                section={section}
-                sectionIndex={index}
-                titleOverride={titles[section.id] ?? section.title}
-                onTitleChange={handleTitleChange}
-                onContentChange={handleContentChange}
-                onFocus={setActiveEditor}
-                readOnly={readOnly}
-              />
-            ))
-          )}
-
-          {/* Bottom save bar */}
-          {!readOnly && dirty.size > 0 && (
-            <div className="sticky bottom-4 flex justify-end">
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saving}
-                className="inline-flex items-center gap-2 border border-ds-primary bg-ds-primary px-5 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-white shadow-ds-md hover:brightness-110 transition-[filter] disabled:opacity-50"
-              >
-                {saving ? (
-                  <CircleNotch className="h-3.5 w-3.5 animate-spin" weight="bold" />
-                ) : (
-                  <FloppyDisk className="h-3.5 w-3.5" weight="bold" />
-                )}
-                {saving ? 'Saving…' : `Save ${dirty.size} change${dirty.size !== 1 ? 's' : ''}`}
-              </button>
+            <div className="space-y-0">
+              {sections.map((section, index) => (
+                <SectionEditor
+                  key={section.id}
+                  section={section}
+                  sectionIndex={index}
+                  titleOverride={titles[section.id] ?? section.title}
+                  onTitleChange={handleTitleChange}
+                  onContentChange={handleContentChange}
+                  onFocus={setActiveEditor}
+                  readOnly={readOnly}
+                />
+              ))}
             </div>
           )}
         </div>
       </div>
     </div>
   );
-}
+});
+
+export default ProposalEditor;
