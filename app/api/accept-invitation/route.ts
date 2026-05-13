@@ -25,48 +25,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get collaborator by token
-    const { data: collaborator, error: collaboratorError } = await supabase
-      .from('proposal_collaborators')
-      .select('*')
-      .eq('invitation_token', token)
+    // Accept invitation via SECURITY DEFINER RPC to avoid brittle RLS UPDATE policies.
+    const { data: accepted, error: acceptError } = await supabase
+      .rpc('accept_collaborator_invitation', { p_token: token })
       .single();
 
-    if (collaboratorError || !collaborator) {
+    if (acceptError || !accepted) {
+      console.error('Error accepting invitation:', acceptError);
+      const code = (acceptError as any)?.code as string | undefined;
+      const status =
+        code === '22023' ? 404 : // invalid_invitation
+        code === '42501' ? 401 : // not_authenticated
+        500;
       return NextResponse.json(
-        { error: 'Invalid invitation token' },
-        { status: 404 }
-      );
-    }
-
-    // Verify email matches
-    if (collaborator.email.toLowerCase() !== user.email?.toLowerCase()) {
-      return NextResponse.json(
-        { error: 'Email does not match invitation' },
-        { status: 403 }
-      );
-    }
-
-    // Update status to accepted
-    const { error: updateError } = await supabase
-      .from('proposal_collaborators')
-      .update({
-        status: 'accepted',
-        accepted_at: new Date().toISOString(),
-      })
-      .eq('id', collaborator.id);
-
-    if (updateError) {
-      console.error('Error updating collaborator:', updateError);
-      return NextResponse.json(
-        { error: 'Failed to accept invitation' },
-        { status: 500 }
+        { error: status === 404 ? 'Invalid invitation token' : 'Failed to accept invitation' },
+        { status }
       );
     }
 
     return NextResponse.json({
       success: true,
       message: 'Invitation accepted',
+      data: accepted,
     });
   } catch (error) {
     console.error('Accept invitation error:', error);

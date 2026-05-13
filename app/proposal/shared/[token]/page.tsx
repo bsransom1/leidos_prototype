@@ -46,23 +46,26 @@ export default async function SharedProposalPage({
   
   if (user && user.email?.toLowerCase() === collaborator.email.toLowerCase()) {
     isAuthenticated = true;
-    // Update status to accepted if still pending
+    // Accept invitation server-side via RPC (RLS-safe). Ignore failures here; the workspace
+    // route will still resolve role via the accepted row if already accepted.
     if (collaborator.status === 'pending') {
-      await supabase
-        .from('proposal_collaborators')
-        .update({ 
-          status: 'accepted',
-          accepted_at: new Date().toISOString(),
-        })
-        .eq('id', collaborator.id);
+      await supabase.rpc('accept_collaborator_invitation', { p_token: token });
     }
   }
 
   const proposal = collaborator.proposals as any;
 
+  const proposalId = collaborator.proposal_id as string;
+  const collaboratorRole =
+    collaborator.role === 'editor' || collaborator.role === 'admin' || collaborator.role === 'viewer'
+      ? collaborator.role
+      : 'viewer';
+
   return (
-    <SharedProposalView 
+    <SharedProposalView
       proposal={proposal}
+      proposalId={proposalId}
+      collaboratorRole={collaboratorRole}
       collaboratorEmail={collaborator.email}
       invitationToken={token}
       isAuthenticated={isAuthenticated}
