@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { buildProposalSubmissionDocx, downloadProposalDocx } from '@/lib/proposal-export-docx';
 import { canEdit, isAdmin, type PmRole } from '@/lib/pm-access';
+import ConfidenceScore from '@/components/ConfidenceScore';
 
 interface ProposalDetailClientProps {
   proposal: {
@@ -185,13 +186,13 @@ export default function ProposalDetailClient({ proposal, user, effectiveRole }: 
             <div className="min-w-0">
               <p className="text-[13px] font-semibold text-ds-text">View Proposal</p>
               <p className="mt-0.5 text-[10px] font-mono uppercase tracking-[0.12em] text-ds-text-muted">
-                Opened from dashboard
+                OPENED FROM DASHBOARD
               </p>
             </div>
           </div>
 
           {/* Center */}
-          <div className="hidden md:flex min-w-0 flex-1 flex-col items-center justify-center px-4">
+          <div className="min-w-0 flex-1 flex flex-col items-center justify-center px-4">
             <div className="flex items-center gap-2 min-w-0">
               {isEditingTitle ? (
                 <div className="flex min-w-0 items-center gap-2">
@@ -446,51 +447,62 @@ export default function ProposalDetailClient({ proposal, user, effectiveRole }: 
           </div>
         </div>
 
-        {/* Outline sidebar */}
+        {/* Outline sidebar (push on desktop, overlay on mobile) */}
         {outlineOpen && (
-          <aside className="w-[280px] shrink-0 border-l border-ds-border bg-ds-surface overflow-y-auto">
-            <div className="px-4 py-4 border-b border-ds-border">
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-ds-text-muted">
-                Outline
-              </p>
-              <p className="mt-2 font-mono text-[11px] text-ds-text-secondary">
-                {proposalData.overallConfidence}% aggregate confidence
-              </p>
-            </div>
-            <ul className="py-2">
-              {(proposalData.sections || []).map((s, idx) => (
-                <li key={s.id}>
-                  <button
-                    type="button"
-                    onClick={() => handleScrollToSection(s.id)}
-                    className="w-full px-4 py-2 text-left hover:bg-ds-shell/60 transition-colors"
-                  >
-                    <div className="flex items-start gap-2">
-                      <span className="mt-[2px] font-mono text-[10px] text-ds-text-subtle tabular-nums w-6 shrink-0">
-                        {String(idx + 1).padStart(2, '0')}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[12px] font-semibold text-ds-text truncate">{s.title}</p>
-                        <div className="mt-1 flex flex-wrap items-center gap-2">
-                          <span className="font-mono text-[10px] text-ds-text-muted">
-                            {s.confidence}% confidence
-                          </span>
-                          {s.required && (
-                            <span className="border border-amber-300 bg-amber-50 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wide text-amber-700">
-                              Required
+          <>
+            <button
+              type="button"
+              className="fixed inset-0 z-20 bg-black/30 lg:hidden"
+              onClick={() => setOutlineOpen(false)}
+              aria-label="Close outline"
+            />
+            <aside className="fixed right-0 top-[57px] z-30 h-[calc(100vh-57px)] w-[280px] border-l border-ds-border bg-ds-surface overflow-y-auto lg:static lg:top-0 lg:h-auto lg:z-auto">
+              <div className="px-4 py-4 border-b border-ds-border">
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-ds-text-muted">
+                  Outline
+                </p>
+                <div className="mt-3">
+                  <ConfidenceScore score={proposalData.overallConfidence} />
+                </div>
+              </div>
+              <ul className="py-2">
+                {(proposalData.sections || []).map((s, idx) => (
+                  <li key={s.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleScrollToSection(s.id);
+                        if (window.innerWidth < 1024) setOutlineOpen(false);
+                      }}
+                      className="w-full px-4 py-2 text-left hover:bg-ds-shell/60 transition-colors"
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="mt-[2px] font-mono text-[10px] text-ds-text-subtle tabular-nums w-6 shrink-0">
+                          {String(idx + 1).padStart(2, '0')}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[12px] font-semibold text-ds-text truncate">{s.title}</p>
+                          <div className="mt-1 flex flex-wrap items-center gap-2">
+                            <span className="font-mono text-[10px] text-ds-text-muted">
+                              {s.confidence}% confidence
                             </span>
-                          )}
-                          <span className="font-mono text-[10px] text-ds-text-subtle">
-                            {s.status}
-                          </span>
+                            {s.required && (
+                              <span className="border border-amber-300 bg-amber-50 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wide text-amber-700">
+                                Required
+                              </span>
+                            )}
+                            <span className="font-mono text-[10px] text-ds-text-subtle">
+                              {s.status}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </aside>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </aside>
+          </>
         )}
       </div>
 

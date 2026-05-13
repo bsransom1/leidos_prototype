@@ -421,7 +421,9 @@ function SectionEditor({
     },
     editorProps: {
       attributes: {
-        class: 'prose-editor min-h-[8rem] focus:outline-none',
+        // Document-like typography (no UI card feel)
+        class:
+          'prose-editor min-h-[8rem] focus:outline-none font-serif text-[13px] leading-[1.7] text-slate-950',
         spellcheck: 'true',
       },
     },
@@ -436,14 +438,14 @@ function SectionEditor({
         {/* Margin section label (outside text margin) */}
         <span
           aria-hidden
-          className="absolute -left-14 top-1 font-mono text-[10px] text-ds-text-subtle tabular-nums"
+          className="absolute -left-14 top-1 font-mono text-[10px] text-slate-500 tabular-nums"
         >
           {String(sectionIndex + 1).padStart(2, '0')}
         </span>
 
         {/* In-document heading */}
         {readOnly ? (
-          <h2 className="text-[15px] font-bold tracking-tight text-ds-text mt-10 first:mt-0">
+          <h2 className="text-[15px] font-bold tracking-tight text-slate-950 mt-10 first:mt-0">
             {titleOverride}
           </h2>
         ) : (
@@ -451,7 +453,7 @@ function SectionEditor({
             type="text"
             value={titleOverride}
             onChange={(e) => onTitleChange(section.id, e.target.value)}
-            className="mt-10 first:mt-0 w-full bg-transparent text-[15px] font-bold tracking-tight text-ds-text placeholder:text-ds-text-subtle focus:outline-none"
+            className="mt-10 first:mt-0 w-full bg-transparent text-[15px] font-bold tracking-tight text-slate-950 placeholder:text-slate-400 focus:outline-none"
             placeholder="Section title"
           />
         )}
