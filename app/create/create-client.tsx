@@ -451,24 +451,147 @@ export default function CreateProposalClient({ user, existingProposal, effective
 
   return (
     <div className="flex h-screen flex-col bg-ds-page">
-      <AppHeader>
-        <div className="flex w-full px-6 py-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <BackLink href="/dashboard">
+      <AppHeader className="sticky top-0 z-30 bg-ds-header/95 backdrop-blur-sm">
+        <div className="px-5 py-2 flex items-start justify-between gap-4">
+          {/* Left */}
+          <div className="flex min-w-0 items-start gap-3">
+            <BackLink href="/dashboard" className="mt-1.5 shrink-0">
               <ArrowLeft className="h-4 w-4" weight="bold" />
             </BackLink>
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-ds-sm border border-ds-border bg-ds-primary shadow-ds-sm">
-              <FileText className="h-5 w-5 text-white" weight="bold" />
-            </div>
-            <div>
-              <h1 className="text-base font-semibold tracking-tight text-ds-text">
-                {existingProposal ? 'View proposal' : 'Create proposal'}
-              </h1>
-              <p className="mt-0.5 text-xs uppercase tracking-[0.1em] text-ds-text-muted">
-                {existingProposal ? 'Opened from dashboard' : 'Ingest • context • validation'}
+            <div className="min-w-0">
+              <p className="text-[13px] font-semibold text-ds-text">
+                {existingProposal ? 'View Proposal' : 'Create Proposal'}
+              </p>
+              <p className="mt-0.5 text-[10px] font-mono uppercase tracking-[0.12em] text-ds-text-muted">
+                {existingProposal ? 'OPENED FROM DASHBOARD' : 'INGEST • CONTEXT • VALIDATION'}
               </p>
             </div>
           </div>
+
+          {/* Center */}
+          {step === 'proposal' && proposal && baa ? (
+            <div className="min-w-0 flex-1 flex flex-col items-center justify-center px-4">
+              <p className="ds-h3 truncate text-ds-text max-w-[42rem]">{proposal.title}</p>
+              <div className="mt-1 flex items-center gap-2">
+                {(baa.noticeNumbers?.[0] ?? '') && (
+                  <span className="border border-ds-border bg-ds-shell/60 px-1.5 py-0.5 font-mono text-[9px] text-ds-text-muted uppercase tracking-wide">
+                    {baa.noticeNumbers?.[0]}
+                  </span>
+                )}
+                <span className="font-mono text-[10px] text-ds-text-subtle truncate max-w-[48rem]">
+                  {baa.title || '—'}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="min-w-0 flex-1" />
+          )}
+
+          {/* Right */}
+          {step === 'proposal' && proposal ? (
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="hidden lg:inline font-mono text-[10px] text-ds-text-muted">
+                {proposal.overallConfidence}% confidence
+              </span>
+              {collaborators.length > 0 && (
+                <button
+                  type="button"
+                  title="Collaborators"
+                  onClick={(e) => editorRef.current?.openCollaborators((e.currentTarget as HTMLButtonElement).getBoundingClientRect())}
+                  onDoubleClick={(e) => editorRef.current?.openCollaborators((e.currentTarget as HTMLButtonElement).getBoundingClientRect())}
+                  className="hidden sm:inline-flex h-7 w-7 items-center justify-center rounded-ds-sm border border-ds-border bg-ds-primary font-mono text-[10px] font-bold uppercase text-white"
+                >
+                  {collaborators[0]?.name?.charAt(0) ?? 'U'}
+                </button>
+              )}
+              {canEdit(effectiveRole) && activeEditor && (
+                <div className="hidden lg:flex items-center gap-1 rounded-ds-sm border border-ds-border bg-ds-surface px-1 py-0.5">
+                  <button
+                    type="button"
+                    className="h-6 w-6 font-mono text-[11px] font-semibold text-ds-text-muted hover:text-ds-text"
+                    onMouseDown={(e) => { e.preventDefault(); activeEditor.chain().focus().toggleBold().run(); }}
+                    title="Bold"
+                  >
+                    B
+                  </button>
+                  <button
+                    type="button"
+                    className="h-6 w-6 font-mono text-[11px] font-semibold text-ds-text-muted hover:text-ds-text italic"
+                    onMouseDown={(e) => { e.preventDefault(); activeEditor.chain().focus().toggleItalic().run(); }}
+                    title="Italic"
+                  >
+                    I
+                  </button>
+                  <button
+                    type="button"
+                    className="h-6 w-6 font-mono text-[11px] font-semibold text-ds-text-muted hover:text-ds-text underline"
+                    onMouseDown={(e) => { e.preventDefault(); activeEditor.chain().focus().toggleUnderline().run(); }}
+                    title="Underline"
+                  >
+                    U
+                  </button>
+                </div>
+              )}
+              <Button
+                type="button"
+                variant="secondary"
+                className="!px-3 !py-1.5 !text-[10px] !font-mono !uppercase !tracking-[0.1em]"
+                onClick={() => setOutlineOpen((v) => !v)}
+              >
+                <ListNumbers className="h-3.5 w-3.5" weight="bold" aria-hidden />
+                Outline
+              </Button>
+              <div className="hidden md:flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="!px-3 !py-1.5 !text-[10px] !font-mono !uppercase !tracking-[0.1em]"
+                  onClick={() => void handleExportDocx()}
+                  disabled={exportBusy}
+                >
+                  <DownloadSimple className="h-3.5 w-3.5" weight="bold" aria-hidden />
+                  {exportBusy ? 'Preparing…' : 'Export'}
+                </Button>
+                {canEdit(effectiveRole) && (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    className="!px-3 !py-1.5 !text-[10px] !font-mono !uppercase !tracking-[0.1em]"
+                    onClick={() => void editorRef.current?.save()}
+                  >
+                    <FloppyDisk className="h-3.5 w-3.5" weight="bold" aria-hidden />
+                    Save
+                  </Button>
+                )}
+                {isAdmin(effectiveRole) && proposalId && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="!px-3 !py-1.5 !text-[10px] !font-mono !uppercase !tracking-[0.1em]"
+                    onClick={async () => {
+                      const res = await fetch(`/api/proposals/${proposalId}/award`, { method: 'POST' });
+                      const data = await res.json().catch(() => ({}));
+                      if (!res.ok) {
+                        alert(data.error ?? 'Could not mark as awarded');
+                        return;
+                      }
+                      router.push(data.redirectTo ?? `/dashboard/projects/${proposalId}/pm`);
+                      router.refresh();
+                    }}
+                  >
+                    <Medal className="h-3.5 w-3.5" weight="bold" aria-hidden />
+                    Mark Awarded
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-ds-sm border border-ds-border bg-ds-primary shadow-ds-sm">
+                <FileText className="h-5 w-5 text-white" weight="bold" aria-hidden />
+              </div>
+            </div>
+          )}
         </div>
       </AppHeader>
 
@@ -508,7 +631,8 @@ export default function CreateProposalClient({ user, existingProposal, effective
         <div className="w-full px-6 py-8">
           <div className="w-full">
             <div>
-              <div className="overflow-hidden rounded-ds-md border border-ds-border bg-ds-surface p-8 shadow-ds-md">
+              {/* Upload/context keep their container; proposal view becomes full document shell */}
+              <div className={step === 'proposal' ? '' : 'overflow-hidden rounded-ds-md border border-ds-border bg-ds-surface p-8 shadow-ds-md'}>
                 {step === 'upload' && (
                   <PDFUpload 
                     onUploadComplete={async (uploadedBAA) => {
@@ -537,307 +661,176 @@ export default function CreateProposalClient({ user, existingProposal, effective
                         onError={handleGenerationError}
                       />
                     ) : proposal && proposal.sections && proposal.sections.length > 0 ? (
-                      <div className="-m-8">
-                        {/* Document shell matches /proposal/[id] */}
-                        <div className="sticky top-0 z-30 border-b border-ds-border bg-ds-header/95 backdrop-blur-sm">
-                          <div className="px-5 py-2 flex items-start justify-between gap-4">
-                            <div className="min-w-0">
-                              <p className="text-[13px] font-semibold text-ds-text">View Proposal</p>
-                              <p className="mt-0.5 text-[10px] font-mono uppercase tracking-[0.12em] text-ds-text-muted">
-                                OPENED FROM DASHBOARD
-                              </p>
-                            </div>
-
-                            <div className="min-w-0 flex-1 flex flex-col items-center justify-center px-4">
-                              <p className="ds-h3 truncate text-ds-text max-w-[42rem]">{proposal.title}</p>
-                              <div className="mt-1 flex items-center gap-2">
-                                {(baa.noticeNumbers?.[0] ?? '') && (
-                                  <span className="border border-ds-border bg-ds-shell/60 px-1.5 py-0.5 font-mono text-[9px] text-ds-text-muted uppercase tracking-wide">
-                                    {baa.noticeNumbers?.[0]}
-                                  </span>
-                                )}
-                                <span className="font-mono text-[10px] text-ds-text-subtle truncate max-w-[48rem]">
-                                  {baa.title || '—'}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-2 shrink-0">
-                              <span className="hidden lg:inline font-mono text-[10px] text-ds-text-muted">
-                                {proposal.overallConfidence}% confidence
-                              </span>
-
-                              {/* Share / collaborators button */}
-                              {collaborators.length > 0 && (
-                                <button
-                                  type="button"
-                                  title="Collaborators"
-                                  onClick={(e) => editorRef.current?.openCollaborators((e.currentTarget as HTMLButtonElement).getBoundingClientRect())}
-                                  onDoubleClick={(e) => editorRef.current?.openCollaborators((e.currentTarget as HTMLButtonElement).getBoundingClientRect())}
-                                  className="hidden sm:inline-flex h-7 w-7 items-center justify-center rounded-ds-sm border border-ds-border bg-ds-primary font-mono text-[10px] font-bold uppercase text-white"
-                                >
-                                  {collaborators[0]?.name?.charAt(0) ?? 'U'}
-                                </button>
-                              )}
-
-                              {/* Compact formatting controls in header (editable only) */}
-                              {canEdit(effectiveRole) && activeEditor && (
-                                <div className="hidden lg:flex items-center gap-1 rounded-ds-sm border border-ds-border bg-ds-surface px-1 py-0.5">
-                                  <button
-                                    type="button"
-                                    className="h-6 w-6 font-mono text-[11px] font-semibold text-ds-text-muted hover:text-ds-text"
-                                    onMouseDown={(e) => { e.preventDefault(); activeEditor.chain().focus().toggleBold().run(); }}
-                                    title="Bold"
-                                  >
-                                    B
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="h-6 w-6 font-mono text-[11px] font-semibold text-ds-text-muted hover:text-ds-text italic"
-                                    onMouseDown={(e) => { e.preventDefault(); activeEditor.chain().focus().toggleItalic().run(); }}
-                                    title="Italic"
-                                  >
-                                    I
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="h-6 w-6 font-mono text-[11px] font-semibold text-ds-text-muted hover:text-ds-text underline"
-                                    onMouseDown={(e) => { e.preventDefault(); activeEditor.chain().focus().toggleUnderline().run(); }}
-                                    title="Underline"
-                                  >
-                                    U
-                                  </button>
-                                </div>
-                              )}
-
-                              <Button
-                                type="button"
-                                variant="secondary"
-                                className="!px-3 !py-1.5 !text-[10px] !font-mono !uppercase !tracking-[0.1em]"
-                                onClick={() => setOutlineOpen((v) => !v)}
-                              >
-                                <ListNumbers className="h-3.5 w-3.5" weight="bold" aria-hidden />
-                                Outline
-                              </Button>
-                              <div className="hidden md:flex items-center gap-2">
-                                <Button
-                                  type="button"
-                                  variant="secondary"
-                                  className="!px-3 !py-1.5 !text-[10px] !font-mono !uppercase !tracking-[0.1em]"
-                                  onClick={() => void handleExportDocx()}
-                                  disabled={exportBusy}
-                                >
-                                  <DownloadSimple className="h-3.5 w-3.5" weight="bold" aria-hidden />
-                                  {exportBusy ? 'Preparing…' : 'Export'}
-                                </Button>
-                                {canEdit(effectiveRole) && (
-                                  <Button
-                                    type="button"
-                                    variant="primary"
-                                    className="!px-3 !py-1.5 !text-[10px] !font-mono !uppercase !tracking-[0.1em]"
-                                    onClick={() => void editorRef.current?.save()}
-                                  >
-                                    <FloppyDisk className="h-3.5 w-3.5" weight="bold" aria-hidden />
-                                    Save
-                                  </Button>
-                                )}
-                                {isAdmin(effectiveRole) && (
-                                  <Button
-                                    type="button"
-                                    variant="secondary"
-                                    className="!px-3 !py-1.5 !text-[10px] !font-mono !uppercase !tracking-[0.1em]"
-                                    onClick={async () => {
-                                      if (!proposalId) return;
-                                      const res = await fetch(`/api/proposals/${proposalId}/award`, { method: 'POST' });
-                                      const data = await res.json().catch(() => ({}));
-                                      if (!res.ok) {
-                                        alert(data.error ?? 'Could not mark as awarded');
-                                        return;
-                                      }
-                                      router.push(data.redirectTo ?? `/dashboard/projects/${proposalId}/pm`);
-                                      router.refresh();
-                                    }}
-                                  >
-                                    <Medal className="h-3.5 w-3.5" weight="bold" aria-hidden />
-                                    Mark Awarded
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex min-h-0 bg-ds-page">
-                          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6">
-                            <div className="mx-auto w-full max-w-[816px]">
-                              <div className="bg-white shadow-[0_1px_4px_rgba(0,0,0,0.10)] border border-ds-border/60 rounded-[4px]">
-                                <div className="px-8 py-12 sm:px-16 sm:py-16 lg:px-24 lg:py-24">
-                                  <ProposalEditor
-                                    ref={editorRef}
-                                    proposal={proposal}
-                                    baa={baa}
-                                    proposalId={proposalId || undefined}
-                                    collaborators={collaborators}
-                                    ownerUserId={user.id}
-                                    onActiveEditorChange={setActiveEditor}
-                                    disableFloatingSelectionToolbar
-                                    onCollaboratorRoleChange={
-                                      isAdmin(effectiveRole) && proposalId
-                                        ? async (collaboratorId, role) => {
+                      <div className="flex min-h-0 bg-ds-page">
+                        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6">
+                          <div className="mx-auto w-full max-w-[816px]">
+                            <div className="doc-page-breaks shadow-[0_1px_4px_rgba(0,0,0,0.10)] border border-ds-border/60 rounded-[4px]">
+                              <div className="px-8 py-12 sm:px-16 sm:py-16 lg:px-24 lg:py-24">
+                                <ProposalEditor
+                                  ref={editorRef}
+                                  proposal={proposal}
+                                  baa={baa}
+                                  proposalId={proposalId || undefined}
+                                  collaborators={collaborators}
+                                  ownerUserId={user.id}
+                                  onActiveEditorChange={setActiveEditor}
+                                  disableFloatingSelectionToolbar
+                                  onCollaboratorRoleChange={
+                                    isAdmin(effectiveRole) && proposalId
+                                      ? async (collaboratorId, role) => {
+                                          const res = await fetch(
+                                            `/api/proposals/${proposalId}/collaborators/${collaboratorId}`,
+                                            {
+                                              method: 'PATCH',
+                                              headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({ role }),
+                                            },
+                                          );
+                                          const j = await res.json().catch(() => ({}));
+                                          if (!res.ok) {
+                                            alert(j.error ?? 'Could not update collaborator role');
+                                            return;
+                                          }
+                                          await mergeCollaboratorsFromApi();
+                                        }
+                                      : undefined
+                                  }
+                                  onCollaboratorRemove={
+                                    isAdmin(effectiveRole) && proposalId
+                                      ? async (collaboratorId) => {
+                                          setCollaborators((prev) => prev.filter((u) => u.id !== collaboratorId));
+                                          try {
                                             const res = await fetch(
                                               `/api/proposals/${proposalId}/collaborators/${collaboratorId}`,
-                                              {
-                                                method: 'PATCH',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({ role }),
-                                              },
+                                              { method: 'DELETE' },
                                             );
                                             const j = await res.json().catch(() => ({}));
                                             if (!res.ok) {
-                                              alert(j.error ?? 'Could not update collaborator role');
+                                              await mergeCollaboratorsFromApi();
+                                              alert(j.error ?? 'Could not remove collaborator');
                                               return;
                                             }
                                             await mergeCollaboratorsFromApi();
+                                          } catch {
+                                            await mergeCollaboratorsFromApi();
+                                            alert('Could not remove collaborator');
                                           }
-                                        : undefined
-                                    }
-                                    onCollaboratorRemove={
-                                      isAdmin(effectiveRole) && proposalId
-                                        ? async (collaboratorId) => {
-                                            setCollaborators((prev) => prev.filter((u) => u.id !== collaboratorId));
-                                            try {
-                                              const res = await fetch(
-                                                `/api/proposals/${proposalId}/collaborators/${collaboratorId}`,
-                                                { method: 'DELETE' },
-                                              );
-                                              const j = await res.json().catch(() => ({}));
-                                              if (!res.ok) {
-                                                await mergeCollaboratorsFromApi();
-                                                alert(j.error ?? 'Could not remove collaborator');
-                                                return;
-                                              }
-                                              await mergeCollaboratorsFromApi();
-                                            } catch {
-                                              await mergeCollaboratorsFromApi();
-                                              alert('Could not remove collaborator');
-                                            }
-                                          }
-                                        : undefined
-                                    }
-                                    readOnly={!canEdit(effectiveRole)}
-                                    effectiveRole={effectiveRole}
-                                    onExportDocx={handleExportDocx}
-                                    exportBusy={exportBusy}
-                                    onAddCollaborator={async (email, role) => {
-                                      if (!proposalId) {
-                                        alert('Save the proposal first before inviting collaborators.');
-                                        return;
-                                      }
-                                      try {
-                                        const response = await fetch('/api/invite-collaborator', {
-                                          method: 'POST',
-                                          headers: { 'Content-Type': 'application/json' },
-                                          body: JSON.stringify({ proposalId, email, role }),
-                                        });
-                                        const result = await response.json();
-                                        if (response.ok) {
-                                          await mergeCollaboratorsFromApi();
-                                          if (result.unchanged) {
-                                            // Already this role — list refreshed only
-                                          } else if (result.roleUpdated) {
-                                            alert(
-                                              result.emailSent
-                                                ? `Access updated to ${role}. A new invitation email was sent.`
-                                                : `Access updated to ${role}.`,
-                                            );
-                                          } else if (result.invitationLink) {
-                                            alert(`Invitation sent!\n\nLink: ${result.invitationLink}`);
-                                          } else {
-                                            alert(`Invitation sent to ${email}`);
-                                          }
-                                        } else {
-                                          alert(`Failed: ${result.error ?? response.statusText}`);
                                         }
-                                      } catch {
-                                        alert('Failed to send invitation. Please try again.');
+                                      : undefined
+                                  }
+                                  readOnly={!canEdit(effectiveRole)}
+                                  effectiveRole={effectiveRole}
+                                  onExportDocx={handleExportDocx}
+                                  exportBusy={exportBusy}
+                                  onAddCollaborator={async (email, role) => {
+                                    if (!proposalId) {
+                                      alert('Save the proposal first before inviting collaborators.');
+                                      return;
+                                    }
+                                    try {
+                                      const response = await fetch('/api/invite-collaborator', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ proposalId, email, role }),
+                                      });
+                                      const result = await response.json();
+                                      if (response.ok) {
+                                        await mergeCollaboratorsFromApi();
+                                        if (result.unchanged) {
+                                          // Already this role — list refreshed only
+                                        } else if (result.roleUpdated) {
+                                          alert(
+                                            result.emailSent
+                                              ? `Access updated to ${role}. A new invitation email was sent.`
+                                              : `Access updated to ${role}.`,
+                                          );
+                                        } else if (result.invitationLink) {
+                                          alert(`Invitation sent!\n\nLink: ${result.invitationLink}`);
+                                        } else {
+                                          alert(`Invitation sent to ${email}`);
+                                        }
+                                      } else {
+                                        alert(`Failed: ${result.error ?? response.statusText}`);
                                       }
-                                    }}
-                                    onSave={async (updated) => {
-                                      setProposal(updated);
-                                      if (proposalId) {
-                                        await fetch('/api/save-proposal', {
-                                          method: 'POST',
-                                          headers: { 'Content-Type': 'application/json' },
-                                          body: JSON.stringify({
-                                            proposalId,
-                                            generatedOutput: JSON.stringify(updated),
-                                          }),
-                                        });
-                                      }
-                                    }}
-                                  />
-                                </div>
+                                    } catch {
+                                      alert('Failed to send invitation. Please try again.');
+                                    }
+                                  }}
+                                  onSave={async (updated) => {
+                                    setProposal(updated);
+                                    if (proposalId) {
+                                      await fetch('/api/save-proposal', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                          proposalId,
+                                          generatedOutput: JSON.stringify(updated),
+                                        }),
+                                      });
+                                    }
+                                  }}
+                                />
                               </div>
                             </div>
                           </div>
+                        </div>
 
-                          {outlineOpen && (
-                            <>
-                              <button
-                                type="button"
-                                className="fixed inset-0 z-20 bg-black/30 lg:hidden"
-                                onClick={() => setOutlineOpen(false)}
-                                aria-label="Close outline"
-                              />
-                              <aside className="fixed right-0 top-[57px] z-30 h-[calc(100vh-57px)] w-[280px] border-l border-ds-border bg-ds-surface overflow-y-auto lg:static lg:top-0 lg:h-auto lg:z-auto">
-                                <div className="px-4 py-4 border-b border-ds-border">
-                                  <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-ds-text-muted">
-                                    Outline
-                                  </p>
-                                  <div className="mt-3">
-                                    <ConfidenceScore score={proposal.overallConfidence} />
-                                  </div>
+                        {outlineOpen && (
+                          <>
+                            <button
+                              type="button"
+                              className="fixed inset-0 z-20 bg-black/30 lg:hidden"
+                              onClick={() => setOutlineOpen(false)}
+                              aria-label="Close outline"
+                            />
+                            <aside className="fixed right-0 top-[57px] z-30 h-[calc(100vh-57px)] w-[280px] border-l border-ds-border bg-ds-surface overflow-y-auto lg:static lg:top-0 lg:h-auto lg:z-auto">
+                              <div className="px-4 py-4 border-b border-ds-border">
+                                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-ds-text-muted">
+                                  Outline
+                                </p>
+                                <div className="mt-3">
+                                  <ConfidenceScore score={proposal.overallConfidence} />
                                 </div>
-                                <ul className="py-2">
-                                  {(proposal.sections || []).map((s, idx) => (
-                                    <li key={s.id}>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          document
-                                            .getElementById(`section-${s.id}`)
-                                            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                          if (window.innerWidth < 1024) setOutlineOpen(false);
-                                        }}
-                                        className="w-full px-4 py-2 text-left hover:bg-ds-shell/60 transition-colors"
-                                      >
-                                        <div className="flex items-start gap-2">
-                                          <span className="mt-[2px] font-mono text-[10px] text-ds-text-subtle tabular-nums w-6 shrink-0">
-                                            {String(idx + 1).padStart(2, '0')}
-                                          </span>
-                                          <div className="min-w-0 flex-1">
-                                            <p className="text-[12px] font-semibold text-ds-text truncate">{s.title}</p>
-                                            <div className="mt-1 flex flex-wrap items-center gap-2">
-                                              <span className="font-mono text-[10px] text-ds-text-muted">
-                                                {s.confidence}% confidence
+                              </div>
+                              <ul className="py-2">
+                                {(proposal.sections || []).map((s, idx) => (
+                                  <li key={s.id}>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        document
+                                          .getElementById(`section-${s.id}`)
+                                          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        if (window.innerWidth < 1024) setOutlineOpen(false);
+                                      }}
+                                      className="w-full px-4 py-2 text-left hover:bg-ds-shell/60 transition-colors"
+                                    >
+                                      <div className="flex items-start gap-2">
+                                        <span className="mt-[2px] font-mono text-[10px] text-ds-text-subtle tabular-nums w-6 shrink-0">
+                                          {String(idx + 1).padStart(2, '0')}
+                                        </span>
+                                        <div className="min-w-0 flex-1">
+                                          <p className="text-[12px] font-semibold text-ds-text truncate">{s.title}</p>
+                                          <div className="mt-1 flex flex-wrap items-center gap-2">
+                                            <span className="font-mono text-[10px] text-ds-text-muted">
+                                              {s.confidence}% confidence
+                                            </span>
+                                            {s.required && (
+                                              <span className="border border-amber-300 bg-amber-50 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wide text-amber-700">
+                                                Required
                                               </span>
-                                              {s.required && (
-                                                <span className="border border-amber-300 bg-amber-50 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wide text-amber-700">
-                                                  Required
-                                                </span>
-                                              )}
-                                              <span className="font-mono text-[10px] text-ds-text-subtle">{s.status}</span>
-                                            </div>
+                                            )}
+                                            <span className="font-mono text-[10px] text-ds-text-subtle">{s.status}</span>
                                           </div>
                                         </div>
-                                      </button>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </aside>
-                            </>
-                          )}
-                        </div>
+                                      </div>
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            </aside>
+                          </>
+                        )}
                       </div>
                     ) : (
                       <div className="p-8 text-center">

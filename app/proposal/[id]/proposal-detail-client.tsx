@@ -389,7 +389,7 @@ export default function ProposalDetailClient({ proposal, user, effectiveRole }: 
       <div className="flex flex-1 min-h-0 overflow-hidden bg-ds-page">
         <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6">
           <div className="mx-auto w-full max-w-[816px]">
-            <div className="bg-white shadow-[0_1px_4px_rgba(0,0,0,0.10)] border border-ds-border/60 rounded-[4px]">
+            <div className="doc-page-breaks shadow-[0_1px_4px_rgba(0,0,0,0.10)] border border-ds-border/60 rounded-[4px]">
               <div className="px-8 py-12 sm:px-16 sm:py-16 lg:px-24 lg:py-24">
                 <ProposalEditor
                   ref={editorRef}
