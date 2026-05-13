@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server';
 import OpenAI from 'openai';
+import { createClient } from '@/lib/supabase/server';
+import { getPmRole, canEdit } from '@/lib/pm-access';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || '',
@@ -11,8 +13,31 @@ if (!process.env.OPENAI_API_KEY) {
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authErr,
+    } = await supabase.auth.getUser();
+
+    if (authErr || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     const body = await request.json();
-    const { baa, organizationContext } = body;
+    const { baa, organizationContext, proposalId } = body;
+
+    if (proposalId && typeof proposalId === 'string') {
+      const role = await getPmRole(supabase, user.id, user.email ?? undefined, proposalId);
+      if (!canEdit(role)) {
+        return new Response(JSON.stringify({ error: 'Only editors and admins can run proposal generation.' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    }
 
     if (!baa || !organizationContext) {
       return new Response(

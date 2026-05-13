@@ -351,6 +351,11 @@ CREATE POLICY "Collaborators can view shared proposals"
     )
   );
 
+-- NOTE: SELECT above is correct (accepted + email match). Editors still need
+-- UPDATE/DELETE on proposals for in-app editing; apply
+-- supabase/migrations/20260513120000_proposal_collaborator_update_delete_rls.sql
+-- if collaborator editors cannot save or admins cannot delete.
+
 CREATE POLICY "pm_me_select" ON pm_milestone_events FOR SELECT USING (
   EXISTS (
     SELECT 1 FROM pm_milestones m

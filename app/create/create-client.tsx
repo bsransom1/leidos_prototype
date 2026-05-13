@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { UploadSimple, FileText, ChartBar, CheckCircle, ArrowLeft } from '@phosphor-icons/react';
 import { AppFooter, AppHeader, BackLink } from '@/components/ui/app-shell';
@@ -11,13 +11,16 @@ import ProposalEditor from '@/components/ProposalEditor';
 import ProposalGenerationLoader from '@/components/ProposalGenerationLoader';
 import { BAA, OrganizationContext, Proposal, User } from '@/types';
 import { User as SupabaseUser } from '@supabase/supabase-js';
+import { canEdit, isAdmin, type PmRole } from '@/lib/pm-access';
+import { buildProposalSubmissionDocx, downloadProposalDocx } from '@/lib/proposal-export-docx';
 
 interface CreateProposalClientProps {
   user: SupabaseUser;
   existingProposal?: any;
+  effectiveRole: PmRole;
 }
 
-export default function CreateProposalClient({ user, existingProposal }: CreateProposalClientProps) {
+export default function CreateProposalClient({ user, existingProposal, effectiveRole }: CreateProposalClientProps) {
   const router = useRouter();
   const [proposalId, setProposalId] = useState<string | null>(existingProposal?.id || null);
   
@@ -188,46 +191,60 @@ export default function CreateProposalClient({ user, existingProposal }: CreateP
       id: user.id,
       name: user.email?.split('@')[0] || 'User',
       email: user.email || '',
-      role: 'admin',
+      role:
+        effectiveRole === 'admin' ? 'admin' : effectiveRole === 'editor' ? 'editor' : 'viewer',
       organizationId: 'org-1',
     },
   ]);
 
+  const mergeCollaboratorsFromApi = useCallback(async () => {
+    if (!proposalId) return;
+    const chip: User['role'] =
+      effectiveRole === 'admin' ? 'admin' : effectiveRole === 'editor' ? 'editor' : 'viewer';
+    try {
+      const response = await fetch(`/api/get-collaborators?proposalId=${proposalId}`, {
+        cache: 'no-store',
+      });
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        const owner: User = {
+          id: user.id,
+          name: user.email?.split('@')[0] || 'User',
+          email: user.email || '',
+          role: chip,
+          organizationId: 'org-1',
+        };
+
+        const invitedUsers: User[] = result.data.map((c: any) => ({
+          id: c.id,
+          name: c.email.split('@')[0],
+          email: c.email,
+          role: c.role as User['role'],
+          organizationId: 'org-1',
+        }));
+
+        setCollaborators([owner, ...invitedUsers]);
+      } else if (response.status === 403) {
+        setCollaborators([
+          {
+            id: user.id,
+            name: user.email?.split('@')[0] || 'User',
+            email: user.email || '',
+            role: chip,
+            organizationId: 'org-1',
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error('Error loading collaborators:', error);
+    }
+  }, [proposalId, user.id, user.email, effectiveRole]);
+
   // Load collaborators when proposalId is available
   useEffect(() => {
-    const loadCollaborators = async () => {
-      if (proposalId) {
-        try {
-          const response = await fetch(`/api/get-collaborators?proposalId=${proposalId}`);
-          const result = await response.json();
-          
-          if (result.success && result.data) {
-            const owner: User = {
-              id: user.id,
-              name: user.email?.split('@')[0] || 'User',
-              email: user.email || '',
-              role: 'admin',
-              organizationId: 'org-1',
-            };
-            
-            const invitedUsers: User[] = result.data.map((c: any) => ({
-              id: c.id,
-              name: c.email.split('@')[0],
-              email: c.email,
-              role: c.role as User['role'],
-              organizationId: 'org-1',
-            }));
-            
-            setCollaborators([owner, ...invitedUsers]);
-          }
-        } catch (error) {
-          console.error('Error loading collaborators:', error);
-        }
-      }
-    };
-
-    loadCollaborators();
-  }, [proposalId, user.id, user.email]);
+    void mergeCollaboratorsFromApi();
+  }, [mergeCollaboratorsFromApi]);
 
   const updateProposalStep = async (newStep: string, baaData?: BAA, orgContext?: OrganizationContext, proposalData?: Proposal) => {
     if (!proposalId) return;
@@ -290,8 +307,7 @@ export default function CreateProposalClient({ user, existingProposal }: CreateP
   const handleContextSubmitted = async (context: OrganizationContext) => {
     setOrganizationContext(context);
     if (baa) {
-      // Save organization context to database
-      if (proposalId) {
+      if (proposalId && canEdit(effectiveRole)) {
         try {
           await fetch('/api/save-proposal', {
             method: 'POST',
@@ -306,7 +322,13 @@ export default function CreateProposalClient({ user, existingProposal }: CreateP
           console.error('Failed to save organization context:', error);
         }
       }
-      
+
+      if (!canEdit(effectiveRole)) {
+        setStep('proposal');
+        setIsGenerating(false);
+        return;
+      }
+
       await updateProposalStep('proposal', baa, context);
       setIsGenerating(true);
       setStep('proposal'); // Show loading screen
@@ -402,6 +424,25 @@ export default function CreateProposalClient({ user, existingProposal }: CreateP
     }
   };
 
+  const [exportBusy, setExportBusy] = useState(false);
+
+  const handleExportDocx = async () => {
+    if (!proposal || !baa || !proposal.sections?.length) {
+      alert('No proposal sections to export yet.');
+      return;
+    }
+    setExportBusy(true);
+    try {
+      const blob = await buildProposalSubmissionDocx(proposal, baa);
+      downloadProposalDocx(blob, proposal.title);
+    } catch (e) {
+      console.error(e);
+      alert('Could not generate the Word document. Try again.');
+    } finally {
+      setExportBusy(false);
+    }
+  };
+
   return (
     <div className="flex h-screen flex-col bg-ds-page">
       <AppHeader>
@@ -481,20 +522,69 @@ export default function CreateProposalClient({ user, existingProposal }: CreateP
                 )}
                 {step === 'proposal' && baa && (
                   <div>
-                    {isGenerating ? (
+                    {isGenerating && canEdit(effectiveRole) ? (
                       <ProposalGenerationLoader
                         baa={baa}
                         organizationContext={organizationContext || undefined}
+                        proposalId={proposalId ?? undefined}
                         onComplete={handleProposalGenerated}
                         onError={handleGenerationError}
                       />
-                    ) :                       proposal && proposal.sections && proposal.sections.length > 0 ? (
+                    ) : proposal && proposal.sections && proposal.sections.length > 0 ? (
                       <div className="-m-8">
                         <ProposalEditor
                           proposal={proposal}
                           baa={baa}
                           proposalId={proposalId || undefined}
                           collaborators={collaborators}
+                          ownerUserId={user.id}
+                          onCollaboratorRoleChange={
+                            isAdmin(effectiveRole) && proposalId
+                              ? async (collaboratorId, role) => {
+                                  const res = await fetch(
+                                    `/api/proposals/${proposalId}/collaborators/${collaboratorId}`,
+                                    {
+                                      method: 'PATCH',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ role }),
+                                    },
+                                  );
+                                  const j = await res.json().catch(() => ({}));
+                                  if (!res.ok) {
+                                    alert(j.error ?? 'Could not update collaborator role');
+                                    return;
+                                  }
+                                  await mergeCollaboratorsFromApi();
+                                }
+                              : undefined
+                          }
+                          onCollaboratorRemove={
+                            isAdmin(effectiveRole) && proposalId
+                              ? async (collaboratorId) => {
+                                  setCollaborators((prev) => prev.filter((u) => u.id !== collaboratorId));
+                                  try {
+                                    const res = await fetch(
+                                      `/api/proposals/${proposalId}/collaborators/${collaboratorId}`,
+                                      { method: 'DELETE' },
+                                    );
+                                    const j = await res.json().catch(() => ({}));
+                                    if (!res.ok) {
+                                      await mergeCollaboratorsFromApi();
+                                      alert(j.error ?? 'Could not remove collaborator');
+                                      return;
+                                    }
+                                    await mergeCollaboratorsFromApi();
+                                  } catch {
+                                    await mergeCollaboratorsFromApi();
+                                    alert('Could not remove collaborator');
+                                  }
+                                }
+                              : undefined
+                          }
+                          readOnly={!canEdit(effectiveRole)}
+                          effectiveRole={effectiveRole}
+                          onExportDocx={handleExportDocx}
+                          exportBusy={exportBusy}
                           onAddCollaborator={async (email, role) => {
                             if (!proposalId) {
                               alert('Save the proposal first before inviting collaborators.');
@@ -504,38 +594,26 @@ export default function CreateProposalClient({ user, existingProposal }: CreateP
                               const response = await fetch('/api/invite-collaborator', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ proposalId, email, role: 'viewer' }),
+                                body: JSON.stringify({ proposalId, email, role }),
                               });
                               const result = await response.json();
                               if (response.ok) {
-                                const collabResponse = await fetch(`/api/get-collaborators?proposalId=${proposalId}`);
-                                const collabData = await collabResponse.json();
-                                if (collabData.success) {
-                                  const owner: import('@/types').User = {
-                                    id: user.id,
-                                    name: user.email?.split('@')[0] || 'User',
-                                    email: user.email || '',
-                                    role: 'admin',
-                                    organizationId: '',
-                                  };
-                                  const invitedUsers: import('@/types').User[] = collabData.data.map((c: any) => ({
-                                    id: c.id,
-                                    name: c.email.split('@')[0],
-                                    email: c.email,
-                                    role: c.role as import('@/types').User['role'],
-                                    organizationId: '',
-                                  }));
-                                  setCollaborators([owner, ...invitedUsers]);
-                                  if (result.invitationLink) {
-                                    alert(`Invitation sent!\n\nLink: ${result.invitationLink}`);
-                                  } else {
-                                    alert(`Invitation sent to ${email}`);
-                                  }
+                                await mergeCollaboratorsFromApi();
+                                if (result.unchanged) {
+                                  // Already this role — list refreshed only
+                                } else if (result.roleUpdated) {
+                                  alert(
+                                    result.emailSent
+                                      ? `Access updated to ${role}. A new invitation email was sent.`
+                                      : `Access updated to ${role}.`,
+                                  );
+                                } else if (result.invitationLink) {
+                                  alert(`Invitation sent!\n\nLink: ${result.invitationLink}`);
+                                } else {
+                                  alert(`Invitation sent to ${email}`);
                                 }
                               } else {
-                                alert(result.error === 'Collaborator already invited'
-                                  ? `${email} has already been invited.`
-                                  : `Failed: ${result.error}`);
+                                alert(`Failed: ${result.error ?? response.statusText}`);
                               }
                             } catch {
                               alert('Failed to send invitation. Please try again.');
@@ -554,20 +632,24 @@ export default function CreateProposalClient({ user, existingProposal }: CreateP
                               });
                             }
                           }}
-                          onAward={async () => {
-                            if (!proposalId) {
-                              alert('Save the proposal first, then try again.');
-                              return;
-                            }
-                            const res = await fetch(`/api/proposals/${proposalId}/award`, { method: 'POST' });
-                            const data = await res.json().catch(() => ({}));
-                            if (!res.ok) {
-                              alert(data.error ?? 'Could not mark as awarded');
-                              return;
-                            }
-                            router.push(data.redirectTo ?? `/dashboard/projects/${proposalId}/pm`);
-                            router.refresh();
-                          }}
+                          onAward={
+                            isAdmin(effectiveRole)
+                              ? async () => {
+                                  if (!proposalId) {
+                                    alert('Save the proposal first, then try again.');
+                                    return;
+                                  }
+                                  const res = await fetch(`/api/proposals/${proposalId}/award`, { method: 'POST' });
+                                  const data = await res.json().catch(() => ({}));
+                                  if (!res.ok) {
+                                    alert(data.error ?? 'Could not mark as awarded');
+                                    return;
+                                  }
+                                  router.push(data.redirectTo ?? `/dashboard/projects/${proposalId}/pm`);
+                                  router.refresh();
+                                }
+                              : undefined
+                          }
                         />
                         <div className="flex justify-end gap-3 border-t border-gray-200 bg-white px-6 py-4 shadow-[0_-1px_0_rgba(0,0,0,0.04)]">
                           <Button
@@ -578,14 +660,16 @@ export default function CreateProposalClient({ user, existingProposal }: CreateP
                           >
                             Done
                           </Button>
-                          <Button
-                            type="button"
-                            variant="primary"
-                            className="border-blue-600 bg-blue-600 text-white hover:border-blue-700 hover:bg-blue-700 focus-visible:ring-offset-white"
-                            onClick={handleSaveProposal}
-                          >
-                            Save to dashboard
-                          </Button>
+                          {canEdit(effectiveRole) && (
+                            <Button
+                              type="button"
+                              variant="primary"
+                              className="border-blue-600 bg-blue-600 text-white hover:border-blue-700 hover:bg-blue-700 focus-visible:ring-offset-white"
+                              onClick={handleSaveProposal}
+                            >
+                              Save to dashboard
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ) : (

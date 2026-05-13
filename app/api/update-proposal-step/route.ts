@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getPmRole, canEdit } from '@/lib/pm-access';
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,6 +26,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const pmRole = await getPmRole(supabase, user.id, user.email ?? undefined, proposalId);
+    if (!canEdit(pmRole)) {
+      return NextResponse.json(
+        { error: 'Viewers cannot update proposals.' },
+        { status: 403 }
+      );
+    }
+
     // Build update object
     const updateData: any = {
       current_step: step,
@@ -44,7 +53,6 @@ export async function POST(request: NextRequest) {
       .from('proposals')
       .update(updateData)
       .eq('id', proposalId)
-      .eq('user_id', user.id) // Ensure user owns this proposal
       .select()
       .single();
 

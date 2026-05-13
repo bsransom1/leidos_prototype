@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getPmRole, isAdmin } from '@/lib/pm-access';
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,18 +26,24 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Verify user owns the proposal
     const { data: proposal, error: proposalError } = await supabase
       .from('proposals')
       .select('id, user_id')
       .eq('id', proposalId)
-      .eq('user_id', user.id)
       .single();
 
     if (proposalError || !proposal) {
       return NextResponse.json(
         { error: 'Proposal not found or access denied' },
         { status: 404 }
+      );
+    }
+
+    const role = await getPmRole(supabase, user.id, user.email ?? undefined, proposalId);
+    if (!isAdmin(role)) {
+      return NextResponse.json(
+        { error: 'Only proposal admins can list collaborators.' },
+        { status: 403 }
       );
     }
 

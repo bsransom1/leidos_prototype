@@ -23,10 +23,13 @@ import {
   Shield,
   PencilSimple,
   Eye,
+  DownloadSimple,
+  Trash,
 } from '@phosphor-icons/react';
 import ConfidenceScore from './ConfidenceScore';
 import { fieldClass } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { isAdmin, type PmRole } from '@/lib/pm-access';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -38,7 +41,15 @@ interface ProposalEditorProps {
   readOnly?: boolean;
   collaborators?: User[];
   onAddCollaborator?: (email: string, role: User['role']) => Promise<void>;
+  /** Supabase auth user id — row with this id is the owner chip, not a DB collaborator row. */
+  ownerUserId?: string;
+  onCollaboratorRoleChange?: (collaboratorId: string, role: User['role']) => Promise<void>;
+  onCollaboratorRemove?: (collaboratorId: string) => Promise<void>;
   proposalId?: string;
+  /** When set, gates collaborator management and award (undefined = unrestricted for legacy callers). */
+  effectiveRole?: PmRole | null;
+  onExportDocx?: () => void | Promise<void>;
+  exportBusy?: boolean;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -66,17 +77,25 @@ function roleBadgeClass(role: User['role']) {
 function CollabOverlay({
   collaborators,
   onAddCollaborator,
+  onCollaboratorRoleChange,
+  onCollaboratorRemove,
+  ownerUserId,
   onClose,
   anchorRect,
 }: {
   collaborators: User[];
   onAddCollaborator?: (email: string, role: User['role']) => Promise<void>;
+  onCollaboratorRoleChange?: (collaboratorId: string, role: User['role']) => Promise<void>;
+  onCollaboratorRemove?: (collaboratorId: string) => Promise<void>;
+  ownerUserId?: string;
   onClose: () => void;
   anchorRect: DOMRect | null;
 }) {
   const [showInvite, setShowInvite] = useState(false);
   const [email, setEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState<User['role']>('viewer');
   const [sending, setSending] = useState(false);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const top = anchorRect ? anchorRect.bottom + 8 : 80;
   const right = anchorRect ? window.innerWidth - anchorRect.right : 24;
@@ -84,7 +103,7 @@ function CollabOverlay({
   const handleInvite = async () => {
     if (!email || !onAddCollaborator) return;
     setSending(true);
-    await onAddCollaborator(email, 'viewer');
+    await onAddCollaborator(email, inviteRole);
     setEmail('');
     setSending(false);
     setShowInvite(false);
@@ -97,7 +116,7 @@ function CollabOverlay({
 
       {/* Panel */}
       <div
-        className="fixed z-50 w-72 overflow-hidden border border-ds-border bg-ds-surface shadow-[0_8px_32px_rgba(0,0,0,0.55)] backdrop-blur-sm"
+        className="fixed z-50 w-[22rem] max-w-[calc(100vw-2rem)] overflow-hidden border border-ds-border bg-ds-surface shadow-[0_8px_32px_rgba(0,0,0,0.55)] backdrop-blur-sm"
         style={{ top, right }}
       >
         {/* Header */}
@@ -137,7 +156,19 @@ function CollabOverlay({
               autoFocus
               className={fieldClass + ' text-xs w-full'}
             />
-            <p className="font-mono text-[10px] text-ds-text-muted">Viewer access only · link expires in 7 days</p>
+            <select
+              value={inviteRole}
+              onChange={(e) => setInviteRole(e.target.value as User['role'])}
+              className={fieldClass + ' text-xs w-full'}
+              title="Invite role"
+            >
+              <option value="viewer">Viewer</option>
+              <option value="editor">Editor</option>
+              <option value="admin">Admin</option>
+            </select>
+            <p className="font-mono text-[10px] leading-relaxed text-ds-text-muted">
+              Viewer — read-only · Editor — edit & AI · Admin — full control & invites
+            </p>
             <div className="flex gap-2">
               <Button type="button" variant="primary" className="!px-3 !py-1 !text-[10px]" onClick={handleInvite} disabled={sending || !email}>
                 {sending ? 'Sending…' : 'Send invite'}
@@ -156,23 +187,87 @@ function CollabOverlay({
               No collaborators yet
             </p>
           ) : (
-            collaborators.map((u) => (
-              <div key={u.id} className="flex items-center gap-2.5 px-4 py-2 hover:bg-ds-shell/40 transition-colors">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center border border-ds-border bg-ds-primary text-[11px] font-bold uppercase text-white">
-                  {u.name.charAt(0)}
+            collaborators.map((u) => {
+              const isOwnerRow = ownerUserId != null && u.id === ownerUserId;
+              const canChangeRole = !!onCollaboratorRoleChange && !!ownerUserId && !isOwnerRow;
+              const canRemove = !!onCollaboratorRemove && !!ownerUserId && !isOwnerRow;
+
+              return (
+                <div key={u.id} className="border-b border-ds-border/60 px-4 py-2.5 last:border-b-0 hover:bg-ds-shell/40 transition-colors">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center border border-ds-border bg-ds-primary text-[11px] font-bold uppercase text-white">
+                      {u.name.charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-[12px] font-semibold text-ds-text">{u.name}</p>
+                      <p className="truncate font-mono text-[10px] text-ds-text-muted">{u.email}</p>
+                    </div>
+                    {!canChangeRole && (
+                      <div className="flex shrink-0 items-center gap-1">
+                        {roleIcon(u.role)}
+                        <span
+                          className={`border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wide ${roleBadgeClass(u.role)}`}
+                        >
+                          {u.role}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  {(canChangeRole || canRemove) && (
+                    <div className="mt-2 flex flex-wrap items-center gap-2 pl-9">
+                      {canChangeRole && (
+                        <>
+                          <label className="font-mono text-[9px] uppercase tracking-wide text-ds-text-muted">Role</label>
+                          <select
+                            value={u.role}
+                            disabled={updatingId === u.id}
+                            onChange={async (e) => {
+                              const next = e.target.value as User['role'];
+                              if (next === u.role || !onCollaboratorRoleChange) return;
+                              setUpdatingId(u.id);
+                              try {
+                                await onCollaboratorRoleChange(u.id, next);
+                              } finally {
+                                setUpdatingId(null);
+                              }
+                            }}
+                            className={fieldClass + ' flex-1 min-w-[7rem] py-1 text-[11px]'}
+                            title="Change access level"
+                          >
+                            <option value="viewer">Viewer</option>
+                            <option value="editor">Editor</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        </>
+                      )}
+                      {canRemove && (
+                        <button
+                          type="button"
+                          title="Remove from proposal"
+                          disabled={updatingId === u.id}
+                          onClick={async () => {
+                            if (!onCollaboratorRemove) return;
+                            if (!confirm(`Remove ${u.email} from this proposal? They will lose access.`)) return;
+                            setUpdatingId(u.id);
+                            try {
+                              await onCollaboratorRemove(u.id);
+                            } finally {
+                              setUpdatingId(null);
+                            }
+                          }}
+                          className="inline-flex shrink-0 items-center justify-center rounded-ds-sm border border-red-900/40 bg-red-950/30 p-1.5 text-red-300 hover:bg-red-950/50 disabled:opacity-40"
+                        >
+                          <Trash className="h-3.5 w-3.5" weight="bold" aria-hidden />
+                        </button>
+                      )}
+                      {updatingId === u.id && (
+                        <span className="font-mono text-[9px] text-ds-text-muted">Saving…</span>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="truncate text-[12px] font-semibold text-ds-text">{u.name}</p>
-                  <p className="truncate font-mono text-[10px] text-ds-text-muted">{u.email}</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  {roleIcon(u.role)}
-                  <span className={`border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wide ${roleBadgeClass(u.role)}`}>
-                    {u.role}
-                  </span>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
@@ -295,12 +390,16 @@ function FormatToolbar({
   dirtyCount,
   onSave,
   onAward,
+  onExportDocx,
+  exportBusy,
 }: {
   activeEditor: Editor | null;
   saving: boolean;
   dirtyCount: number;
   onSave: () => void;
   onAward?: () => void;
+  onExportDocx?: () => void | Promise<void>;
+  exportBusy?: boolean;
 }) {
   const e = activeEditor;
 
@@ -383,8 +482,20 @@ function FormatToolbar({
         </ToolbarButton>
       </div>
 
-      {/* Right: save + award */}
+      {/* Right: export + save + award */}
       <div className="flex items-center gap-2 shrink-0">
+        {onExportDocx && (
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => void onExportDocx()}
+            disabled={exportBusy}
+            className="inline-flex items-center gap-1.5 border border-gray-300 bg-gray-50 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <DownloadSimple className="h-3 w-3" weight="bold" />
+            {exportBusy ? 'Preparing…' : 'Export'}
+          </button>
+        )}
         {dirtyCount > 0 && (
           <span className="font-mono text-[10px] text-gray-400">
             {dirtyCount} unsaved
@@ -508,8 +619,27 @@ function SectionEditor({
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export default function ProposalEditor({ proposal, baa, onSave, onAward, readOnly, collaborators = [], onAddCollaborator, proposalId }: ProposalEditorProps) {
+export default function ProposalEditor({
+  proposal,
+  baa,
+  onSave,
+  onAward,
+  readOnly,
+  collaborators = [],
+  onAddCollaborator,
+  ownerUserId,
+  onCollaboratorRoleChange,
+  onCollaboratorRemove,
+  proposalId,
+  effectiveRole,
+  onExportDocx,
+  exportBusy = false,
+}: ProposalEditorProps) {
   void proposalId;
+  const unrestricted = effectiveRole === undefined || effectiveRole === null;
+  const isProposalAdmin = unrestricted || isAdmin(effectiveRole);
+  const canManageCollaborators =
+    isProposalAdmin && (!!onAddCollaborator || !!onCollaboratorRemove || !!onCollaboratorRoleChange);
   const [activeEditor, setActiveEditor] = useState<Editor | null>(null);
   const [, forceUpdate] = useState(0);
   const [titles, setTitles] = useState<Record<string, string>>(() =>
@@ -614,6 +744,7 @@ export default function ProposalEditor({ proposal, baa, onSave, onAward, readOnl
             )}
 
             {/* Share / collaborators button */}
+            {canManageCollaborators && (
             <button
               ref={shareButtonRef}
               type="button"
@@ -644,6 +775,7 @@ export default function ProposalEditor({ proposal, baa, onSave, onAward, readOnl
                 {collaborators.length > 0 ? `${collaborators.length}` : 'Share'}
               </span>
             </button>
+            )}
           </div>
         </div>
 
@@ -653,10 +785,13 @@ export default function ProposalEditor({ proposal, baa, onSave, onAward, readOnl
       </div>
 
       {/* Collaborator floating overlay */}
-      {showCollab && (
+      {showCollab && canManageCollaborators && (
         <CollabOverlay
           collaborators={collaborators}
           onAddCollaborator={onAddCollaborator}
+          onCollaboratorRoleChange={onCollaboratorRoleChange}
+          onCollaboratorRemove={onCollaboratorRemove}
+          ownerUserId={ownerUserId}
           onClose={() => setShowCollab(false)}
           anchorRect={collabAnchor}
         />
@@ -673,6 +808,20 @@ export default function ProposalEditor({ proposal, baa, onSave, onAward, readOnl
         />
       )}
 
+      {readOnly && onExportDocx && (
+        <div className="sticky top-0 z-10 flex items-center justify-end gap-2 border-b border-gray-200 bg-white/95 px-6 py-2 backdrop-blur-sm shadow-sm">
+          <button
+            type="button"
+            onClick={() => void onExportDocx()}
+            disabled={exportBusy || !proposal.sections?.length}
+            className="inline-flex items-center gap-1.5 border border-ds-border bg-ds-shell/80 px-3 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-ds-text-secondary hover:bg-ds-shell disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <DownloadSimple className="h-3.5 w-3.5" weight="bold" />
+            {exportBusy ? 'Preparing…' : 'Export submission package'}
+          </button>
+        </div>
+      )}
+
       {/* Sticky format toolbar */}
       {!readOnly && (
         <FormatToolbar
@@ -681,6 +830,8 @@ export default function ProposalEditor({ proposal, baa, onSave, onAward, readOnl
           dirtyCount={dirty.size}
           onSave={handleSave}
           onAward={onAward}
+          onExportDocx={onExportDocx}
+          exportBusy={exportBusy}
         />
       )}
 

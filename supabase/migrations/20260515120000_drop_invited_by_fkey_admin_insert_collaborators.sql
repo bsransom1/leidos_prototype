@@ -1,16 +1,8 @@
--- =============================================================================
--- Invites fail with: foreign key on invited_by / permission on auth.users
---
--- Apply this in Supabase → SQL Editor → Run (whole file).
--- Or locally: npm run db:fix-collaborators-invites  (requires DATABASE_URL in .env.local)
---
--- Same as: supabase/migrations/20260515120000_drop_invited_by_fkey_admin_insert_collaborators.sql
--- Does NOT remove other RLS policies (unlike older versions of this file).
--- =============================================================================
-
 -- INSERT into proposal_collaborators fails when invited_by REFERENCES auth.users:
 -- PostgreSQL validates the FK by reading auth.users under RLS → permission denied (often 42501, mentions "users").
--- invited_by is still set by the app to auth.uid(); we only remove the FK.
+-- invited_by is still set by the app to auth.uid(); we only remove the FK (same as FIX_COLLABORATORS_NOW.sql).
+--
+-- Also add INSERT for proposal admins who are not proposals.user_id (policy previously owner-only).
 
 DO $$
 DECLARE
@@ -29,10 +21,10 @@ BEGIN
       )
   ) LOOP
     EXECUTE format('ALTER TABLE public.proposal_collaborators DROP CONSTRAINT IF EXISTS %I', r.conname);
-    RAISE NOTICE 'Dropped FK on invited_by: %', r.conname;
   END LOOP;
 END $$;
 
+-- Ensure RBAC helpers exist (idem prior migrations)
 CREATE OR REPLACE FUNCTION public.pm_is_proposal_owner(pid uuid)
 RETURNS boolean
 LANGUAGE sql
@@ -82,16 +74,3 @@ CREATE POLICY "Proposal admins can insert collaborator invites"
     AND invited_by = auth.uid()
     AND public.pm_is_admin(proposal_id)
   );
-
--- Verify: no FK left on invited_by column
-SELECT
-  c.conname,
-  a.attname AS column_name
-FROM pg_constraint c
-JOIN unnest(c.conkey::smallint[]) AS ck(attnum) ON true
-JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ck.attnum
-WHERE c.conrelid = 'public.proposal_collaborators'::regclass
-  AND c.contype = 'f'
-  AND a.attname = 'invited_by';
-
--- (Expect 0 rows. If any row appears, note conname and drop manually.)

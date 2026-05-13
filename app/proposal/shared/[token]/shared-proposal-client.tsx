@@ -6,19 +6,32 @@ import type { Proposal, BAA, ProposalSection } from '@/types';
 import { useRouter } from 'next/navigation';
 import { SignIn, CheckCircle, WarningCircle, XCircle, LockKey, FileText } from '@phosphor-icons/react';
 
+type CollaboratorShareRole = 'viewer' | 'editor' | 'admin';
+
 interface SharedProposalViewProps {
   proposal: {
     title: string;
     generated_output?: string;
     baa_input?: string;
   };
+  /** Workspace route uses this id; editors/admins are redirected here when signed in. */
+  proposalId: string;
+  collaboratorRole: CollaboratorShareRole;
   collaboratorEmail: string;
   invitationToken: string;
   isAuthenticated: boolean;
 }
 
+function roleShareLabel(role: CollaboratorShareRole): string {
+  if (role === 'admin') return 'Admin · Full control';
+  if (role === 'editor') return 'Editor · Edit & AI';
+  return 'Viewer · Read only';
+}
+
 export default function SharedProposalView({
   proposal,
+  proposalId,
+  collaboratorRole,
   collaboratorEmail,
   invitationToken,
   isAuthenticated,
@@ -27,6 +40,13 @@ export default function SharedProposalView({
   const [proposalData, setProposalData] = useState<Proposal | null>(null);
   const [baaData, setBaaData] = useState<BAA | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Editors/admins use the full proposal workspace; this route is read-only markdown.
+  useEffect(() => {
+    if (!loading && isAuthenticated && proposalId && (collaboratorRole === 'editor' || collaboratorRole === 'admin')) {
+      router.replace(`/proposal/${proposalId}`);
+    }
+  }, [loading, isAuthenticated, collaboratorRole, proposalId, router]);
 
   useEffect(() => {
     try {
@@ -97,6 +117,20 @@ export default function SharedProposalView({
     );
   }
 
+  // Brief handoff while redirecting editors/admins to the workspace
+  if (isAuthenticated && (collaboratorRole === 'editor' || collaboratorRole === 'admin')) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-ds-page">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-ds-primary border-t-transparent" />
+          <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-ds-text-muted">
+            Opening workspace…
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const sections = proposalData.sections || [];
   const generatedDate = proposalData.createdAt
     ? new Date(proposalData.createdAt).toLocaleDateString('en-US', {
@@ -128,7 +162,7 @@ export default function SharedProposalView({
             <div className="hidden sm:flex items-center gap-1.5 border border-ds-border bg-ds-shell/60 px-2 py-1">
               <LockKey className="h-3 w-3 text-ds-text-muted" weight="bold" />
               <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-ds-text-muted">
-                Viewer · {collaboratorEmail}
+                {roleShareLabel(collaboratorRole)} · {collaboratorEmail}
               </span>
             </div>
             {!isAuthenticated && (

@@ -1,0 +1,493 @@
+{
+  "organization": {
+    "legal_name": "Helios Applied Research Consortium, LLC",
+    "dba_name": "Helios ARC",
+    "type": "Federally Funded R&D Center Partner / University-Affiliated Research Center",
+    "institution_parent": "Mid-Continent Research University System",
+    "website": "https://example-helio-arc.org",
+    "established_year": 2008,
+    "description": "Helios ARC conducts applied research in trustworthy autonomy, secure software supply chains, and human–machine teaming for defense and intelligence sponsors. The consortium combines university faculty, cleared engineering staff, and transition partners for rapid prototyping through limited production demonstrations.",
+    "naics_code": "541715",
+    "dun_number": "08-765-4321",
+    "cage_code": "8ABC1",
+    "sam_registration": {
+      "registered": true,
+      "registration_date": "2023-03-01",
+      "status": "Active"
+    },
+    "facility_security_clearance": {
+      "level": "Secret",
+      "accredited": true,
+      "accreditation_expires": "2027-09-30"
+    },
+    "cmmc_certification": {
+      "level": "2",
+      "status": "Current",
+      "valid_through": "2027-01-15",
+      "c3pao_assessor": "Example C3PAO LLC"
+    }
+  },
+  "primary_contact": {
+    "name": "Jordan Ellis",
+    "title": "Director of Strategic Programs",
+    "role": "Primary Point of Contact",
+    "email": "j.ellis@example-helio-arc.org",
+    "phone": "+1-703-555-0142",
+    "mailing_address": {
+      "street": "1800 Defense Innovation Way, Suite 400",
+      "city": "Arlington",
+      "state": "VA",
+      "zip": "22202",
+      "country": "USA"
+    }
+  },
+  "technical_poc": {
+    "name": "Dr. Samira Okonkwo",
+    "title": "Chief Scientist & PI",
+    "email": "s.okonkwo@example-helio-arc.org",
+    "phone": "+1-703-555-0143",
+    "background_summary": "Former program lead on adaptive systems and formal methods; 18 years in high-assurance software, 40+ refereed papers, and prior experience transitioning tools to operational test organizations."
+  },
+  "administrative_poc": {
+    "name": "Marcus Chen",
+    "title": "Senior Contracts Administrator",
+    "email": "m.chen@example-helio-arc.org",
+    "phone": "+1-703-555-0144",
+    "responsibilities": "FAR-based proposal preparation, subcontract flow-downs, DCAA interface, and property/financial reporting for cost-type awards."
+  },
+  "research_profile": {
+    "focus_areas": [
+      "Trustworthy AI and assured autonomy",
+      "Resilient, adaptable, and secure software",
+      "Model-based systems engineering for cyber-physical systems",
+      "Test & evaluation of AI-enabled mission systems"
+    ],
+    "research_description": "The consortium operates integrated research threads spanning formal assurance, runtime monitoring, and red-team evaluation of learning-enabled components in representative mission threads. We emphasize reproducible benchmarks, shared evaluation harnesses, and publication of non-sensitive methods while protecting sponsor-specific data and models.",
+    "prior_publications": [
+      {
+        "title": "Compositional Contracts for Learning-Enabled Subsystems in Safety-Critical Control",
+        "authors": ["S. Okonkwo", "L. Patel", "R. Nguyen"],
+        "venue": "IEEE Transactions on Dependable and Secure Computing",
+        "year": 2025,
+        "url": "https://doi.org/10.1109/example.2025.0000",
+        "relevance_to_proposal": "Demonstrates assurance case patterns applicable to the proposed architecture."
+      },
+      {
+        "title": "Supply-Chain Integrity Metrics for CI/CD Pipelines in Regulated Environments",
+        "authors": ["R. Nguyen", "J. Ellis"],
+        "venue": "ACM Conference on Computer and Communications Security (CCS)",
+        "year": 2024,
+        "url": "https://doi.org/10.1145/example.2024",
+        "relevance_to_proposal": "Grounds the software assurance workstream in peer-reviewed methods."
+      }
+    ],
+    "prior_darpa_awards": [
+      {
+        "program_name": "Example DARPA Program (Illustrative)",
+        "award_number": "HR00XXXXXXXXX",
+        "award_instrument": "Other Transaction for Prototype",
+        "award_amount_usd": 4200000,
+        "period_start": "2021-04-01",
+        "period_end": "2024-09-30",
+        "status": "Completed",
+        "outcomes": "Delivered reference evaluation harness, transitioned evaluation playbook to sponsor test organization, and published open methods volume."
+      }
+    ],
+    "prior_government_awards": [
+      {
+        "agency": "NSF",
+        "program": "Secure and Trustworthy Cyberspace (SaTC)",
+        "award_number": "CNS-20XXXXX",
+        "award_amount_usd": 1200000,
+        "period": "2020–2024",
+        "relevance": "Foundational work on provenance and policy enforcement for ML pipelines."
+      },
+      {
+        "agency": "DOE",
+        "program": "Scientific Discovery through Advanced Computing",
+        "award_number": "DE-XXXXXXX",
+        "award_amount_usd": 850000,
+        "period": "2019–2023",
+        "relevance": "Large-scale simulation and HPC workflows informing performance baselines."
+      }
+    ],
+    "key_capabilities": [
+      "Assured autonomy and runtime assurance",
+      "Formal methods and lightweight specification",
+      "Adversarial ML evaluation and hardening",
+      "Secure DevSecOps and SBOM-centric governance",
+      "Hardware-in-the-loop and software-in-the-loop testbeds",
+      "Transition support to acquisition and T&E communities"
+    ],
+    "technical_infrastructure": {
+      "computing_resources": "On-prem GPU cluster (A100-class), air-gapped analysis enclave, and FedRAMP-moderate cloud burst capacity for non-sensitive training workloads.",
+      "laboratory_facilities": "Cyber range with physical plant simulators, RF-shielded bench labs, and collaboration spaces cleared to Secret.",
+      "software_tools": "Python/PyTorch ecosystem, Coq/Lean for selected proofs, LLVM-based static analysis toolchain, and internal CI/CD with policy-as-code gates.",
+      "partnerships": "Subcontractors and university affiliates listed under subawardees_and_partners; standing MOUs with two national labs for specialized test assets."
+    }
+  },
+  "team": [
+    {
+      "team_member_id": "team_001",
+      "name": "Dr. Samira Okonkwo",
+      "title": "Principal Investigator",
+      "role": "Technical leadership, architecture, and sponsor engagement",
+      "expertise": [
+        "Formal methods",
+        "High-assurance software",
+        "AI safety and evaluation"
+      ],
+      "relevant_experience": "Led multi-institution teams on assurance-focused programs; PI or co-PI on >$25M sponsored research.",
+      "education": {
+        "degree": "Ph.D.",
+        "field": "Computer Science",
+        "institution": "Carnegie Mellon University",
+        "year": 2007
+      },
+      "security_clearance": {
+        "level": "Top Secret",
+        "active": true,
+        "last_renewed": "2024-08-01"
+      },
+      "allocation_percent": 35,
+      "salary_rate_usd_per_year": 245000,
+      "fringe_rate_percent": 28,
+      "commitment_confirmed": true,
+      "conflict_of_interest": "None declared",
+      "subcontractor_affiliation": null,
+      "publications_last_3_years": 11,
+      "key_publications": [
+        {
+          "title": "Compositional Contracts for Learning-Enabled Subsystems in Safety-Critical Control",
+          "year": 2025,
+          "venue": "IEEE TDSC"
+        }
+      ]
+    },
+    {
+      "team_member_id": "team_002",
+      "name": "Dr. Rafael Nguyen",
+      "title": "Co-Principal Investigator",
+      "role": "Software assurance lead, CI/CD and supply-chain security",
+      "expertise": [
+        "Software engineering",
+        "Security architecture",
+        "Static and dynamic analysis"
+      ],
+      "relevant_experience": "Former tech lead for enterprise secure build pipelines; 12 years in defensive cyber.",
+      "education": {
+        "degree": "Ph.D.",
+        "field": "Software Engineering",
+        "institution": "University of Texas at Austin",
+        "year": 2013
+      },
+      "security_clearance": {
+        "level": "Secret",
+        "active": true,
+        "last_renewed": "2025-01-20"
+      },
+      "allocation_percent": 30,
+      "salary_rate_usd_per_year": 198000,
+      "fringe_rate_percent": 28,
+      "commitment_confirmed": true,
+      "conflict_of_interest": "None declared",
+      "subcontractor_affiliation": null,
+      "publications_last_3_years": 6,
+      "key_publications": [
+        {
+          "title": "Supply-Chain Integrity Metrics for CI/CD Pipelines in Regulated Environments",
+          "year": 2024,
+          "venue": "ACM CCS"
+        }
+      ]
+    },
+    {
+      "team_member_id": "team_003",
+      "name": "Dr. Priya Desai",
+      "title": "Senior Research Scientist",
+      "role": "ML robustness, evaluation harnesses, and red-team exercises",
+      "expertise": [
+        "Machine learning",
+        "Robustness and interpretability",
+        "Experimental design"
+      ],
+      "relevant_experience": "Designed large-scale benchmark campaigns for perception stacks in contested environments.",
+      "education": {
+        "degree": "Ph.D.",
+        "field": "Electrical and Computer Engineering",
+        "institution": "Georgia Institute of Technology",
+        "year": 2016
+      },
+      "security_clearance": {
+        "level": "Secret",
+        "active": true,
+        "last_renewed": "2023-11-10"
+      },
+      "allocation_percent": 20,
+      "salary_rate_usd_per_year": 175000,
+      "fringe_rate_percent": 28,
+      "commitment_confirmed": true,
+      "conflict_of_interest": "None declared",
+      "subcontractor_affiliation": null,
+      "publications_last_3_years": 7,
+      "key_publications": []
+    },
+    {
+      "team_member_id": "team_004",
+      "name": "Alex Park",
+      "title": "Chief Engineer",
+      "role": "Integration, testbed operations, and release management",
+      "expertise": [
+        "Systems integration",
+        "Test automation",
+        "DevSecOps"
+      ],
+      "relevant_experience": "Delivered continuous integration for hardware-in-the-loop programs; cleared program support since 2014.",
+      "education": {
+        "degree": "M.S.",
+        "field": "Systems Engineering",
+        "institution": "Stevens Institute of Technology",
+        "year": 2012
+      },
+      "security_clearance": {
+        "level": "Secret",
+        "active": true,
+        "last_renewed": "2024-03-05"
+      },
+      "allocation_percent": 15,
+      "salary_rate_usd_per_year": 165000,
+      "fringe_rate_percent": 28,
+      "commitment_confirmed": true,
+      "conflict_of_interest": "None declared",
+      "subcontractor_affiliation": null,
+      "publications_last_3_years": 2,
+      "key_publications": []
+    }
+  ],
+  "subawardees_and_partners": [
+    {
+      "partner_id": "sub_001",
+      "organization_name": "Cedar Ridge Secure Systems, Inc.",
+      "poc_name": "Dana Whitaker",
+      "poc_email": "d.whitaker@example-cedar-ridge.com",
+      "relationship_type": "Subcontractor",
+      "role_description": "Specialized firmware analysis, side-channel lab measurements, and independent vulnerability assessment.",
+      "award_amount_usd": 720000,
+      "allocation_percent": 22,
+      "key_contributions": [
+        "Firmware assurance",
+        "Side-channel evaluation",
+        "Independent V&V reporting"
+      ],
+      "facility_security_clearance": "Secret",
+      "cmmc_level_required": 2,
+      "contract_type": "Firm Fixed Price (CLIN-based)",
+      "subcontractor_mou": "Executed teaming agreement dated 2025-11-01"
+    },
+    {
+      "partner_id": "sub_002",
+      "organization_name": "Great Plains Autonomy Lab (University)",
+      "poc_name": "Prof. Luis Morales",
+      "poc_email": "lmorales@example-gpal.edu",
+      "relationship_type": "Subawardee (research institute)",
+      "role_description": "Fundamental research on runtime monitors and student/postdoc support.",
+      "award_amount_usd": 380000,
+      "allocation_percent": 12,
+      "key_contributions": [
+        "Runtime monitoring theory",
+        "Graduate student effort",
+        "Open benchmark datasets (non-sensitive)"
+      ],
+      "facility_security_clearance": "None (unclassified effort only)",
+      "cmmc_level_required": 0,
+      "contract_type": "Cost-reimbursable research subaward",
+      "subcontractor_mou": "Master subcontract under university F&A agreement"
+    }
+  ],
+  "funding_plan": {
+    "total_requested_usd": 3250000,
+    "period_of_performance_months": 36,
+    "period_start_date": "2026-10-01",
+    "period_end_date": "2029-09-30",
+    "cost_share_contributed_usd": 275000,
+    "cost_share_percent": 7.8,
+    "cost_share_description": "In-kind: dedicated lab space, senior faculty cost share, and donated GPU hours on university cluster for unclassified experiments.",
+    "requested_instrument_type": "Hybrid (base + options)",
+    "breakdown": [
+      {
+        "category": "Personnel — prime",
+        "amount_usd": 1625000,
+        "percent_of_total": 50,
+        "notes": "PI, co-PI, scientists, engineers, and program support per staffing plan; includes fringe."
+      },
+      {
+        "category": "Subcontractors / subawardees",
+        "amount_usd": 715000,
+        "percent_of_total": 22,
+        "notes": "Cedar Ridge Secure Systems and Great Plains Autonomy Lab per SOWs."
+      },
+      {
+        "category": "Equipment & prototypes",
+        "amount_usd": 487500,
+        "percent_of_total": 15,
+        "notes": "SBCs, RF capture hardware, GPU refresh, and ruggedized edge nodes for field exercises."
+      },
+      {
+        "category": "Travel",
+        "amount_usd": 130000,
+        "percent_of_total": 4,
+        "notes": "Program reviews, integration events, and classified travel as authorized."
+      },
+      {
+        "category": "Other direct costs",
+        "amount_usd": 162500,
+        "percent_of_total": 5,
+        "notes": "Cloud non-sensitive training, professional services, materials, and publication fees."
+      },
+      {
+        "category": "Indirect (F&A)",
+        "amount_usd": 130000,
+        "percent_of_total": 4,
+        "notes": "Negotiated rate on MTDC per institution policy."
+      }
+    ]
+  },
+  "project_goals": {
+    "primary_objective": "Deliver a reference architecture and evaluation pipeline that enables assured deployment of learning-enabled components in mission threads, with measurable reduction in critical failure modes under adversarial and degraded conditions.",
+    "technical_goals": [
+      {
+        "goal_id": "TG_001",
+        "title": "Assurance-aligned development workflow",
+        "description": "Integrate lightweight specifications, property-based tests, and continuous evidence generation into the delivery pipeline.",
+        "success_metric": "≥90% of safety-critical modules covered by automated assurance artifacts in CI.",
+        "deliverable_aligned": "DL_001"
+      },
+      {
+        "goal_id": "TG_002",
+        "title": "Adversarial and stress testing at scale",
+        "description": "Operationalize red-team campaigns and robustness suites on representative hardware-in-the-loop configurations.",
+        "success_metric": "Documented regression of high-severity findings within two-week sprint cadence.",
+        "deliverable_aligned": "DL_002"
+      },
+      {
+        "goal_id": "TG_003",
+        "title": "Transition package for T&E",
+        "description": "Produce playbooks, metrics, and training materials suitable for independent evaluation organizations.",
+        "success_metric": "Successful dry-run evaluation led by external V&V without rework of core harness interfaces.",
+        "deliverable_aligned": "DL_003"
+      }
+    ],
+    "expected_outcomes": [
+      {
+        "outcome_id": "OUT_001",
+        "deliverable": "Open reference harness (non-sensitive components)",
+        "type": "Software",
+        "description": "Repositories, containers, and documentation for reproducible benchmarks on public surrogate workloads.",
+        "transition_plan": "Apache 2.0 release with sponsor-approved export review.",
+        "fundamental_research_flag": false
+      },
+      {
+        "outcome_id": "OUT_002",
+        "deliverable": "Peer-reviewed publications and tutorials",
+        "type": "Publication",
+        "description": "Methods papers and hands-on tutorials for assurance and robustness evaluation.",
+        "transition_plan": "Venues aligned with program dissemination guidance.",
+        "fundamental_research_flag": true,
+        "quantity": 8,
+        "venues": [
+          "IEEE S&P",
+          "USENIX Security",
+          "NDSS",
+          "CAV"
+        ]
+      }
+    ],
+    "fundamental_research_claim": true,
+    "fundamental_research_justification": "A substantial portion of the effort advances published science in assurance and robustness while keeping sponsor-specific data and models protected.",
+    "revolutionary_vs_evolutionary": "Evolutionary in platform engineering; revolutionary in the composition of formal, statistical, and operational assurance evidence for learning-enabled subsystems.",
+    "relationship_to_i2o_thrust_areas": [
+      {
+        "thrust_area": "Transformative AI",
+        "alignment": "Focus on trustworthy autonomy and evaluation under adversarial stress."
+      },
+      {
+        "thrust_area": "Resilient, Adaptable, and Secure Software",
+        "alignment": "Secure software supply chain, CI/CD assurance, and compositional reasoning."
+      }
+    ],
+    "competitive_landscape": "Commercial ML tooling emphasizes throughput over assurance; defense programs need traceable evidence—our differentiator is integrated assurance artifacts tied to mission threads.",
+    "transition_and_commercialization": "Transition via reference harness, training, and optional licensing of hardened extensions to cleared integrators."
+  },
+  "compliance_and_constraints": {
+    "export_control": {
+      "applicable": true,
+      "categories": "ECCNs to be determined per deliverable; default posture is US-person team on controlled technical data.",
+      "plan": "Technology Control Plan and reviews at each release gate; no foreign national access to controlled repositories without approvals."
+    },
+    "security_requirements": {
+      "classified_work": false,
+      "unclassified_controlled_information": true,
+      "cui_categories": "ITAR-related markings possible on sponsor-furnished information; CUI handling per NIST SP 800-171 program plan.",
+      "security_plan_required": true,
+      "facility_requirements": "Secret-capable SCIF spaces for classified reviews if option exercised; baseline unclassified development in controlled open labs."
+    },
+    "human_subjects_research": {
+      "involved": false,
+      "irb_approval_required": false
+    },
+    "animal_research": {
+      "involved": false,
+      "iacuc_approval_required": false
+    },
+    "environmental_compliance": {
+      "involved": false,
+      "nepa_review_required": false
+    },
+    "independent_research_and_development": "No reliance on restricted IRAD; cost share documented separately.",
+    "concurrent_proposals": [
+      {
+        "agency": "NSF",
+        "program": "CISE Core",
+        "status": "Under review",
+        "overlap_assessment": "Distinct technical aims; shared personnel time managed via institutional effort reporting."
+      }
+    ],
+    "prior_government_funding": [
+      {
+        "agency": "DARPA",
+        "program": "Illustrative prior program",
+        "award": "HR00XXXXXXXXX",
+        "relationship": "Completed; no residual data rights conflicts."
+      }
+    ],
+    "conflicts_of_interest": {
+      "organizational_conflicts": "None identified; OCI screening completed annually.",
+      "personal_conflicts": "Team disclosures on file; no disqualifying overlaps for proposed work.",
+      "mitigation": "Recusal and firewall procedures per institutional policy if issues arise."
+    },
+    "special_considerations": "Fast-start staffing contingent on favorable abstract feedback; option periods gated on milestone acceptance."
+  },
+  "submission_metadata": {
+    "baa_number": "HR001126S0001",
+    "baa_title": "Information Innovation Office (I2O) — illustrative BAA title",
+    "submission_type": "Full proposal (Stage 1)",
+    "abstract_submission_date": "2026-09-01",
+    "proposal_submission_date": "2026-11-15",
+    "invited_to_propose": true,
+    "darpa_feedback_on_abstract": "Illustrative: encouraged to submit full proposal with emphasis on evaluation rigor.",
+    "document_version": "v0.9-demo",
+    "last_updated": "2026-05-12",
+    "prepared_by": "Jordan Ellis",
+    "approved_by_ci": false,
+    "approved_by_admin": false,
+    "legal_review_completed": false,
+    "compliance_checklist": {
+      "sam_registration_verified": true,
+      "cmmc_status_verified": true,
+      "security_clearance_verified": false,
+      "representations_certifications_completed": false,
+      "cost_accounting_standards_compliant": true,
+      "export_control_review_completed": false
+    }
+  }
+}

@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { getPmRole } from '@/lib/pm-access';
 import ProposalDetailClient from './proposal-detail-client';
 
 export default async function ProposalDetailPage({
@@ -25,5 +26,10 @@ export default async function ProposalDetailPage({
     redirect('/dashboard');
   }
 
-  return <ProposalDetailClient proposal={proposal} user={user} />;
+  const effectiveRole = await getPmRole(supabase, user.id, user.email ?? undefined, id);
+  if (!effectiveRole) {
+    redirect('/dashboard');
+  }
+
+  return <ProposalDetailClient proposal={proposal} user={user} effectiveRole={effectiveRole} />;
 }

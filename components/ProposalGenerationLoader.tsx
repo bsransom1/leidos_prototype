@@ -8,6 +8,8 @@ interface ProposalGenerationLoaderProps {
   onError: (error: string) => void;
   baa: any;
   organizationContext: any;
+  /** When set, server enforces editor/admin role before streaming generation. */
+  proposalId?: string;
 }
 
 /** A log entry is either a section header or a chunk line under a section */
@@ -20,6 +22,7 @@ export default function ProposalGenerationLoader({
   onError,
   baa,
   organizationContext,
+  proposalId,
 }: ProposalGenerationLoaderProps) {
   const [progress, setProgress]       = useState(0);
   const [message, setMessage]         = useState('Initializing proposal generation...');
@@ -46,7 +49,7 @@ export default function ProposalGenerationLoader({
         const response = await fetch('/api/generate-proposal-stream', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ baa, organizationContext }),
+          body: JSON.stringify({ baa, organizationContext, proposalId }),
         });
 
         if (!response.ok) {

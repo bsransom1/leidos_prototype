@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { getPmRole, type PmRole } from '@/lib/pm-access';
 import CreateProposalClient from './create-client';
 
 export default async function CreateProposalPage({
@@ -19,12 +20,13 @@ export default async function CreateProposalPage({
   
   // If id is provided, load existing proposal
   let proposalData = null;
+  let effectiveRole: PmRole = 'admin';
+
   if (params.id) {
     const { data: proposal, error } = await supabase
       .from('proposals')
       .select('*')
       .eq('id', params.id)
-      .eq('user_id', user.id)
       .single();
 
     if (error) {
@@ -36,14 +38,20 @@ export default async function CreateProposalPage({
         redirect(`/dashboard/projects/${proposal.id}/pm`);
       }
       proposalData = proposal;
+      const r = await getPmRole(supabase, user.id, user.email ?? undefined, proposal.id);
+      if (!r) {
+        redirect('/dashboard');
+      }
+      effectiveRole = r;
       console.log('Loaded proposal:', {
         id: proposal.id,
         current_step: proposal.current_step,
         has_baa: !!proposal.baa_input,
         has_proposal: !!proposal.generated_output,
+        effectiveRole,
       });
     }
   }
 
-  return <CreateProposalClient user={user} existingProposal={proposalData} />;
+  return <CreateProposalClient user={user} existingProposal={proposalData} effectiveRole={effectiveRole} />;
 }

@@ -37,12 +37,19 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Cursor / agent workspace state
+.cursor/
+.agents/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 
 # supabase local CLI cache
 supabase/.temp/
+
+# Large demo PDFs (avoid repo bloat)
+public/baas/
 
 # Local org-context fixture (may contain demo PII — do not commit)
 org_context.json

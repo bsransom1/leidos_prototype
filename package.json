@@ -9,7 +9,21 @@
     "start": "next start",
     "lint": "eslint",
     "check-supabase": "node --env-file=.env.local scripts/check-supabase.mjs",
-    "db:migrate": "node --env-file=.env.local scripts/run-sql.mjs supabase/migrations/20260130120000_leidos_full_schema.sql"
+    "test:resend-shared": "node --env-file=.env.local scripts/test-resend-and-shared-link.mjs",
+    "db:migrate": "node --env-file=.env.local scripts/run-sql.mjs supabase/migrations/20260130120000_leidos_full_schema.sql",
+    "db:fix-collaborators-invites": "node --env-file=.env.local scripts/run-sql.mjs supabase/migrations/20260515120000_drop_invited_by_fkey_admin_insert_collaborators.sql",
+    "sb": "supabase",
+    "sb:login": "supabase login",
+    "sb:init": "supabase init",
+    "sb:link": "supabase link",
+    "sb:projects": "supabase projects list",
+    "sb:start": "supabase start",
+    "sb:stop": "supabase stop",
+    "sb:status": "supabase status",
+    "sb:push": "supabase db push",
+    "sb:pull": "supabase db pull",
+    "sb:diff": "supabase db diff",
+    "sb:types": "supabase gen types typescript --linked --schema public -o lib/supabase/database.types.ts"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
@@ -41,6 +55,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "pg": "^8.20.0",
+    "supabase": "^2.98.2",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

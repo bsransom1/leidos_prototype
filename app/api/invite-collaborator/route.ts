@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getPmRole, isAdmin } from '@/lib/pm-access';
+
+const COLLAB_ROLES = ['viewer', 'editor', 'admin'] as const;
+
+function normalizeInviteRole(value: unknown): (typeof COLLAB_ROLES)[number] {
+  if (typeof value !== 'string') return 'viewer';
+  const r = value.toLowerCase();
+  return (COLLAB_ROLES as readonly string[]).includes(r) ? (r as (typeof COLLAB_ROLES)[number]) : 'viewer';
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,7 +25,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { proposalId, email, role = 'viewer' } = body;
+    const { proposalId, email } = body;
+    const role = normalizeInviteRole(body.role);
 
     if (!proposalId || !email) {
       return NextResponse.json(
@@ -34,12 +44,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify user owns the proposal
     const { data: proposal, error: proposalError } = await supabase
       .from('proposals')
       .select('id, title, user_id')
       .eq('id', proposalId)
-      .eq('user_id', user.id)
       .single();
 
     if (proposalError || !proposal) {
@@ -49,10 +57,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const pmRole = await getPmRole(supabase, user.id, user.email ?? undefined, proposalId);
+    if (!isAdmin(pmRole)) {
+      return NextResponse.json(
+        { error: 'Only proposal admins can invite collaborators.' },
+        { status: 403 }
+      );
+    }
+
     // Check if collaborator already exists
     const { data: existing, error: existingError } = await supabase
       .from('proposal_collaborators')
-      .select('id, status')
+      .select('id, status, role, invitation_token')
       .eq('proposal_id', proposalId)
       .eq('email', email.toLowerCase())
       .maybeSingle();
@@ -63,10 +79,60 @@ export async function POST(request: NextRequest) {
     }
 
     if (existing) {
-      return NextResponse.json(
-        { error: 'Collaborator already invited', data: existing },
-        { status: 409 }
-      );
+      if (existing.role === role) {
+        const invitationLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/proposal/shared/${existing.invitation_token}`;
+        return NextResponse.json({
+          success: true,
+          data: existing,
+          invitationLink,
+          emailSent: false,
+          roleUpdated: false,
+          unchanged: true,
+        });
+      }
+
+      const { data: updated, error: updateExistingError } = await supabase
+        .from('proposal_collaborators')
+        .update({ role })
+        .eq('id', existing.id)
+        .eq('proposal_id', proposalId)
+        .select()
+        .single();
+
+      if (updateExistingError || !updated) {
+        console.error('Error updating existing collaborator role:', updateExistingError);
+        return NextResponse.json(
+          { error: 'Collaborator already invited; could not update role.', details: updateExistingError?.message },
+          { status: 500 }
+        );
+      }
+
+      const invitationLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/proposal/shared/${updated.invitation_token}`;
+
+      try {
+        const emailSent =
+          updated.status === 'pending'
+            ? await sendInvitationEmail(email, proposal.title, invitationLink, user.email || '', role)
+            : false;
+
+        return NextResponse.json({
+          success: true,
+          data: updated,
+          invitationLink,
+          emailSent,
+          roleUpdated: true,
+        });
+      } catch (emailError) {
+        console.error('Error sending email:', emailError);
+        return NextResponse.json({
+          success: true,
+          data: updated,
+          invitationLink,
+          emailSent: false,
+          roleUpdated: true,
+          warning: 'Role updated but email failed to send',
+        });
+      }
     }
 
     // Generate invitation token
@@ -97,17 +163,20 @@ export async function POST(request: NextRequest) {
         proposal_id: proposalId,
       });
       
-      // Provide more specific error messages
-      if (insertError.code === '42501' && insertError.message?.includes('users')) {
+      // FK invited_by → auth.users triggers RLS on auth.users during INSERT (42501) or 23503.
+      const msg = insertError.message ?? '';
+      const fkBlocksInvite =
+        insertError.code === '23503' ||
+        (insertError.code === '42501' && /users|auth\.users|foreign key/i.test(msg));
+      if (fkBlocksInvite) {
         return NextResponse.json(
-          { 
-            error: 'DATABASE FIX REQUIRED: Foreign key constraint is blocking operations.',
+          {
+            error:
+              'Database fix required: apply supabase/FIX_COLLABORATORS_NOW.sql in Supabase SQL Editor (or npm run db:fix-collaborators-invites with DATABASE_URL in .env.local). This drops the invited_by→auth.users FK that blocks inserts.',
             details: insertError.message,
-            fix: 'Open Supabase Dashboard → SQL Editor → Run: supabase/FIX_COLLABORATORS_NOW.sql',
             code: insertError.code,
-            sqlFix: `ALTER TABLE proposal_collaborators DROP CONSTRAINT IF EXISTS proposal_collaborators_invited_by_fkey;`
           },
-          { status: 500 }
+          { status: 500 },
         );
       }
       
@@ -125,12 +194,13 @@ export async function POST(request: NextRequest) {
       
       if (insertError.code === '42P01') {
         return NextResponse.json(
-          { 
-            error: 'Table does not exist. Please run migration_add_collaborators.sql in Supabase SQL Editor.',
+          {
+            error:
+              'Table does not exist. Run supabase/migrations/20260130120000_leidos_full_schema.sql in Supabase SQL Editor (or npm run db:migrate with DATABASE_URL).',
             details: insertError.message,
-            code: insertError.code
+            code: insertError.code,
           },
-          { status: 500 }
+          { status: 500 },
         );
       }
       
@@ -151,7 +221,7 @@ export async function POST(request: NextRequest) {
     try {
       // Use Supabase's email function or send via API
       // For now, we'll use a simple approach - you can enhance this with Resend/SendGrid
-      const emailSent = await sendInvitationEmail(email, proposal.title, invitationLink, user.email || '');
+      const emailSent = await sendInvitationEmail(email, proposal.title, invitationLink, user.email || '', role);
       
       return NextResponse.json({
         success: true,
@@ -179,11 +249,18 @@ export async function POST(request: NextRequest) {
   }
 }
 
+function inviteRoleEmailLabel(r: (typeof COLLAB_ROLES)[number]): string {
+  if (r === 'admin') return 'ADMIN — Full control & invites';
+  if (r === 'editor') return 'EDITOR — Edit content & AI';
+  return 'VIEWER — Read only';
+}
+
 async function sendInvitationEmail(
   toEmail: string,
   proposalTitle: string,
   invitationLink: string,
-  inviterEmail: string
+  inviterEmail: string,
+  accessRole: (typeof COLLAB_ROLES)[number]
 ): Promise<boolean> {
   try {
     // Use Resend for email sending
@@ -207,14 +284,20 @@ async function sendInvitationEmail(
     const resend = new Resend(resendApiKey);
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
 
-    const emailHtml = buildInvitationEmail({ toEmail, proposalTitle, invitationLink, inviterEmail });
+    const emailHtml = buildInvitationEmail({
+      toEmail,
+      proposalTitle,
+      invitationLink,
+      inviterEmail,
+      accessRole,
+    });
 
     const { data, error } = await resend.emails.send({
       from: fromEmail,
       to: [toEmail],
       subject: `[LEIDOS GENAI] Proposal review access granted — ${proposalTitle}`,
       html: emailHtml,
-      text: `${inviterEmail} has granted you read access to the following DARPA BAA proposal:\n\n"${proposalTitle}"\n\nAccess the proposal here:\n${invitationLink}\n\nThis link is unique to ${toEmail}. Do not forward.`,
+      text: `${inviterEmail} has shared the following DARPA BAA proposal with you (${inviteRoleEmailLabel(accessRole)}):\n\n"${proposalTitle}"\n\nOpen the proposal:\n${invitationLink}\n\nThis link is unique to ${toEmail}. Do not forward.`,
     });
 
     if (error) {
@@ -235,12 +318,24 @@ function buildInvitationEmail({
   proposalTitle,
   invitationLink,
   inviterEmail,
+  accessRole,
 }: {
   toEmail: string;
   proposalTitle: string;
   invitationLink: string;
   inviterEmail: string;
+  accessRole: (typeof COLLAB_ROLES)[number];
 }): string {
+  const accessLabel =
+    accessRole === 'admin'
+      ? 'ADMIN — Full control & invites'
+      : accessRole === 'editor'
+        ? 'EDITOR — Edit & AI'
+        : 'VIEWER — Read only';
+  const accessIntro =
+    accessRole === 'viewer'
+      ? `You've been granted read access to a proposal`
+      : `You've been granted workspace access to a proposal`;
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -285,11 +380,11 @@ function buildInvitationEmail({
                 ACCESS NOTIFICATION
               </p>
               <h1 style="margin:0 0 24px 0;font-size:20px;font-weight:700;color:#dce6f0;letter-spacing:0.01em;line-height:1.2;">
-                You've been granted<br>read access to a proposal
+                ${accessIntro}
               </h1>
 
               <p style="margin:0 0 20px 0;font-size:13px;color:rgba(220,230,240,0.8);line-height:1.6;">
-                <strong style="color:#dce6f0;">${inviterEmail}</strong> has shared a DARPA BAA proposal with you for review.
+                <strong style="color:#dce6f0;">${inviterEmail}</strong> has shared a DARPA BAA proposal with you.
               </p>
 
               <!-- Proposal title block -->
@@ -307,7 +402,7 @@ function buildInvitationEmail({
                 <tr>
                   <td width="50%" style="padding:12px 16px;border-right:1px solid rgba(80,110,150,0.25);">
                     <p style="margin:0 0 3px 0;font-family:monospace;font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#6b7c96;">ACCESS LEVEL</p>
-                    <p style="margin:0;font-size:12px;color:#dce6f0;font-weight:600;">VIEWER — Read Only</p>
+                    <p style="margin:0;font-size:12px;color:#dce6f0;font-weight:600;">${accessLabel}</p>
                   </td>
                   <td width="50%" style="padding:12px 16px;">
                     <p style="margin:0 0 3px 0;font-family:monospace;font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#6b7c96;">GRANTED TO</p>
@@ -329,7 +424,7 @@ function buildInvitationEmail({
               </table>
 
               <p style="margin:0;font-size:11px;color:#6b7c96;line-height:1.6;">
-                This link is unique to <span style="color:#7a8ca8;font-family:monospace;">${toEmail}</span> and provides read-only access to the proposal document. Do not forward this email.
+                This link is unique to <span style="color:#7a8ca8;font-family:monospace;">${toEmail}</span>. Sign in with this address to use your assigned access level in the app. Do not forward this email.
               </p>
 
             </td>

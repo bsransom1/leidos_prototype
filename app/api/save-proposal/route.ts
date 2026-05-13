@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getPmRole, canEdit } from '@/lib/pm-access';
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,13 +30,24 @@ export async function POST(request: NextRequest) {
 
     // If proposalId exists, update existing proposal; otherwise create new
     if (proposalId) {
-      const updateData: any = {
-        title,
-        baa_input: baaInput,
-        generated_output: generatedOutput,
-        status: status || 'draft',
-        current_step: currentStep || 'proposal',
-      };
+      const pmRole = await getPmRole(supabase, user.id, user.email ?? undefined, proposalId);
+      if (!canEdit(pmRole)) {
+        return NextResponse.json(
+          { error: 'Viewers cannot modify proposals.' },
+          { status: 403 }
+        );
+      }
+
+      const updateData: any = {};
+      if (title !== undefined && title !== null) updateData.title = title;
+      if (baaInput !== undefined && baaInput !== null) updateData.baa_input = baaInput;
+      if (generatedOutput !== undefined && generatedOutput !== null) {
+        updateData.generated_output = generatedOutput;
+      }
+      if (status !== undefined && status !== null) updateData.status = status || 'draft';
+      if (currentStep !== undefined && currentStep !== null) {
+        updateData.current_step = currentStep || 'proposal';
+      }
       
       if (organizationContextJson) {
         updateData.organization_context_json = typeof organizationContextJson === 'string' 
@@ -47,11 +59,14 @@ export async function POST(request: NextRequest) {
         updateData.pdf_file_name = pdfFileName;
       }
 
+      if (Object.keys(updateData).length === 0) {
+        return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
+      }
+
       const { data, error } = await supabase
         .from('proposals')
         .update(updateData)
         .eq('id', proposalId)
-        .eq('user_id', user.id)
         .select()
         .single();
 
