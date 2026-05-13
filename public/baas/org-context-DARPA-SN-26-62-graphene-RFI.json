@@ -1,0 +1,437 @@
+{
+  "organization": {
+    "legal_name": "Stratum Graphene Technologies LLC",
+    "dba_name": "Stratum Graphene",
+    "type": "Small Business (SB)",
+    "institution_parent": null,
+    "website": "https://www.stratum-graphene.example",
+    "established_year": 2017,
+    "description": "Stratum Graphene Technologies manufactures large-area monolayer graphene via roll-to-roll chemical vapor deposition (CVD), performs scalable transfer and lamination into aerospace-qualified epoxy systems, and operates an accredited mechanical testing laboratory focused on composite fatigue, interlaminar shear, and compression-after-impact relevant to primary and secondary aerostructures. The company emphasizes empirical datasets—static strength, fatigue life, environmental aging—not unsubstantiated theoretical claims about graphene performance.",
+    "naics_code": "325998",
+    "dun_number": "112233445",
+    "cage_code": "3PLZ9",
+    "sam_registration": {
+      "registered": true,
+      "registration_date": "2019-07-22",
+      "status": "Active"
+    },
+    "facility_security_clearance": {
+      "level": "None",
+      "accredited": false
+    },
+    "cmmc_certification": {
+      "level": "Level 2",
+      "status": "In Progress ( assessment scheduled )",
+      "valid_through": null,
+      "c3pao_assessor": null
+    },
+    "primary_contact": {
+      "name": "Ms. Angela Ruiz",
+      "email": "a.ruiz@stratum-graphene.example",
+      "role": "President",
+      "title": "President"
+    }
+  },
+  "primary_contact": {
+    "name": "Ms. Angela Ruiz",
+    "title": "President",
+    "role": "Corporate Official",
+    "email": "a.ruiz@stratum-graphene.example",
+    "phone": "+1-206-555-0166",
+    "mailing_address": {
+      "street": "920 Industrial Parkway, Building C",
+      "city": "Everett",
+      "state": "WA",
+      "zip": "98203",
+      "country": "United States"
+    }
+  },
+  "technical_poc": {
+    "name": "Dr. Samuel Okonkwo",
+    "title": "Chief Technology Officer",
+    "email": "s.okonkwo@stratum-graphene.example",
+    "phone": "+1-425-555-0134",
+    "background_summary": "Materials scientist with 16 years in aerospace composites manufacturing and qualification (AS9100 environments). Led teams qualifying carbon/epoxy prepreg structures for UAV primary structures and introduced graphene-enhanced interleaf concepts with statistically powered fatigue datasets (stress-life curves, environmental conditioning per ASTM). Expertise in scalable lamination, void management, and standardized coupon-to-element validation pathways suitable for white paper responses grounded in test evidence."
+  },
+  "administrative_poc": {
+    "name": "Kevin Porter",
+    "title": "Contracts Manager",
+    "email": "contracts@stratum-graphene.example",
+    "phone": "+1-425-555-0189",
+    "responsibilities": "Handles proprietary marking, submission packaging for RFIs, NDAs with aerospace primes, and coordination for controlled facility tours under visitor protocols."
+  },
+  "research_profile": {
+    "focus_areas": [
+      "Roll-to-roll monolayer graphene synthesis and defect mapping",
+      "Transfer & lamination into aerospace epoxy systems (controlled void content)",
+      "Structural composites testing: tension/compression, ILSS, CAI, fatigue",
+      "Hybrid laminates: graphene interlayers vs baseline carbon fiber/epoxy",
+      "Manufacturing cost modeling ($/lb Part + scrap + recurring NRE amortization)"
+    ],
+    "research_description": "Stratum's operating model pairs scalable graphene sheet supply with statistically framed structural validation. For aerospace load-bearing applications, the company emphasizes through-thickness integrity (interlaminar toughening hypothesis tested via Mode I/II fracture surrogates), not cosmetic conductivity enhancements. Stratum maintains traceable lab datasets comparing baseline UD carbon/epoxy coupons against graphene-interleaved architectures under identical cure cycles and fiber areal weights.",
+    "prior_experience": "Delivered pilot-line graphene interlayers for a regional UAV OEM demonstrator wing spar cap (non-flight article); joint testing campaign with a Tier 1 aerostructures supplier comparing fatigue crack growth trends vs baseline laminate under matched spectrum loading.",
+    "prior_publications": [
+      {
+        "title": "Fatigue Performance of Graphene-Interleaved Carbon/Epoxy Laminates Under Spectrum Loading",
+        "authors": ["S. Okonkwo", "M. Li", "R. Patel"],
+        "venue": "Composites Part A",
+        "year": 2024,
+        "relevance_to_proposal": "Provides substantiating fatigue data aligned with RFI emphasis on static/fatigue substantiation."
+      },
+      {
+        "title": "Interlaminar Shear Strength Improvements from Monolayer Graphene Interlayers: A Manufacturing-Controlled Study",
+        "authors": ["M. Li", "S. Okonkwo"],
+        "venue": "Composite Structures",
+        "year": 2023,
+        "relevance_to_proposal": "Addresses out-of-plane and interlaminar strength themes requested by DARPA-SN-26-62."
+      },
+      {
+        "title": "Roll-to-Roll Graphene Sheet Uniformity Metrics Correlated to Lap-Shear Joint Performance",
+        "authors": ["R. Patel", "S. Okonkwo"],
+        "venue": "SAMPE Journal",
+        "year": 2025,
+        "relevance_to_proposal": "Supports joining/scaling discussion relevant to building larger structural constructs from sheets."
+      }
+    ],
+    "prior_darpa_awards": [],
+    "prior_government_awards": [
+      {
+        "agency": "NASA",
+        "program": "SBIR Phase I — Advanced Composite Processing",
+        "award_number": "NNX17EXAMPLE",
+        "award_amount_usd": 125000,
+        "period": "2018",
+        "relevance": "Developed manufacturing controls applicable to scaled lamination — foundational to graphene transfer QC."
+      },
+      {
+        "agency": "AFRL",
+        "program": "Subaward via prime — composite durability screening",
+        "award_number": "FA8650-XX-X-XXXX",
+        "award_amount_usd": 430000,
+        "period": "2020–2021",
+        "relevance": "Generated fatigue / environmental datasets using aerospace-standard conditioning protocols."
+      }
+    ],
+    "key_capabilities": [
+      "Roll-to-roll monolayer graphene up to documented maximum sheet dimensions (see internal datasheet; export-controlled processing details withheld from public marketing)",
+      "Automated optical defect mapping + sheet grading for structural applications",
+      "Hot debulk/vacuum bag cure profiles aligned with AS9100 traceability",
+      "Structural testing lab (Instron servo-hydraulic + environmental chambers)",
+      "Cost modeling for aerospace recurring manufacturing ($/lb aerostructure basis)"
+    ],
+    "technical_infrastructure": {
+      "computing_resources": "MES-linked PostgreSQL production database for batch traceability; FEA preprocessing workstations (baseline comparative models—not offered as primary RFI evidence per DARPA exclusions).",
+      "laboratory_facilities": "18,000 sq ft manufacturing bay with climate-controlled layup room; 12-ft roll handling station; CT scanning partnership for void characterization; fatigue frames up to 250 kN; conditioning ovens with FAA-relevant humidity cycles.",
+      "software_tools": "MES/QMS (ISO9001/AS9100 aligned), statistical analysis (Minitab/Python), coupon tracking digital twins for batch genealogy.",
+      "partnerships": "Tier 2 aerostructures supplier under NDA for co-developed demonstration panels; university collaboration for fracture mechanics specimen fabrication."
+    }
+  },
+  "team": [
+    {
+      "team_member_id": "tm-g001",
+      "name": "Dr. Samuel Okonkwo",
+      "title": "Chief Technology Officer",
+      "role": "Technical Lead — materials, structural validation strategy, white paper technical narrative",
+      "expertise": [
+        "Aerospace composites qualification",
+        "Fatigue & damage tolerance",
+        "Composite manufacturing science"
+      ],
+      "relevant_experience": "Led qualification campaigns for carbon/epoxy primary structure coupons; introduced graphene interleaf datasets under controlled manufacturing experiments.",
+      "education": {
+        "degree": "Ph.D.",
+        "field": "Materials Science & Engineering",
+        "institution": "University of Washington",
+        "year": 2009
+      },
+      "security_clearance": {
+        "level": "None",
+        "active": false
+      },
+      "allocation_percent": 45,
+      "publications_last_3_years": 7,
+      "commitment_confirmed": true,
+      "conflict_of_interest": "No involvement in DARPA SETA support related to graphene RFIs.",
+      "subcontractor_affiliation": null
+    },
+    {
+      "team_member_id": "tm-g002",
+      "name": "Dr. Mei Li",
+      "title": "Director of Graphene Manufacturing",
+      "role": "Roll-to-roll synthesis, transfer yield, scale-up barriers & throughput economics",
+      "expertise": [
+        "CVD process engineering",
+        "Roll-to-roll web handling",
+        "Thin film transfer processes"
+      ],
+      "relevant_experience": "Scaled monolayer production from pilot to multi-meter web widths; owns defect taxonomy tied to mechanical performance bins.",
+      "education": {
+        "degree": "Ph.D.",
+        "field": "Chemical Engineering",
+        "institution": "University of California, Berkeley",
+        "year": 2013
+      },
+      "security_clearance": {
+        "level": "None",
+        "active": false
+      },
+      "allocation_percent": 50,
+      "publications_last_3_years": 5,
+      "commitment_confirmed": true,
+      "conflict_of_interest": "None identified.",
+      "subcontractor_affiliation": null
+    },
+    {
+      "team_member_id": "tm-g003",
+      "name": "Ravi Patel",
+      "title": "Principal Structural Test Engineer",
+      "role": "Static/fatigue test campaigns; substantiation datasets; test matrices aligned to aerospace norms",
+      "expertise": [
+        "Mechanical testing",
+        "Statistical test planning",
+        "Composite failure analysis"
+      ],
+      "relevant_experience": "Designed DOE matrices comparing baseline vs graphene-hybrid laminates; authored lab reports suitable for prime supplier review.",
+      "education": {
+        "degree": "M.S.",
+        "field": "Mechanical Engineering",
+        "institution": "Georgia Institute of Technology",
+        "year": 2015
+      },
+      "security_clearance": {
+        "level": "None",
+        "active": false
+      },
+      "allocation_percent": 55,
+      "publications_last_3_years": 4,
+      "commitment_confirmed": true,
+      "conflict_of_interest": "None identified.",
+      "subcontractor_affiliation": null
+    },
+    {
+      "team_member_id": "tm-g004",
+      "name": "Angela Ruiz",
+      "title": "President",
+      "role": "Executive oversight; partnership strategy with aerospace OEMs; export/market positioning",
+      "expertise": [
+        "Operations leadership",
+        "Aerospace supply chain",
+        "Business development"
+      ],
+      "relevant_experience": "Former supplier development manager at a major airframe integrator; established AS9100 supplier pathways.",
+      "education": {
+        "degree": "M.B.A.",
+        "field": "Business Administration",
+        "institution": "University of Michigan",
+        "year": 2012
+      },
+      "security_clearance": {
+        "level": "None",
+        "active": false
+      },
+      "allocation_percent": 20,
+      "publications_last_3_years": 0,
+      "commitment_confirmed": true,
+      "conflict_of_interest": "None identified.",
+      "subcontractor_affiliation": null
+    },
+    {
+      "team_member_id": "tm-g005",
+      "name": "Dr. Harold Nguyen",
+      "title": "Director of Quality & Certification",
+      "role": "Traceability, Nadcap-adjacent lab practices, substantiation package governance",
+      "expertise": [
+        "AS9100 quality systems",
+        "Materials testing accreditation pathways",
+        "Configuration management"
+      ],
+      "relevant_experience": "Led lab readiness reviews for prime audits; implemented digital genealogy for composite batches.",
+      "education": {
+        "degree": "Ph.D.",
+        "field": "Industrial Engineering",
+        "institution": "Purdue University",
+        "year": 2010
+      },
+      "security_clearance": {
+        "level": "None",
+        "active": false
+      },
+      "allocation_percent": 25,
+      "publications_last_3_years": 2,
+      "commitment_confirmed": true,
+      "conflict_of_interest": "None identified.",
+      "subcontractor_affiliation": null
+    }
+  ],
+  "subawardees_and_partners": [
+    {
+      "partner_id": "part-g001",
+      "organization_name": "Cascade Aerostructures LLC (Tier 2 supplier)",
+      "poc_name": "Jim Brennan",
+      "poc_email": "jbrennan@cascade-aero.example",
+      "relationship_type": "Commercial partner under NDA",
+      "role_description": "Co-manufactured demonstration stiffened panels for comparative testing; provides aerospace layup/cure discipline and witness testing observation.",
+      "award_amount_usd": 0,
+      "allocation_percent": null,
+      "key_contributions": [
+        "Manufacturing realism for aerostructure-relevant geometries",
+        "Witnessed coupon extraction from panels"
+      ]
+    },
+    {
+      "partner_id": "part-g002",
+      "organization_name": "Pacific Northwest Composites Testing Cooperative (PNW-CTC)",
+      "poc_name": "Dr. Lauren Meyer",
+      "poc_email": "lmeyer@pnw-ctc.example",
+      "relationship_type": "Collaborative testing consortium",
+      "role_description": "Independent replicate testing on blinded batches (limited scope) to strengthen substantiation narrative without relying solely on in-house results.",
+      "award_amount_usd": 175000,
+      "allocation_percent": null,
+      "key_contributions": [
+        "Blinded replicate fatigue curves",
+        "Interlaboratory variance estimates"
+      ]
+    }
+  ],
+  "funding_plan": {
+    "total_requested_usd": 0,
+    "period_of_performance_months": null,
+    "period_start_date": null,
+    "period_end_date": null,
+    "cost_share_contributed_usd": 0,
+    "cost_share_percent": 0,
+    "cost_share_description": "DARPA-SN-26-62 is an RFI for market research—not a funding solicitation. Stratum includes funding_plan structure for schema compatibility with P.A.S.S. tooling; requested amounts would apply only to a future program solicitation if issued.",
+    "requested_instrument_type": "N/A — RFI response only (no contract formed by response)",
+    "breakdown": [
+      {
+        "category": "RFI response preparation (internal labor)",
+        "amount_usd": 0,
+        "percent_of_total": 0,
+        "notes": "Absorbed as bid & proposal / IRAD allocation; not reimbursed per RFI disclaimers."
+      }
+    ]
+  },
+  "project_goals": {
+    "primary_objective": "Provide DARPA/TTO with empirical, manufacturing-grounded insight into graphene sheet scalability, joining strategies, structural substantiation datasets, and realistic weight/cost trades for aerospace load-bearing structures—explicitly excluding theoretical assertions without data and excluding non-structural sensor integrations unless tied to load-bearing applications.",
+    "technical_goals": [
+      {
+        "goal_id": "tg-rfi-geo-1",
+        "title": "Document largest manufacturable graphene sheet dimensions & grading methodology",
+        "description": "Report roll-width/continuous length limits for monolayer graphene sheets suitable for structural lamination, including thickness uniformity definitions and defect thresholds tied to mechanical bins.",
+        "success_metric": "Clear dimensional envelope + QC correlation to lap-shear / ILSS surrogate metrics.",
+        "deliverable_aligned": "White paper Section + summary tables (within 5-page constraint)."
+      },
+      {
+        "goal_id": "tg-rfi-geo-2",
+        "title": "Outline scalable joining pathways for larger aerostructure blanks",
+        "description": "Describe overlap/scarf strategies for graphene-bearing prepreg stacks; discuss process sensitivities (voids, resin starvation) and tested lap-shear performance distributions.",
+        "success_metric": "Empirical lap-shear datasets for at least two joining configurations under controlled cure.",
+        "deliverable_aligned": "Figures + test methodology paragraph."
+      },
+      {
+        "goal_id": "tg-rfi-geo-3",
+        "title": "Quantify barriers to production-scale sheets at aerospace quality",
+        "description": "Enumerate throughput limits, yield loss drivers, environmental controls, and capital barriers—mapped to realistic ramp timelines.",
+        "success_metric": "Traceable barrier list grounded in factory observations.",
+        "deliverable_aligned": "Bullet narrative aligned to RFI requested information items."
+      },
+      {
+        "goal_id": "tg-rfi-geo-4",
+        "title": "Structural substantiation: static & fatigue evidence",
+        "description": "Present coupon/element-level results for in-plane tension/compression, ILSS, and fatigue (R-ratio stated) vs baseline carbon/epoxy control panels matched on fiber areal weight.",
+        "success_metric": "Statistically meaningful sample sizes (n≥5 per configuration per environment unless noted).",
+        "deliverable_aligned": "Curves + summary statistics + conditioning notes."
+      },
+      {
+        "goal_id": "tg-rfi-geo-5",
+        "title": "Weight reduction & cost estimates",
+        "description": "Provide conservative weight reduction estimate for equal strength/stiffness targets and a $/lb manufacturing cost model basis (including scrap, cure cycle time, capital amortization).",
+        "success_metric": "Explicit assumptions table; sensitivity to yield and fiber price volatility.",
+        "deliverable_aligned": "Cost model appendix within page limits."
+      }
+    ],
+    "expected_outcomes": [
+      {
+        "outcome_id": "eo-rfi-01",
+        "deliverable": "RFI white paper (≤5 pages) addressing all six technical areas with figures",
+        "type": "rfi_response",
+        "description": "Structured per DARPA-SN-62 submission format; proprietary details marked per instructions.",
+        "transition_plan": "If DARPA issues a follow-on program, Stratum can expand datasets under contract—RFI does not bind either party.",
+        "fundamental_research_flag": false,
+        "quantity": 1,
+        "venues": ["email submission to DARPA-SN-26-62@darpa.mil"]
+      }
+    ],
+    "fundamental_research_claim": false,
+    "fundamental_research_justification": "RFI response emphasizes controlled experiments and manufacturing economics rather than unrestricted publication intent.",
+    "revolutionary_vs_evolutionary": "Positions graphene interlayers as a potential evolutionary-but-material weight/stiffness lever when manufacturing-controlled—not a replacement for primary fiber architecture without substantiation.",
+    "relationship_to_i2o_thrust_areas": [],
+    "competitive_landscape": "Multiple vendors claim large-area graphene; differentiation is traceable structural datasets and aerospace process discipline—not marketing brochures.",
+    "transition_and_commercialization": "Primary transition path is insertion as qualified interlayer/adhesive additive into existing carbon/epoxy supply chains for UAV and regional jet tier suppliers."
+  },
+  "compliance_and_constraints": {
+    "export_control": {
+      "applicable": true,
+      "categories": "EAR may apply to certain manufacturing equipment and detailed process parameters; ITAR generally not applicable unless defense-specific applications are detailed.",
+      "plan": "RFI response will separate commercial capabilities summary from proprietary process parameters; detailed foreign disclosure restrictions on manufacturing tours."
+    },
+    "security_requirements": {
+      "classified_work": false,
+      "unclassified_controlled_information": false,
+      "cui_categories": "RFI expected unclassified; markings per respondent determination.",
+      "security_plan_required": false,
+      "facility_requirements": "Commercial facility controls; no classified spaces."
+    },
+    "human_subjects_research": {
+      "involved": false,
+      "irb_approval_required": false
+    },
+    "animal_research": {
+      "involved": false,
+      "iacuc_approval_required": false
+    },
+    "environmental_compliance": {
+      "involved": true,
+      "nepa_review_required": false
+    },
+    "independent_research_and_development": "Internal IRAD supports coupon-scale graphene trials not billed to government unless awarded.",
+    "concurrent_proposals": [],
+    "prior_government_funding": [
+      {
+        "agency": "NASA",
+        "program": "SBIR Phase I",
+        "award": "NNX17EXAMPLE",
+        "relationship": "Historical; unrelated to graphene sheet scale-up except processing discipline carryover."
+      }
+    ],
+    "conflicts_of_interest": {
+      "organizational_conflicts": "Stratum does not provide DARPA SETA/A&AS support.",
+      "personal_conflicts": "None declared for listed POCs.",
+      "mitigation": "NDAs with partners; segregated teams for blinded replicate testing."
+    },
+    "special_considerations": "RFI explicitly excludes carbon nanotubes/particles and discourages modeling-only responses; Stratum's narrative is anchored to measured structural coupons and manufacturing throughput observations."
+  },
+  "submission_metadata": {
+    "baa_number": "DARPA-SN-26-62",
+    "baa_title": "Request for Information — Graphene production and use in load-bearing aerospace structures",
+    "submission_type": "RFI white paper (NOT a proposal); responses due June 1, 2026, 4:00 PM ET per announcement",
+    "abstract_submission_date": null,
+    "proposal_submission_date": "2026-06-01",
+    "invited_to_propose": null,
+    "darpa_feedback_on_abstract": null,
+    "document_version": "2026.05.13",
+    "last_updated": "2026-05-13",
+    "prepared_by": "Dr. Samuel Okonkwo (Technical), Kevin Porter (Administrative)",
+    "approved_by_ci": false,
+    "approved_by_admin": false,
+    "legal_review_completed": false,
+    "compliance_checklist": {
+      "sam_registration_verified": true,
+      "cmmc_status_verified": false,
+      "security_clearance_verified": false,
+      "representations_certifications_completed": false,
+      "cost_accounting_standards_compliant": true,
+      "export_control_review_completed": true
+    }
+  }
+}

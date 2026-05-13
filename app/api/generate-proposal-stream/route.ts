@@ -1,15 +1,9 @@
 import { NextRequest } from 'next/server';
-import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@/lib/supabase/server';
 import { getPmRole, canEdit } from '@/lib/pm-access';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || '',
-});
-
-if (!process.env.OPENAI_API_KEY) {
-  console.error('OPENAI_API_KEY is not set');
-}
+const anthropic = new Anthropic();
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,11 +40,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!process.env.OPENAI_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: 'OpenAI API key not configured' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return new Response(JSON.stringify({ error: 'Anthropic API key not configured' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Extract actual BAA text content - prioritize rawText, then sections, then fallback to JSON
@@ -109,8 +103,12 @@ export async function POST(request: NextRequest) {
     
     // CRITICAL: If BAA text is too short or doesn't contain expected content, warn
     if (baaText.length < 500) {
-      console.error('❌ CRITICAL: BAA text is too short! Length:', baaText.length);
-      console.error('  This suggests rawText was not preserved. BAA content may not be used properly.');
+      return new Response(
+        JSON.stringify({
+          error: 'BAA text is insufficient for generation. Please re-upload the solicitation document.',
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
     
     // Log domain indicators found in BAA (for debugging only - no hardcoding)
@@ -162,36 +160,43 @@ export async function POST(request: NextRequest) {
       parsedOrgContext = typeof organizationContext === 'string' 
         ? JSON.parse(organizationContext) 
         : organizationContext;
-    } catch (e) {
+    } catch {
       parsedOrgContext = organizationContext;
     }
     const orgContextText = typeof organizationContext === 'string' 
       ? organizationContext 
       : JSON.stringify(organizationContext);
 
-    const systemPrompt = `You are an expert proposal writer specializing in government research proposals (BAAs/RFPs). Your task is to generate a comprehensive, Stage 1 BAA proposal that is approximately 10 pages in length (when formatted as a standard document).
+    const systemPrompt = `You are an expert proposal writer specializing in government research proposals (BAAs/RFPs). You MUST follow these rules:
 
-CRITICAL REQUIREMENTS:
-- The total proposal must be approximately 10 pages when formatted (roughly 5,000-6,000 words total)
-- Each section must be substantial and detailed (typically 500-800 words per section)
-- You MUST personalize EVERY section with the specific organization's name, team members, expertise, prior work, and capabilities from the ORGANIZATION CONTEXT
-- NEVER write generic proposals - always mention the specific organization name, team members by name, their specific roles and expertise, and their prior relevant work
-- Include specific technical details, methodologies, and concrete examples tied to the organization's actual capabilities
-- Demonstrate deep understanding of the BAA requirements AND how this specific organization uniquely addresses them
-- Show clear alignment between THIS organization's specific capabilities and the BAA objectives
-- Use professional, technical language appropriate for government research proposals
-- Include realistic timelines, deliverables, and success metrics specific to this organization
-- Provide detailed technical approaches that reference the organization's actual team members, facilities, and prior work
+GROUNDING RULES (NON-NEGOTIABLE):
+- The proposal MUST be grounded in the provided BAA text and the organization context.
+- NEVER invent requirements, programs, schedules, evaluation criteria, deadlines, or technical domains that are not explicitly present in the BAA.
+- If a detail is not present in the BAA text, do NOT assume it. Instead, write generally and note uncertainty in the "feedback" field for that section.
+- Do NOT hallucinate citations, statute/regulation references, or program office names.
+- The proposal must reflect what the BAA actually asks for — nothing more, nothing less.
 
-Generate a well-structured proposal with the following characteristics:
-- Addresses ALL requirements and sections from the BAA comprehensively
-- PERSONALIZED to the specific organization - mention organization name, team members, and their expertise throughout
-- Demonstrates clear alignment between THIS organization's specific capabilities and the BAA requirements
-- Includes specific, concrete details about the organization's team, facilities, prior work, and capabilities
-- Follows the exact structure and section titles from the BAA
-- Each section is substantial (500-800 words minimum) and personalized
-- Provides realistic confidence scores (60-95%) based on proposal strength
-- Includes actionable feedback for improvement where needed`;
+STRUCTURE RULES:
+- Generate exactly 10 sections, in the exact order and titles provided.
+- Each section MUST be a separate JSON object in the "sections" array.
+- Use "id" values "section-1" through "section-10".
+- The output MUST be valid JSON, parseable by JSON.parse().
+
+PERSONALIZATION RULES:
+- Personalize every section to the applying organization using the organization context.
+- Reference the organization name repeatedly and tie claims to the team's actual capabilities, facilities, prior work, and constraints.
+- Do NOT fabricate past performance, facilities, clearances, certifications, awards, or publications. Use ONLY what is present in the organization context JSON/details provided.
+
+OUTPUT RULES:
+- Return ONLY JSON. No markdown. No code fences. No extra commentary.
+- Each section MUST include:
+  - id (string)
+  - title (string)
+  - content (string, markdown allowed for lists/bold)
+  - confidence (number 0-100)
+  - status ("strong" | "needs-improvement" | "weak")
+  - feedback (string[]; include at least one improvement note even for strong sections)
+  - required (boolean)`;
 
     const truncatedBaaText = baaText.length > 100000 
       ? baaText.substring(0, 100000) + '\n\n[Content truncated...]'
@@ -300,7 +305,7 @@ COMPLIANCE STATUS:
 ${orgContext.compliance_and_constraints?.special_considerations ? `- Special Considerations: ${orgContext.compliance_and_constraints.special_considerations}` : ''}
 `;
       }
-    } catch (e) {
+    } catch {
       orgDetails = `\nORGANIZATION CONTEXT (raw): ${orgContextText}`;
     }
 
@@ -335,180 +340,41 @@ ${orgContext.compliance_and_constraints?.special_considerations ? `- Special Con
     console.log('  BAA Structure:', baaStructure.length, 'sections');
     console.log('  Organization Name:', orgName);
     
-    const userPrompt = `Generate a comprehensive Stage 1 BAA research proposal for ${orgName}. This proposal MUST be personalized to this specific organization and MUST be approximately 10 pages (5,000-6,000 words total).
+    const userPrompt = `Write a grounded Stage 1 BAA proposal for ${orgName}.
+
+You MUST follow the BAA requirements exactly as written in the BAA text. Do NOT invent requirements, deadlines, evaluation criteria, or technical domains not explicitly present in the BAA text. If a required detail is missing from the BAA text, write generally and add an improvement note to that section's "feedback".
 
 BAA TITLE: ${baa.title || 'Untitled BAA'}
 BAA STRUCTURE FROM DOCUMENT: ${baaStructure.join(' → ')}
-PROPOSAL SECTIONS TO GENERATE (EXACTLY 10 SECTIONS):
-${finalSections.map((s, i) => `${i + 1}. ${s}`).join('\n')}
 
-CRITICAL: You MUST generate EXACTLY ${totalSections} separate sections. Each section must be a completely separate object in the "sections" array.
+PROPOSAL SECTIONS TO GENERATE (EXACTLY 10 SECTIONS, IN THIS ORDER):
+${finalSections.map((s, i) => `${i + 1}. ${s}`).join('\n')}
 
 ${orgDetails}
 
-CRITICAL BAA CONTENT REQUIREMENTS (MANDATORY):
-- The FULL BAA CONTENT below contains the actual requirements, objectives, and details from the BAA document
-- You MUST read and understand the FULL BAA CONTENT thoroughly before writing ANYTHING
-- Your proposal MUST directly address the specific requirements, objectives, and topics mentioned in the FULL BAA CONTENT
-- DO NOT make assumptions about the domain - ONLY use what is explicitly stated in the FULL BAA CONTENT below
-- DO NOT add domain-specific content that is not mentioned in the BAA
-- Reference specific requirements, methods, objectives, and topics from the FULL BAA CONTENT in your proposal sections
-- The proposal MUST reflect EXACTLY what the BAA asks for - nothing more, nothing less
-
-BAA TITLE: ${baa.title || 'Untitled BAA'}
-
-FULL BAA CONTENT (READ THIS CAREFULLY - THIS IS THE ACTUAL BAA DOCUMENT - YOU MUST USE ONLY THIS CONTENT):
+FULL BAA CONTENT (AUTHORITATIVE SOURCE; USE ONLY THIS FOR REQUIREMENTS):
 ${truncatedBaaText}
 
-CRITICAL: Your proposal MUST be based SOLELY on the BAA content above. Do NOT add domain-specific content that is not explicitly mentioned in the BAA. If the BAA is about AI, write about AI. If it's about biology, write about biology. If it's about engineering, write about engineering. Use ONLY what the BAA specifies.
-
-FULL ORGANIZATION CONTEXT JSON:
+FULL ORGANIZATION CONTEXT JSON (AUTHORITATIVE SOURCE; USE ONLY THIS FOR ORG FACTS):
 ${orgContextText}
 
-CRITICAL PERSONALIZATION REQUIREMENTS:
-- You MUST write this proposal as if ${orgName} is submitting it
-- Mention the organization name "${orgName}" multiple times throughout the proposal (at least 3-5 times per section)
-- Reference specific team members BY NAME and their specific expertise in relevant sections
-- Incorporate the organization's prior experience, capabilities, and research focus into the technical approach
-- Make it clear this is THEIR proposal, not a generic template
-- Use "we", "our team", "our organization", "our lab" when referring to the applying organization
-
-CRITICAL SECTION REQUIREMENTS (MANDATORY):
-- You MUST generate EXACTLY ${totalSections} SEPARATE sections - NOT one combined section
-- Each section MUST be a separate object in the JSON "sections" array
-- Each section MUST have a unique "id" (section-1, section-2, etc.)
-- Each section MUST have a unique "title" matching the list above
-- The ENTIRE proposal must be approximately 10 pages when formatted (5,000-6,000 words total)
-- Each section MUST be 500-800 words minimum - COUNT YOUR WORDS AND EXPAND IF NEEDED
-- With ${totalSections} sections, each section should average ${Math.round(5500 / totalSections)} words to reach 5,500 words total
-- Be detailed, specific, and comprehensive - this is a Stage 1 proposal that must demonstrate deep understanding
-- If a section is less than 500 words, you MUST expand it with:
-  * More details about how ${orgName} specifically will approach this
-  * Specific examples from ${orgName}'s prior work
-  * Detailed explanations of team member contributions (mention names)
-  * More technical depth and methodology
-  * Specific deliverables and timelines
-  * Risk mitigation strategies
-  * Innovation and unique value propositions
-  * Budget breakdowns (for Budget section)
-  * Team member details (for Team section)
-  * Technical specifications (for Technical Approach section)
-
-CONTENT DEPTH REQUIREMENTS FOR EACH SECTION:
-- Technical Approach: Detailed methodology referencing the organization's specific capabilities, mention team members by name and their roles, specific techniques tied to their expertise, step-by-step processes
-- Team Qualifications: List each team member BY NAME, their specific expertise areas, relevant experience from their background, credentials, and how their skills address the BAA requirements
-- Facilities & Resources: Detailed descriptions of the organization's actual capabilities, equipment, infrastructure, and how they support this project
-- Budget & Timeline: Use the funding plan from the organization context, realistic detailed breakdowns with justifications tied to their specific needs
-- Deliverables: Specific, measurable outcomes with clear success criteria that align with the organization's project goals
-- Risk Mitigation: Detailed risk analysis with specific mitigation strategies leveraging the organization's capabilities
-- Innovation: Specific technical innovations tied to the organization's research focus and prior work
-
-CRITICAL JSON FORMATTING INSTRUCTIONS:
-1. Return ONLY valid JSON - no markdown code blocks, no explanations, no text before or after
-2. Ensure all strings are properly escaped - use backslash-quote for quotes inside content strings
-3. Ensure all brackets and braces are properly closed
-4. The JSON must be parseable by JSON.parse() - validate it before returning
-5. Each section's "content" field must be 500-800 words minimum
-6. You MUST create EXACTLY ${totalSections} separate section objects in the "sections" array
-7. DO NOT combine multiple sections into one - each section title must be its own separate object
-8. The "sections" array must have exactly ${totalSections} elements, no more, no less
-
-CRITICAL MARKDOWN FORMATTING FOR CONTENT FIELDS:
-- Use **text** for bold text (e.g., **Phase 1:** or **Key Milestones:**)
-- Use proper markdown list syntax: Start bullet points with "- " (hyphen + space) followed by content
-- Example: "- **Month 1:** Description here" or "- Description here"
-- Use proper spacing: Always include a space after "-" for list items
-- Use numbered lists with "1. ", "2. ", etc. for ordered lists
-- Use ## for section headers within content if needed
-- Ensure proper paragraph breaks with blank lines between paragraphs
-
-Required JSON structure (MUST HAVE EXACTLY ${totalSections} SECTIONS):
+Return ONLY valid JSON in this structure:
 {
-  "title": "Comprehensive Proposal Title for ${orgName}",
+  "title": "Proposal Title",
   "sections": [
     {
       "id": "section-1",
       "title": "${finalSections[0]}",
-      "content": "Detailed section content here. This MUST be 500-800 words minimum (COUNT YOUR WORDS). Include: (1) Specific mention of ${orgName} and how ${orgName} will approach this, (2) Reference to specific team members BY NAME and their expertise areas, (3) ${orgName}'s prior relevant work and capabilities from the organization context, (4) Specific technical details, methodologies, examples, timelines, deliverables, and concrete information tied to ${orgName}. Be comprehensive and demonstrate deep understanding of both the BAA requirements AND how ${orgName} specifically addresses them. Expand extensively on technical approaches, team capabilities (mention team member names), resources, and expected outcomes in detail. Write as if ${orgName} is speaking directly about their proposal. Use 'we', 'our team', 'our organization' when appropriate. DO NOT write generic content - every sentence should be specific to ${orgName}.",
-      "confidence": 85,
-      "status": "strong",
-      "feedback": [],
+      "content": "string",
+      "confidence": 0,
+      "status": "needs-improvement",
+      "feedback": ["string improvement note"],
       "required": true
-    },
-    {
-      "id": "section-2",
-      "title": "${finalSections[1]}",
-      "content": "[500-800 words of detailed content for this section, personalized to ${orgName}]"
-    },
-    {
-      "id": "section-3",
-      "title": "${finalSections[2]}",
-      "content": "[500-800 words of detailed content for this section, personalized to ${orgName}]"
-    },
-    {
-      "id": "section-4",
-      "title": "${finalSections[3]}",
-      "content": "[500-800 words of detailed content for this section, personalized to ${orgName}]"
-    },
-    {
-      "id": "section-5",
-      "title": "${finalSections[4]}",
-      "content": "[500-800 words of detailed content for this section, personalized to ${orgName}]"
-    },
-    {
-      "id": "section-6",
-      "title": "${finalSections[5]}",
-      "content": "[500-800 words of detailed content for this section, personalized to ${orgName}]"
-    },
-    {
-      "id": "section-7",
-      "title": "${finalSections[6]}",
-      "content": "[500-800 words of detailed content for this section, personalized to ${orgName}]"
-    },
-    {
-      "id": "section-8",
-      "title": "${finalSections[7]}",
-      "content": "[500-800 words of detailed content for this section, personalized to ${orgName}]"
-    },
-    {
-      "id": "section-9",
-      "title": "${finalSections[8]}",
-      "content": "[500-800 words of detailed content for this section, personalized to ${orgName}]"
-    },
-    {
-      "id": "section-10",
-      "title": "${finalSections[9]}",
-      "content": "[500-800 words of detailed content for this section, personalized to ${orgName}]"
     }
+    // ... sections 2..10
   ],
-  "overallConfidence": 82
-}
-
-CRITICAL REMINDERS:
-- You MUST generate EXACTLY ${totalSections} separate section objects in the "sections" array
-- Each section MUST have a unique id (section-1 through section-${totalSections})
-- Each section MUST have the exact title from the list above
-- Write in first person ("we", "our team", "our organization") when appropriate
-- Mention the organization name "${orgName}" multiple times in each section (at least 3-5 times)
-- Reference team members by name and their specific contributions
-- Tie every technical approach back to the organization's actual capabilities and prior work
-- Each section MUST be 500-800 words - count your words and expand if needed
-- The total proposal MUST be 5,000-6,000 words (10 pages)
-- DO NOT combine sections - each must be completely separate
-
-YOU MUST GENERATE EXACTLY ${totalSections} SEPARATE SECTIONS. Here is the exact list you must create:
-
-${finalSections.map((title, idx) => `${idx + 1}. "${title}" - This must be section-${idx + 1} with id "section-${idx + 1}"`).join('\n')}
-
-Each section must be:
-- A completely separate object in the JSON "sections" array
-- 500-800 words minimum
-- Personalized to ${orgName} with organization name, team member names, and specific capabilities
-- Reference the BAA requirements and how ${orgName} addresses them
-
-DO NOT combine sections. DO NOT skip sections. Generate all ${totalSections} sections as separate objects.`;
-
-    const modelName = 'gpt-4o-mini';
+  "overallConfidence": 0
+}`;
 
     // Store finalSections in a variable accessible to the stream handler
     const sectionsToGenerate = finalSections;
@@ -550,36 +416,7 @@ DO NOT combine sections. DO NOT skip sections. Generate all ${totalSections} sec
         try {
           sendProgress(5, 'Initializing proposal generation...');
           
-                  // Log what we're sending to OpenAI
-                  console.log('📤 Sending to OpenAI:');
-                  console.log('  Model: gpt-4o-mini');
-                  console.log('  System prompt length:', systemPrompt.length, 'chars');
-                  console.log('  User prompt length:', userPrompt.length, 'chars');
-                  console.log('  BAA text length in prompt:', truncatedBaaText.length, 'chars');
-                  console.log('  Organization name:', orgNameForGeneration);
-                  console.log('  Sections to generate:', sectionsToGenerate.length);
-                  console.log('  BAA title:', baa.title);
-                  console.log('  Max tokens:', 16384);
-                  console.log('  Estimated prompt tokens:', Math.ceil((systemPrompt.length + userPrompt.length) / 4));
-          
-          const streamResponse = await Promise.race([
-              openai.chat.completions.create({
-                model: 'gpt-4o-mini',
-                max_tokens: 16384,
-                temperature: 0.7,
-                stream: true,
-                messages: [
-                  { role: 'system', content: systemPrompt },
-                  { role: 'user', content: userPrompt },
-                ],
-              }),
-            new Promise((_, reject) => {
-              setTimeout(() => reject(new Error('OpenAI API request timed out after 60 seconds')), 60000);
-            }),
-          ]) as any;
-
           sendProgress(10, 'Generating proposal content...');
-          console.log('✅ OpenAI stream created, receiving chunks...');
 
           // Announce the first section immediately
           if (sectionsToGenerate.length > 0) {
@@ -587,56 +424,42 @@ DO NOT combine sections. DO NOT skip sections. Generate all ${totalSections} sec
           }
 
           let fullText = '';
-          let lastProgress = 10;
           let sectionCount = 0;
-          let lastProgressUpdate = Date.now();
           let chunkCount = 0;
           let totalContentLength = 0;
-
-          for await (const chunk of streamResponse) {
+          
+          const stream = anthropic.messages.stream({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 8000,
+            system: systemPrompt,
+            messages: [{ role: 'user', content: userPrompt }],
+          });
+          
+          stream.on('text', (textDelta) => {
+            if (!textDelta) return;
+            fullText += textDelta;
+            totalContentLength += textDelta.length;
             chunkCount++;
-            const content = chunk.choices?.[0]?.delta?.content || '';
             
-            if (content) {
-              fullText += content;
-              totalContentLength += content.length;
-              
-              // Send chunk updates every 100 chunks (both console and SSE)
-              if (chunkCount % 100 === 0) {
-                console.log(`📦 Received ${chunkCount} chunks, ${totalContentLength} chars so far`);
-                sendChunkUpdate(chunkCount, totalContentLength);
-              }
-              
-              const now = Date.now();
-              if (now - lastProgressUpdate < 500) continue;
-              lastProgressUpdate = now;
-              
-              const estimatedCharsPerSection = 4000;
-              const estimatedTotalChars = totalSections * estimatedCharsPerSection;
-              const textProgress = Math.min(90, 10 + (fullText.length / estimatedTotalChars) * 80);
-              
-              const newSectionCount = (fullText.match(/\}\s*,\s*\{/g) || []).length + 1;
-              if (newSectionCount > sectionCount) {
-                sectionCount = newSectionCount;
-                // Announce the next section that is now being generated
-                const nextSectionTitle = sectionsToGenerate[sectionCount] ?? '';
-                if (nextSectionTitle) {
-                  sendSectionStart(sectionCount + 1, nextSectionTitle);
-                }
-                sendProgress(
-                  Math.min(90, 10 + (sectionCount / totalSections) * 80),
-                  `Completed ${sectionCount} of ${totalSections} sections`
-                );
-              } else if (textProgress - lastProgress > 5) {
-                lastProgress = textProgress;
-                sendProgress(textProgress, 'Generating proposal content...');
-              }
+            if (chunkCount % 100 === 0) {
+              sendChunkUpdate(chunkCount, totalContentLength);
             }
-          }
-
-          console.log(`✅ Stream complete. Total chunks: ${chunkCount}, Total text: ${fullText.length} chars`);
-          console.log(`📝 First 500 chars: ${fullText.substring(0, 500)}`);
-          console.log(`📝 Last 500 chars: ${fullText.substring(Math.max(0, fullText.length - 500))}`);
+            
+            const newSectionCount = (fullText.match(/\}\s*,\s*\{/g) || []).length + 1;
+            if (newSectionCount > sectionCount) {
+              sectionCount = newSectionCount;
+              const nextSectionTitle = sectionsToGenerate[sectionCount] ?? '';
+              if (nextSectionTitle) {
+                sendSectionStart(sectionCount + 1, nextSectionTitle);
+              }
+              sendProgress(
+                Math.min(90, 10 + (sectionCount / totalSections) * 80),
+                `Completed ${sectionCount} of ${totalSections} sections`
+              );
+            }
+          });
+          
+          await stream.finalMessage();
           
           sendProgress(95, 'Processing and validating proposal...');
 
@@ -713,63 +536,107 @@ DO NOT combine sections. DO NOT skip sections. Generate all ${totalSections} sec
             title: sectionsToGenerate[index] || section.title,
           }));
 
-          // Validate and enhance sections
-          const orgNameForEnhancement = orgNameForGeneration;
-          const teamMembers = parsedOrgContext?.team || [];
-          
+          // Validate and normalize section shape (NO enhancement pass)
           proposalData.sections = proposalData.sections.map((section: any, index: number) => {
-            let content = section.content || '';
-            const wordCount = content.split(/\s+/).filter((w: string) => w.length > 0).length;
+            const feedback: string[] = Array.isArray(section.feedback)
+              ? section.feedback
+                  .map((fb: any) => (typeof fb === 'string' ? fb : fb?.text))
+                  .filter((t: any) => typeof t === 'string' && t.trim().length > 0)
+              : [];
             
-            // If section is too short, add organization-specific content
-            if (wordCount < 400 && orgNameForEnhancement) {
-              const expansion = `\n\n${orgNameForEnhancement} brings unique capabilities to this effort. Our team, including ${teamMembers.slice(0, 3).map((m: any) => m.name).join(', ')}${teamMembers.length > 3 ? ' and others' : ''}, has extensive experience in ${parsedOrgContext?.research_profile?.focus_areas?.slice(0, 2).join(' and ') || 'relevant research areas'}. ${orgNameForEnhancement}'s prior work in ${parsedOrgContext?.research_profile?.prior_experience?.substring(0, 200) || 'related domains'} positions us uniquely to address the requirements outlined in this BAA. Our approach leverages ${parsedOrgContext?.research_profile?.key_capabilities?.slice(0, 3).join(', ') || 'key organizational capabilities'} to deliver innovative solutions that align with the BAA objectives.`;
-              content += expansion;
-            }
-            
-            // Ensure organization name appears multiple times
-            const orgNameCount = (content.match(new RegExp(orgNameForEnhancement.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')) || []).length;
-            if (orgNameForEnhancement && orgNameCount < 2) {
-              content = `${orgNameForEnhancement} proposes to address this requirement through our comprehensive approach. ` + content;
+            if (feedback.length === 0) {
+              feedback.push('Clarify alignment to specific BAA requirements and organization capabilities.');
             }
             
             return {
               id: section.id || `section-${index + 1}`,
               title: section.title || sectionsToGenerate[index] || `Section ${index + 1}`,
-              content: content,
+              content: typeof section.content === 'string' ? section.content : String(section.content ?? ''),
               confidence: typeof section.confidence === 'number' ? section.confidence : 75,
-              status: ['strong', 'needs-improvement', 'weak'].includes(section.status) 
-                ? section.status 
+              status: ['strong', 'needs-improvement', 'weak'].includes(section.status)
+                ? section.status
                 : 'needs-improvement',
-              feedback: Array.isArray(section.feedback) 
-                ? section.feedback.map((fb: any, fbIndex: number) => ({
-                    id: fb.id || `feedback-${index}-${fbIndex}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                    type: ['strength', 'improvement', 'removal'].includes(fb.type) ? fb.type : 'improvement',
-                    text: fb.text || '',
-                    highlightedText: fb.highlightedText,
-                    suggestion: fb.suggestion,
-                  }))
-                : [],
+              feedback,
               required: section.required !== false,
             };
           });
           
-          // Ensure we have exactly 10 sections after enhancement
-          while (proposalData.sections.length < 10) {
-            const nextIndex = proposalData.sections.length;
-            proposalData.sections.push({
-              id: `section-${nextIndex + 1}`,
-              title: sectionsToGenerate[nextIndex] || `Section ${nextIndex + 1}`,
-              content: `${orgNameForEnhancement} will comprehensively address this requirement through our team's expertise and organizational capabilities.`,
-              confidence: 75,
-              status: 'needs-improvement',
-              feedback: [],
-              required: true,
+          // Grounding verification pass (best-effort)
+          sendProgress(90, 'Verifying proposal grounding...');
+          try {
+            const auditorPrompt = `You are a grounding auditor. You will be given (1) the BAA text and (2) a generated proposal (JSON).
+
+For each of the 10 sections, evaluate whether the section's claims and requirements alignment are grounded in the BAA text.
+
+Return ONLY JSON as an array of 10 objects:
+[
+  {
+    "sectionIndex": 0,
+    "groundingScore": 0,
+    "flag": "grounded" | "partially-grounded" | "ungrounded",
+    "note": "short improvement note or null"
+  }
+]
+
+BAA TEXT:
+${truncatedBaaText}
+
+PROPOSAL JSON:
+${JSON.stringify({ title: proposalData.title, sections: proposalData.sections }, null, 2)}
+`;
+            
+            const groundingResp = await anthropic.messages.create({
+              model: 'claude-sonnet-4-20250514',
+              max_tokens: 1000,
+              messages: [{ role: 'user', content: auditorPrompt }],
             });
+            
+            const txt = (groundingResp.content || [])
+              .filter((b: any) => b.type === 'text')
+              .map((b: any) => b.text)
+              .join('')
+              .trim();
+            
+            const start = txt.indexOf('[');
+            const end = txt.lastIndexOf(']');
+            const json = start !== -1 && end !== -1 ? txt.slice(start, end + 1) : txt;
+            
+            const results = JSON.parse(json) as Array<{
+              sectionIndex: number;
+              groundingScore: number;
+              flag: 'grounded' | 'partially-grounded' | 'ungrounded';
+              note: string | null;
+            }>;
+            
+            let flagged = 0;
+            for (const r of results) {
+              const idx = Number(r.sectionIndex);
+              const s = proposalData.sections?.[idx];
+              if (!s) continue;
+              
+              if (r.flag === 'ungrounded') {
+                flagged++;
+                s.confidence = Math.max(40, (Number(s.confidence) || 0) - 15);
+                if (s.status !== 'weak') s.status = 'needs-improvement';
+              } else if (r.flag === 'partially-grounded') {
+                flagged++;
+                s.confidence = Math.max(50, (Number(s.confidence) || 0) - 7);
+              }
+              
+              if (r.note) {
+                s.feedback = Array.isArray(s.feedback) ? [...s.feedback, r.note] : [r.note];
+              }
+            }
+            
+            if (flagged >= 3) {
+              proposalData.overallConfidence = Math.max(
+                50,
+                (Number(proposalData.overallConfidence) || 0) - 10
+              );
+            }
+          } catch (e: any) {
+            console.error('Grounding check failed:', e?.message || e);
           }
-          
-          // Trim to exactly 10 if somehow we have more
-          proposalData.sections = proposalData.sections.slice(0, 10);
           
           // Log total word count for validation
           const totalWords = proposalData.sections.reduce((sum: number, s: any) => {

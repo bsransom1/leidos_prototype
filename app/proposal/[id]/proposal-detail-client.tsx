@@ -92,6 +92,40 @@ export default function ProposalDetailClient({ proposal, user, effectiveRole }: 
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [activeEditor, setActiveEditor] = useState<Editor | null>(null);
 
+  const downloadPdf = async () => {
+    if (!proposalData.sections?.length) {
+      alert('No proposal sections to export yet.');
+      return;
+    }
+    setExportBusy(true);
+    try {
+      const res = await fetch('/api/export-proposal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: proposalData.title,
+          sections: (proposalData.sections || []).map((s) => ({ title: s.title, content: s.content || '' })),
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        alert(j.error ?? 'Could not generate PDF');
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${proposalData.title || 'proposal'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExportBusy(false);
+    }
+  };
+
   const handleExportDocx = async () => {
     if (!proposalData.sections?.length) {
       alert('No proposal sections to export yet.');
@@ -312,12 +346,12 @@ export default function ProposalDetailClient({ proposal, user, effectiveRole }: 
                 type="button"
                 variant="secondary"
                 className="!px-3 !py-1.5 !text-[10px] !font-mono !uppercase !tracking-[0.1em]"
-                onClick={() => void handleExportDocx()}
+                onClick={() => void downloadPdf()}
                 disabled={exportBusy}
                 title="Export"
               >
                 <DownloadSimple className="h-3.5 w-3.5" weight="bold" aria-hidden />
-                {exportBusy ? 'Preparing…' : 'Export'}
+                {exportBusy ? 'Preparing…' : 'Export PDF'}
               </Button>
 
               {!documentReadOnly && (

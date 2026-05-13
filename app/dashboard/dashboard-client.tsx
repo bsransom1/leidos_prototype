@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -8,7 +8,6 @@ import {
   Plus,
   SignOut,
   CalendarBlank,
-  Eye,
   Trash,
   Users,
   Medal,
@@ -19,18 +18,11 @@ import {
 import type { User } from '@supabase/supabase-js';
 import { AppFooter, AppHeader, PassBrand } from '@/components/ui/app-shell';
 import { Button } from '@/components/ui/button';
-import { Badge, type BadgeTone } from '@/components/ui/badge';
 import type { EnrichedProposal } from './page';
 
 interface DashboardClientProps {
   user: User;
   proposals: EnrichedProposal[];
-}
-
-function statusTone(status: string): BadgeTone {
-  if (status === 'awarded') return 'accent';
-  if (status === 'generated') return 'positive';
-  return 'default';
 }
 
 function fmtDate(iso?: string): string {
@@ -40,6 +32,142 @@ function fmtDate(iso?: string): string {
     month: 'short',
     day: 'numeric',
   });
+}
+
+function startOfDay(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function isWithinNextDays(dateLike: string | undefined, days: number) {
+  if (!dateLike) return false;
+  const d = new Date(dateLike);
+  if (Number.isNaN(d.getTime())) return false;
+  const today = startOfDay(new Date());
+  const target = startOfDay(d);
+  const ms = target.getTime() - today.getTime();
+  const max = days * 24 * 60 * 60 * 1000;
+  return ms >= 0 && ms <= max;
+}
+
+function statusLabel(status: string) {
+  if (status === 'awarded') return 'AWARDED';
+  if (status === 'generated') return 'IN REVIEW';
+  return 'DRAFT';
+}
+
+function StatusPill({ status }: { status: string }) {
+  const s = statusLabel(status);
+  if (s === 'AWARDED') {
+    return (
+      <span className="inline-flex items-center gap-2 bg-[#C0DD97] text-[#27500A] px-2 py-1 rounded-[4px] text-[11px] tracking-[0.03em]">
+        <span className="h-1.5 w-1.5 rounded-full bg-[#27500A]" aria-hidden />
+        <span className="font-mono font-semibold">{s}</span>
+      </span>
+    );
+  }
+  if (s === 'IN REVIEW') {
+    return (
+      <span className="inline-flex items-center gap-2 bg-[#FAC775] text-[#633806] px-2 py-1 rounded-[4px] text-[11px] tracking-[0.03em]">
+        <span className="h-1.5 w-1.5 rounded-full bg-[#633806]" aria-hidden />
+        <span className="font-mono font-semibold">{s}</span>
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-2 bg-[#D3D1C7] text-[#444441] px-2 py-1 rounded-[4px] text-[11px] tracking-[0.03em]">
+      <span className="h-1.5 w-1.5 rounded-full bg-[#444441]" aria-hidden />
+      <span className="font-mono font-semibold">{s}</span>
+    </span>
+  );
+}
+
+function ConfidenceCell({ confidence }: { confidence?: number }) {
+  if (confidence == null) return <span className="font-mono text-[11px] text-ds-text-muted">—</span>;
+  const pct = Math.max(0, Math.min(100, Math.round(confidence)));
+  return (
+    <div className="flex items-center gap-2">
+      <div className="h-[3px] w-[60px] bg-ds-border/60">
+        <div className="h-full bg-ds-primary" style={{ width: `${pct}%` }} />
+      </div>
+      <span className="font-mono text-[11px] text-ds-text-secondary">{pct}%</span>
+    </div>
+  );
+}
+
+function OpsStatusBar({
+  deadlines14,
+  avgConfidence,
+  activeCollabs,
+}: {
+  deadlines14: number;
+  avgConfidence: number;
+  activeCollabs: number;
+}) {
+  return (
+    <div className="shrink-0 border-b border-ds-border bg-ds-shell/70">
+      <div className="mx-auto flex h-9 max-w-7xl items-center px-6">
+        <div className="flex items-center gap-3 text-[11px]">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-ds-text-muted">
+              Operational
+            </span>
+          </div>
+
+          <div className="h-4 w-px bg-ds-border/60" aria-hidden />
+
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-ds-text-muted">
+              Deadlines
+            </span>
+            <span
+              className={`font-mono text-[10px] uppercase tracking-[0.14em] ${
+                deadlines14 > 0 ? 'text-ds-danger' : 'text-ds-text-secondary'
+              }`}
+            >
+              {deadlines14} within 14 days
+            </span>
+          </div>
+
+          <div className="h-4 w-px bg-ds-border/60" aria-hidden />
+
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-ds-text-muted">
+              Avg confidence
+            </span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ds-text-secondary">
+              {avgConfidence}%
+            </span>
+          </div>
+
+          <div className="h-4 w-px bg-ds-border/60" aria-hidden />
+
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-ds-text-muted">
+              Active collabs
+            </span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ds-text-secondary">
+              {activeCollabs}
+            </span>
+          </div>
+
+          <div className="h-4 w-px bg-ds-border/60" aria-hidden />
+
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-ds-text-muted">
+              Updated
+            </span>
+            <span
+              className="font-mono text-[10px] uppercase tracking-[0.14em] text-ds-text-secondary"
+              suppressHydrationWarning
+            >
+              {new Date().toLocaleDateString()}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ── Naming modal ───────────────────────────────────────────────────────────────
@@ -186,6 +314,29 @@ export default function DashboardClient({ user, proposals }: DashboardClientProp
   const awarded = proposals.filter((p) => p.status === 'awarded');
   const active = proposals.filter((p) => p.status !== 'awarded');
 
+  const deadlines14 = useMemo(
+    () => active.filter((p) => isWithinNextDays(p.baaDeadline, 14)).length,
+    [active],
+  );
+
+  const avgConfidence = useMemo(() => {
+    const withC = active.filter((p) => typeof p.confidence === 'number') as Array<EnrichedProposal & { confidence: number }>;
+    if (withC.length === 0) return 0;
+    const sum = withC.reduce((acc, p) => acc + p.confidence, 0);
+    return Math.round(sum / withC.length);
+  }, [active]);
+
+  // We only have collaborator counts per proposal (no identities), so this is total active collaborator rows.
+  const activeCollabs = useMemo(
+    () => active.reduce((acc, p) => acc + (p.collaboratorCount ?? 0), 0),
+    [active],
+  );
+
+  const inReviewCount = useMemo(
+    () => proposals.filter((p) => p.status === 'generated').length,
+    [proposals],
+  );
+
   return (
     <div className="flex h-screen flex-col bg-ds-page">
       {showNamingModal && (
@@ -210,14 +361,18 @@ export default function DashboardClient({ user, proposals }: DashboardClientProp
         </div>
       </AppHeader>
 
+      <OpsStatusBar deadlines14={deadlines14} avgConfidence={avgConfidence} activeCollabs={activeCollabs} />
+
       <div className="flex-1 overflow-y-auto">
         <div className="w-full px-6 py-8 max-w-7xl mx-auto">
 
           {/* Page header */}
-          <div className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-ds-border pb-6">
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-ds-border pb-5">
             <div>
-              <h2 className="ds-h2 text-ds-text">Dashboard</h2>
-              <p className="mt-1 text-sm text-ds-text-muted">
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-ds-text-muted">
+                Dashboard
+              </p>
+              <p className="mt-1 font-mono text-[11px] text-ds-text-muted">
                 {proposals.length} proposal{proposals.length !== 1 ? 's' : ''} ·{' '}
                 {awarded.length} awarded · {active.length} active
               </p>
@@ -225,12 +380,55 @@ export default function DashboardClient({ user, proposals }: DashboardClientProp
             <button
               type="button"
               onClick={() => setShowNamingModal(true)}
-              className="inline-flex items-center gap-2 border border-ds-primary bg-ds-primary px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-white shadow-ds-sm hover:brightness-110 transition-[filter]"
+              className="inline-flex h-8 items-center gap-2 border border-ds-primary bg-ds-primary px-4 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-white shadow-ds-sm hover:brightness-110 transition-[filter]"
             >
               <Plus className="h-3.5 w-3.5" weight="bold" />
               New proposal
             </button>
           </div>
+
+          {/* Stat summary cards */}
+          {proposals.length > 0 && (
+            <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="border border-ds-border bg-ds-surface px-5 py-4 shadow-ds-sm">
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-ds-text-muted">
+                  Total proposals
+                </p>
+                <p className="mt-2 text-[22px] font-medium text-ds-text">{proposals.length}</p>
+                <p className="mt-1 font-mono text-[10px] text-ds-text-muted">All time</p>
+              </div>
+
+              <div className="border border-ds-border bg-ds-surface px-5 py-4 shadow-ds-sm">
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-ds-text-muted">
+                  Awarded
+                </p>
+                <p className="mt-2 text-[22px] font-medium text-ds-text">{awarded.length}</p>
+                <p className="mt-1 font-mono text-[10px] text-ds-text-muted">
+                  Win rate {proposals.length ? Math.round((awarded.length / proposals.length) * 100) : 0}%
+                </p>
+              </div>
+
+              <div className="border border-ds-border bg-ds-surface px-5 py-4 shadow-ds-sm">
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-ds-text-muted">
+                  In review
+                </p>
+                <p className="mt-2 text-[22px] font-medium text-ds-text">{inReviewCount}</p>
+                <p className="mt-1 font-mono text-[10px] text-ds-text-muted">Generated</p>
+              </div>
+
+              <div
+                className={`border border-ds-border bg-ds-surface px-5 py-4 shadow-ds-sm ${
+                  deadlines14 > 0 ? 'border-l-4 border-l-ds-danger' : ''
+                }`}
+              >
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-ds-text-muted">
+                  Deadlines (14d)
+                </p>
+                <p className="mt-2 text-[22px] font-medium text-ds-text">{deadlines14}</p>
+                <p className="mt-1 font-mono text-[10px] text-ds-text-muted">Active proposals</p>
+              </div>
+            </div>
+          )}
 
           {proposals.length === 0 ? (
             <div className="border border-ds-border bg-ds-surface px-10 py-16 text-center shadow-ds-md">
@@ -250,11 +448,15 @@ export default function DashboardClient({ user, proposals }: DashboardClientProp
               {/* Active proposals */}
               {active.length > 0 && (
                 <section>
-                  {awarded.length > 0 && (
-                    <h3 className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-ds-text-muted">
-                      Active · {active.length}
-                    </h3>
-                  )}
+                  <div className="mt-4 mb-2 flex items-center gap-3">
+                    <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-ds-text-muted">
+                      Active
+                    </span>
+                    <span className="inline-flex items-center border border-ds-border bg-ds-shell/60 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-ds-text-secondary rounded-[4px]">
+                      {active.length}
+                    </span>
+                    <div className="h-px flex-1 bg-ds-border/60" aria-hidden />
+                  </div>
                   <div className="border border-ds-border bg-ds-surface overflow-hidden">
                     <ProposalTable
                       proposals={active}
@@ -269,10 +471,16 @@ export default function DashboardClient({ user, proposals }: DashboardClientProp
               {/* Awarded proposals */}
               {awarded.length > 0 && (
                 <section>
-                  <h3 className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-ds-text-muted flex items-center gap-1.5">
-                    <Medal className="h-3 w-3 text-ds-accent" weight="bold" />
-                    Awarded programs · {awarded.length}
-                  </h3>
+                  <div className="mt-4 mb-2 flex items-center gap-3">
+                    <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-ds-text-muted flex items-center gap-1.5">
+                      <Medal className="h-3 w-3 text-ds-accent" weight="bold" aria-hidden />
+                      Awarded programs
+                    </span>
+                    <span className="inline-flex items-center border border-ds-border bg-ds-shell/60 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-ds-text-secondary rounded-[4px]">
+                      {awarded.length}
+                    </span>
+                    <div className="h-px flex-1 bg-ds-border/60" aria-hidden />
+                  </div>
                   <div className="border border-ds-accent/30 bg-ds-surface overflow-hidden">
                     <ProposalTable
                       proposals={awarded}
@@ -290,8 +498,17 @@ export default function DashboardClient({ user, proposals }: DashboardClientProp
       </div>
 
       <AppFooter>
-        <div className="flex w-full flex-wrap items-center justify-end gap-4 px-6 py-3 text-[11px] uppercase tracking-[0.06em] text-ds-text-subtle">
-          <span suppressHydrationWarning>Updated {new Date().toLocaleDateString()}</span>
+        <div className="flex w-full flex-wrap items-center justify-between gap-4 px-6 py-3 text-[11px] uppercase tracking-[0.06em] text-ds-text-subtle">
+          <div className="flex flex-wrap gap-4">
+            <span>Build v0.1.0 prototype</span>
+            <span className="text-ds-border-strong">/</span>
+            <span>Sandbox environment</span>
+          </div>
+          <div className="flex flex-wrap gap-4">
+            <span>Operational</span>
+            <span className="text-ds-border-strong">/</span>
+            <span suppressHydrationWarning>Updated {new Date().toLocaleDateString()}</span>
+          </div>
         </div>
       </AppFooter>
     </div>
@@ -322,13 +539,16 @@ function ProposalTable({
             Status
           </th>
           <th className="px-4 py-2.5 text-left font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-ds-text-muted whitespace-nowrap">
+            Confidence
+          </th>
+          <th className="px-4 py-2.5 text-left font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-ds-text-muted whitespace-nowrap">
             Team
           </th>
           <th className="px-4 py-2.5 text-left font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-ds-text-muted whitespace-nowrap">
             Timeline
           </th>
           <th className="px-4 py-2.5 text-right font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-ds-text-muted">
-            Actions
+            {/* action indicator */}
           </th>
         </tr>
       </thead>
@@ -376,7 +596,7 @@ function ProposalRow({
 
   return (
     <tr
-      className={`group cursor-pointer hover:bg-ds-shell/30 transition-colors ${isDeleting ? 'opacity-50' : ''}`}
+      className={`group cursor-pointer hover:bg-ds-shell/30 ${isDeleting ? 'opacity-50' : ''}`}
       onClick={() => onOpen(p)}
     >
       {/* Proposal / solicitation */}
@@ -409,19 +629,12 @@ function ProposalRow({
 
       {/* Status */}
       <td className="px-4 py-3 whitespace-nowrap">
-        <div className="flex flex-col gap-1">
-          <Badge tone={statusTone(p.status)}>{p.status}</Badge>
-          {p.confidence != null && (
-            <span className="font-mono text-[10px] text-ds-text-muted">
-              {p.confidence}% confidence
-            </span>
-          )}
-          {p.sectionCount != null && (
-            <span className="font-mono text-[10px] text-ds-text-muted">
-              {p.sectionCount} sections
-            </span>
-          )}
-        </div>
+        <StatusPill status={p.status} />
+      </td>
+
+      {/* Confidence */}
+      <td className="px-4 py-3 whitespace-nowrap">
+        <ConfidenceCell confidence={p.confidence} />
       </td>
 
       {/* Team */}
@@ -440,42 +653,38 @@ function ProposalRow({
 
       {/* Timeline */}
       <td className="px-4 py-3 whitespace-nowrap">
-        <div className="flex flex-col gap-0.5">
+        <div className="flex items-center gap-2">
           <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-ds-text-muted">
             {timelineLabel}
           </span>
           <span className="inline-flex items-center gap-1 text-[11px] text-ds-text-secondary">
-            <CalendarBlank className="h-3 w-3 text-ds-text-muted" weight="bold" />
+            <CalendarBlank className="h-3 w-3 text-ds-text-muted" weight="bold" aria-hidden />
             {timelineDate}
           </span>
-          {p.status === 'awarded' && p.contract_number && (
-            <span className="font-mono text-[9px] text-ds-text-muted mt-0.5">
-              {p.contract_number}
-            </span>
-          )}
         </div>
       </td>
 
       {/* Actions */}
       <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-end gap-1.5">
-          <button
-            type="button"
-            onClick={() => onOpen(p)}
-            className="inline-flex items-center gap-1 border border-ds-border bg-transparent px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-ds-text-secondary hover:border-ds-border-strong hover:text-ds-text transition-colors"
-          >
-            {p.status === 'awarded' ? (
-              <><Medal className="h-3.5 w-3.5" weight="bold" /> PM Hub</>
-            ) : (
-              <><Eye className="h-3.5 w-3.5" weight="bold" /> Open</>
-            )}
-          </button>
+          {p.status === 'awarded' ? (
+            <button
+              type="button"
+              onClick={() => onOpen(p)}
+              className="inline-flex items-center gap-1 border border-ds-border bg-transparent px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-ds-text-secondary hover:border-ds-border-strong hover:text-ds-text transition-colors rounded-ds-sm"
+            >
+              <Medal className="h-3.5 w-3.5" weight="bold" aria-hidden />
+              PM Hub
+            </button>
+          ) : (
+            <ArrowRight className="h-3.5 w-3.5 text-ds-text-muted group-hover:text-ds-text-secondary" weight="bold" aria-hidden />
+          )}
           <button
             type="button"
             title="Delete proposal"
             onClick={(e) => onDelete(p.id, e)}
             disabled={isDeleting}
-            className="rounded-ds-sm p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
+            className="rounded-ds-sm p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-40"
           >
             <Trash className="h-3.5 w-3.5" weight="bold" />
           </button>

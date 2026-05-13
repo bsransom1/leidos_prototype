@@ -1,0 +1,490 @@
+{
+  "organization": {
+    "legal_name": "Heliotrope Quantum Systems, Inc.",
+    "dba_name": "Heliotrope Quantum",
+    "type": "Small Business (SB)",
+    "institution_parent": null,
+    "website": "https://www.heliotrope-quantum.example",
+    "established_year": 2019,
+    "description": "Heliotrope Quantum Systems develops modular control, calibration, and verification tooling for fault-tolerant quantum computing architectures. The company specializes in cryogenic electronics integration, quantum characterization at scale, and evidence-backed milestone plans suitable for independent verification and validation (IV&V). Heliotrope positions its approach as a platform for benchmarking intermediate-scale prototypes and progressively tightening acceptance metrics toward utility-scale quantum computing (USQC) readiness—not incremental benchmarking of today's niche demonstrations.",
+    "naics_code": "541715",
+    "dun_number": "987654321",
+    "cage_code": "8XQN7",
+    "sam_registration": {
+      "registered": true,
+      "registration_date": "2021-03-15",
+      "status": "Active"
+    },
+    "facility_security_clearance": {
+      "level": "None",
+      "accredited": false
+    },
+    "cmmc_certification": {
+      "level": "Level 2",
+      "status": "Certified",
+      "valid_through": "2028-09-30",
+      "c3pao_assessor": "Example C3PAO Services LLC"
+    },
+    "primary_contact": {
+      "name": "Dr. Elena Vasquez",
+      "email": "e.vasquez@heliotrope-quantum.example",
+      "role": "Chief Executive Officer",
+      "title": "Chief Executive Officer"
+    }
+  },
+  "primary_contact": {
+    "name": "Dr. Elena Vasquez",
+    "title": "Chief Executive Officer",
+    "role": "Corporate Official / Authorized Representative",
+    "email": "e.vasquez@heliotrope-quantum.example",
+    "phone": "+1-703-555-0142",
+    "mailing_address": {
+      "street": "4100 Quantum Way, Suite 200",
+      "city": "Boulder",
+      "state": "CO",
+      "zip": "80301",
+      "country": "United States"
+    }
+  },
+  "technical_poc": {
+    "name": "Dr. Marcus Chen",
+    "title": "Principal Scientist & Technical Director",
+    "email": "m.chen@heliotrope-quantum.example",
+    "phone": "+1-303-555-0198",
+    "background_summary": "Former applied physicist at a national laboratory with 14 years in superconducting quantum circuits, cryogenic microwave engineering, and quantum error mitigation experiments. Led teams delivering calibrated multi-qubit demonstrations with documented acceptance procedures and third-party witnessed tests. Focus on verification readiness: defining measurable subsystem gates between cryogenic stack, control electronics, and classical benchmarking harness."
+  },
+  "administrative_poc": {
+    "name": "Jordan Okonkwo",
+    "title": "Director of Contracts & Compliance",
+    "email": "contracts@heliotrope-quantum.example",
+    "phone": "+1-303-555-0171",
+    "responsibilities": "SAM/WAWF readiness, OT representations and certifications packages, CUI handling procedures per NIST SP 800-171 aligned practices, subcontract flow-downs, and milestone invoicing alignment."
+  },
+  "research_profile": {
+    "focus_areas": [
+      "Fault-tolerant quantum computing architecture pathways",
+      "Cryogenic control and readout electronics for scalable qubit arrays",
+      "Quantum characterization, tomography, and randomized benchmarking at intermediate scale",
+      "Independent test harness design for milestone-driven verification",
+      "Risk-register methodology for integrated quantum computer development"
+    ],
+    "research_description": "Heliotrope's technical thesis is that utility-scale quantum computing feasibility can be adjudicated earlier than full machine completion if proposers supply (A) a physically grounded USQC concept with near-term prototype milestones, (B) an explicit R&D plan with risk burn-down prototypes—not slide-level claims—and (C) artifacts that enable government-side verification and validation (including interfaces for IV&V teams and quantum test instrumentation). The company emphasizes measurable subsystem acceptance tests (latency budgets, crosstalk envelopes, calibration stability windows, error budget accountability across layers) rather than algorithm-only narratives.",
+    "prior_experience": "Delivered cryogenic control electronics revisions that reduced wiring-induced correlated errors in a 36-qubit demonstration; co-developed a benchmarking workflow adopted by a peer laboratory for quarterly regression testing; supported transition of a calibration automation toolchain to a partner fab facility under CRADA-like arrangements.",
+    "prior_publications": [
+      {
+        "title": "Regression Suites for Calibrated Multi-Qubit Operations Under Wiring Crosstalk Constraints",
+        "authors": ["M. Chen", "A. Singh", "P. Okonkwo"],
+        "venue": "IEEE Transactions on Quantum Engineering",
+        "year": 2024,
+        "relevance_to_proposal": "Demonstrates methodology for structured benchmarking aligned with milestone verification rather than one-off hero experiments."
+      },
+      {
+        "title": "Cryogenic Signal Integrity Budgeting for Scalable Superconducting Control Lines",
+        "authors": ["R. Kim", "M. Chen"],
+        "venue": "Applied Physics Letters",
+        "year": 2023,
+        "relevance_to_proposal": "Supports credible subsystem specifications needed for Stage A/B integration claims."
+      },
+      {
+        "title": "Witnessed Acceptance Testing Protocols for Intermediate-Scale Quantum Processors",
+        "authors": ["E. Vasquez", "M. Chen", "L. Patel"],
+        "venue": "Quantum Science and Technology",
+        "year": 2025,
+        "relevance_to_proposal": "Directly aligned with QBI emphasis on verification paths and government-ready evaluation artifacts."
+      }
+    ],
+    "prior_darpa_awards": [
+      {
+        "program_name": "SBIR Phase II (Quantum Control Electronics)",
+        "award_number": "EXAMPLE-HR0011-21-C-XXXX",
+        "award_instrument": "SBIR",
+        "award_amount_usd": 1650000,
+        "period_start": "2021-09-01",
+        "period_end": "2023-08-31",
+        "status": "Completed",
+        "outcomes": "Delivered modular cryogenic IF chains and documented calibration artifacts; transitioned firmware regression suite to partner test lab."
+      }
+    ],
+    "prior_government_awards": [
+      {
+        "agency": "DOE",
+        "program": "Office of Science — National Laboratory subaward (via partner)",
+        "award_number": "DE-SC00EXAMPLE",
+        "award_amount_usd": 420000,
+        "period": "2022–2023",
+        "relevance": "Co-developed quantum characterization workflows used in independent review cycles."
+      }
+    ],
+    "key_capabilities": [
+      "Cryogenic microwave engineering and signal integrity validation",
+      "FPGA/DSP control stacks for low-latency pulse delivery",
+      "Automated calibration pipelines with versioned regression artifacts",
+      "Design of witnessed benchmark suites and acceptance metrics suitable for IV&V participation",
+      "Integrated schedule/risk management linking prototypes to measurable uncertainty reduction"
+    ],
+    "technical_infrastructure": {
+      "computing_resources": "On-prem HPC cluster (CPU/GPU) for classical simulation envelopes and error-model Monte Carlo; secure enclave for CUI-handled datasets; encrypted artifact repository with immutable milestone bundles.",
+      "laboratory_facilities": "Class 10,000 cleanroom bay for cryogenic wiring harness assembly; 3 dilution refrigerators (mixing chamber base temps down to ~10 mK); RF shielded measurement cells; vector network analyzer / AWG / digitizer racks calibrated to NIST-traceable references.",
+      "software_tools": "Internal QuantumCI suite for calibration regression; Git-backed hardware definition languages for electronics revisions; artifact signing for witnessed test bundles; integration hooks for standardized JSON logs consumable by Government-side IV&V tooling.",
+      "partnerships": "Non-exclusive relationships with a domestic superconducting qubit foundry for fabrication iterations and with a university cryogenic packaging group for interconnect demonstrations."
+    }
+  },
+  "team": [
+    {
+      "team_member_id": "tm-001",
+      "name": "Dr. Marcus Chen",
+      "title": "Principal Scientist & Technical Director",
+      "role": "Technical Lead — Architecture, V&V interfaces, cryogenic control stack",
+      "expertise": [
+        "Superconducting qubits",
+        "Cryogenic RF engineering",
+        "Quantum benchmarking",
+        "Subsystem acceptance testing"
+      ],
+      "relevant_experience": "14 years building and verifying intermediate-scale quantum processors; authored witnessed acceptance protocols adopted by partners.",
+      "education": {
+        "degree": "Ph.D.",
+        "field": "Applied Physics",
+        "institution": "Stanford University",
+        "year": 2011
+      },
+      "security_clearance": {
+        "level": "None",
+        "active": false
+      },
+      "allocation_percent": 55,
+      "publications_last_3_years": 9,
+      "commitment_confirmed": true,
+      "conflict_of_interest": "No financial interest in DARPA SETA/A&AS providers; no concurrent advisory role with QBI IV&V contractors.",
+      "subcontractor_affiliation": null
+    },
+    {
+      "team_member_id": "tm-002",
+      "name": "Dr. Priya Singh",
+      "title": "Director of Quantum Systems Architecture",
+      "role": "USQC concept owner — fault-tolerance pathway & milestone decomposition",
+      "expertise": [
+        "Quantum error correction resource estimation",
+        "Fault-tolerant architectural modeling",
+        "Hardware constraints → logical layer mapping"
+      ],
+      "relevant_experience": "Led architecture studies linking physical error budgets to logical clock overhead; published on threshold-adjacent planning for near-term prototypes.",
+      "education": {
+        "degree": "Ph.D.",
+        "field": "Computer Science (Quantum Information)",
+        "institution": "MIT",
+        "year": 2015
+      },
+      "security_clearance": {
+        "level": "None",
+        "active": false
+      },
+      "allocation_percent": 35,
+      "publications_last_3_years": 6,
+      "commitment_confirmed": true,
+      "conflict_of_interest": "None identified.",
+      "subcontractor_affiliation": null
+    },
+    {
+      "team_member_id": "tm-003",
+      "name": "Dr. Raj Kim",
+      "title": "Lead Systems Engineer",
+      "role": "Stage B risk register, integration prototypes, schedule burn-down",
+      "expertise": [
+        "Systems engineering",
+        "TRL-style milestone definition",
+        "Cryogenic packaging integration"
+      ],
+      "relevant_experience": "Managed multi-disciplinary integration projects across firmware, mechanical, and thermal domains with gated reviews.",
+      "education": {
+        "degree": "Ph.D.",
+        "field": "Electrical Engineering",
+        "institution": "Georgia Institute of Technology",
+        "year": 2012
+      },
+      "security_clearance": {
+        "level": "None",
+        "active": false
+      },
+      "allocation_percent": 40,
+      "publications_last_3_years": 3,
+      "commitment_confirmed": true,
+      "conflict_of_interest": "None identified.",
+      "subcontractor_affiliation": null
+    },
+    {
+      "team_member_id": "tm-004",
+      "name": "Lisa Okonkwo",
+      "title": "Director of Benchmarking & IV&V Interfaces",
+      "role": "Stage C artifacts — test harnesses, data schemas, witnessed benchmark bundles",
+      "expertise": [
+        "Quantum characterization",
+        "Software quality for scientific computing",
+        "Evaluator-ready documentation"
+      ],
+      "relevant_experience": "Built regression benchmarking infrastructure used by external reviewers; led creation of signed artifact pipelines.",
+      "education": {
+        "degree": "M.S.",
+        "field": "Computer Engineering",
+        "institution": "University of Colorado Boulder",
+        "year": 2016
+      },
+      "security_clearance": {
+        "level": "None",
+        "active": false
+      },
+      "allocation_percent": 45,
+      "publications_last_3_years": 4,
+      "commitment_confirmed": true,
+      "conflict_of_interest": "None identified.",
+      "subcontractor_affiliation": null
+    },
+    {
+      "team_member_id": "tm-005",
+      "name": "Dr. Elena Vasquez",
+      "title": "Chief Executive Officer",
+      "role": "Corporate governance, strategic alignment with QBI objectives, stakeholder communication",
+      "expertise": [
+        "Defense innovation ecosystem",
+        "Program execution oversight",
+        "Partnership formation"
+      ],
+      "relevant_experience": "Former program manager for quantum hardware transition efforts; established export/compliance governance for dual-use technologies.",
+      "education": {
+        "degree": "Ph.D.",
+        "field": "Physics",
+        "institution": "University of Maryland",
+        "year": 2008
+      },
+      "security_clearance": {
+        "level": "None",
+        "active": false
+      },
+      "allocation_percent": 15,
+      "publications_last_3_years": 1,
+      "commitment_confirmed": true,
+      "conflict_of_interest": "None identified.",
+      "subcontractor_affiliation": null
+    }
+  ],
+  "subawardees_and_partners": [
+    {
+      "partner_id": "sub-001",
+      "organization_name": "Flatiron Quantum Fabrication Foundry (FQFF)",
+      "poc_name": "Dr. Neil Patterson",
+      "poc_email": "npatterson@fqff.example",
+      "relationship_type": "Subcontractor",
+      "role_description": "Iterative fabrication of superconducting circuit revisions and wafer-scale screening for yield risk reduction tied to Stage B prototypes.",
+      "award_amount_usd": 1850000,
+      "allocation_percent": null,
+      "key_contributions": [
+        "Design-rule checks for reduced TLS loss",
+        "Wafer screening datasets feeding milestone gates"
+      ],
+      "facility_security_clearance": "None",
+      "cmmc_level_required": 2,
+      "contract_type": "FFP milestones",
+      "subcontractor_mou": "Executed teaming MOU with IP and export-control flow-downs."
+    },
+    {
+      "partner_id": "sub-002",
+      "organization_name": "Meridian Cryogenic Packaging Lab (University-affiliated)",
+      "poc_name": "Prof. Hannah Meyer",
+      "poc_email": "hmeyer@meridian-lab.example",
+      "relationship_type": "Collaborator (CRADA-like)",
+      "role_description": "Demonstrates interconnect scaling approaches and thermal/mechanical stress testing for integration prototypes.",
+      "award_amount_usd": 0,
+      "allocation_percent": null,
+      "key_contributions": [
+        "Mechanical reliability studies",
+        "Packaging interfaces for multi-stage harness verification"
+      ]
+    }
+  ],
+  "funding_plan": {
+    "total_requested_usd": 14250000,
+    "period_of_performance_months": 42,
+    "period_start_date": "2027-01-01",
+    "period_end_date": "2030-06-30",
+    "cost_share_contributed_usd": 950000,
+    "cost_share_percent": 6.6,
+    "cost_share_description": "Corporate labor and fab slot donations toward iterative prototype spins and regression harness hardening.",
+    "requested_instrument_type": "Other Transaction (OT) for Research or Prototype — per QBIT package (anticipate milestone-driven OT aligned with QBI model OT)",
+    "breakdown": [
+      {
+        "category": "Personnel & fringe (engineering, physics, systems)",
+        "amount_usd": 4980000,
+        "percent_of_total": 35,
+        "notes": "Core team allocation across architecture, cryogenic RF, benchmarking/IV&V tooling, and program management."
+      },
+      {
+        "category": "Cryogenic hardware & electronics (capital-like)",
+        "amount_usd": 3420000,
+        "percent_of_total": 24,
+        "notes": "Dilution refrigerator upgrades, wiring harness builds, RF racks, calibration-grade instrumentation refresh cycles."
+      },
+      {
+        "category": "Fabrication & foundry iterations (subcontract)",
+        "amount_usd": 2850000,
+        "percent_of_total": 20,
+        "notes": "Wafer runs, mask revisions, packaging iterations tied to Stage B risk burn-down milestones."
+      },
+      {
+        "category": "Integration & witnessed testing campaigns",
+        "amount_usd": 1710000,
+        "percent_of_total": 12,
+        "notes": "Closed-loop integration windows, independent observer attendance logistics, artifact packaging for IV&V consumption."
+      },
+      {
+        "category": "Travel, facilities, IT/CUI infrastructure",
+        "amount_usd": 855000,
+        "percent_of_total": 6,
+        "notes": "Secure collaboration environments, CUI storage hardening, periodic Government coordination travel."
+      },
+      {
+        "category": "Fee / indirect (aligned with negotiated OT structure)",
+        "amount_usd": 435000,
+        "percent_of_total": 3,
+        "notes": "Administrative overhead consistent with negotiated OT indirect caps if applicable."
+      }
+    ]
+  },
+  "project_goals": {
+    "primary_objective": "Demonstrate a credible, independently verifiable path toward utility-scale quantum computing by 2033 by pairing a near-term USQC concept with staged prototypes that burn down integration risks and produce evaluator-ready verification artifacts—not incremental benchmarking of today's boutique systems.",
+    "technical_goals": [
+      {
+        "goal_id": "tg-qbi-a",
+        "title": "Stage A — USQC concept & feasibility narrative grounded in physics-limited budgets",
+        "description": "Produce a quantitative architecture concept spanning cryogenic stack, control/readout, and fault-tolerance overhead—explicitly mapping assumptions to measurable subsystem envelopes.",
+        "success_metric": "Acceptance review scores concept as plausible with falsifiable assumptions and identified killer risks.",
+        "deliverable_aligned": "Concept brief + error-budget spreadsheet + risk-ranked falsification experiments list."
+      },
+      {
+        "goal_id": "tg-qbi-b",
+        "title": "Stage B — Milestone plan with hardware/software prototypes that reduce integration uncertainty",
+        "description": "Execute gated prototypes (interposer revisions, crosstalk isolation demos, stability-week regression suites) each tied to uncertainty reduction metrics.",
+        "success_metric": "Each milestone closes at least one critical risk with witnessed data artifacts.",
+        "deliverable_aligned": "Prototype revision logs; regression bundles; independent observer statements where applicable."
+      },
+      {
+        "goal_id": "tg-qbi-c",
+        "title": "Stage C — Government verification alignment & IV&V augmentation tools",
+        "description": "Deliver standardized benchmark harness outputs and interfaces enabling third-party IV&V to validate constructability and operability claims without relying on proprietary GUI-only workflows.",
+        "success_metric": "IV&V team can replay benchmarks from signed artifacts and reproduce key metrics within agreed tolerances.",
+        "deliverable_aligned": "Signed artifact repository schema; replay tooling; documented tolerance budgets."
+      },
+      "Automated calibration regression coverage expansion tied to hardware revision gates",
+      "Subsystem specification sheets suitable for acceptance testing (latency, fidelity floors, stability windows)"
+    ],
+    "expected_outcomes": [
+      {
+        "outcome_id": "eo-001",
+        "deliverable": "Versioned benchmark suites with immutable hashes suitable for Government retention",
+        "type": "software_artifact",
+        "description": "Supports QBI focus on verification rather than incremental QC improvements.",
+        "transition_plan": "License-friendly modules for Government-side evaluation harness integration.",
+        "fundamental_research_flag": true,
+        "quantity": 1,
+        "venues": ["internal repo + export packages"]
+      },
+      {
+        "outcome_id": "eo-002",
+        "deliverable": "Cryogenic integration prototypes demonstrating reduced correlated control errors",
+        "type": "hardware_demonstration",
+        "description": "Hardware proof tied to Stage B burn-down.",
+        "transition_plan": "Partner fab transfers processes under contractual IP terms.",
+        "fundamental_research_flag": false,
+        "quantity": 3,
+        "venues": ["lab demonstrations + witnessed test events"]
+      },
+      {
+        "outcome_id": "eo-003",
+        "deliverable": "Risk register updates traceable to empirical closures",
+        "type": "program_management",
+        "description": "Demonstrates disciplined execution aligned with QBIT milestone constructs.",
+        "transition_plan": "Monthly drops to Agreements Officer milestone reviews.",
+        "fundamental_research_flag": false,
+        "quantity": 42,
+        "venues": ["monthly milestone binders"]
+      }
+    ],
+    "fundamental_research_claim": true,
+    "fundamental_research_justification": "Expected publishable advances in calibration methodology, cryogenic signal integrity, and verification-grade benchmarking—while retaining controlled handling for performer-specific fabrication parameters under appropriate markings.",
+    "revolutionary_vs_evolutionary": "Targets step-change verification methodology and integration prototypes aimed at utility-scale feasibility adjudication; explicitly avoids proposals that only evolve today's small-system benchmarks without addressing constructability and operability verification.",
+    "relationship_to_i2o_thrust_areas": [],
+    "competitive_landscape": "Multiple hardware modalities compete for USQC; Heliotrope emphasizes cross-cutting verification infrastructure and staged falsifiable prototypes applicable across modalities where cryogenic superconducting integration dominates risk.",
+    "transition_and_commercialization": "If viability is demonstrated, transition pathways include national lab partnerships and domestic cloud-accessible quantum evaluation contracts; Heliotrope maintains dual-use awareness and export compliance gates."
+  },
+  "compliance_and_constraints": {
+    "export_control": {
+      "applicable": true,
+      "categories": "EAR (potential ECCNs for specialized quantum-related electronics and precision instruments); deemed export controls for foreign nationals accessing detailed technical data.",
+      "plan": "Technology control plan (TCP) with role-based access to detailed fab parameters; visitor protocols for witnessed tests; encryption for CUI-bearing datasets at rest/in transit."
+    },
+    "security_requirements": {
+      "classified_work": false,
+      "unclassified_controlled_information": true,
+      "cui_categories": "CTI (Controlled Technical Information) anticipated under QBI CUI guide; program markings applied per submission instructions.",
+      "security_plan_required": true,
+      "facility_requirements": "Controlled access lab zones; visitor logs for witnessed testing; secure artifact signing pipeline."
+    },
+    "human_subjects_research": {
+      "involved": false,
+      "irb_approval_required": false
+    },
+    "animal_research": {
+      "involved": false,
+      "iacuc_approval_required": false
+    },
+    "environmental_compliance": {
+      "involved": true,
+      "nepa_review_required": false
+    },
+    "independent_research_and_development": "Internal IRAD funded benchmark harness improvements (~$220k/yr) aligned with verification tooling roadmap.",
+    "concurrent_proposals": [
+      {
+        "agency": "NSF",
+        "program": "Quantum sensing — unrelated thrust",
+        "status": "Submitted",
+        "overlap_assessment": "Distinct personnel focus; no overlapping milestones or hardware deliverables."
+      }
+    ],
+    "prior_government_funding": [
+      {
+        "agency": "DARPA",
+        "program": "SBIR — cryogenic control electronics",
+        "award": "HR0011-21-C-XXXX",
+        "relationship": "Completed; no conflict with proposed QBI alignment—distinct technical artifacts."
+      }
+    ],
+    "conflicts_of_interest": {
+      "organizational_conflicts": "Heliotrope does not concurrently provide SETA/A&AS to DARPA on QBI; personnel screening excludes IV&V contractor employment overlaps.",
+      "personal_conflicts": "Technical POC affirms no familial/financial ties to prospective evaluators.",
+      "mitigation": "Firewall procedures for any future teaming discussions with support contractors; ethics training annually."
+    },
+    "special_considerations": "Submissions under QBI may be CUI; Heliotrope maintains NIST SP 800-171 aligned practices for nonfederal systems handling CUI as applicable to performer obligations under award."
+  },
+  "submission_metadata": {
+    "baa_number": "DARPA-PA-26-02",
+    "baa_title": "Quantum Benchmarking Initiative (QBI) 2026 Program Announcement",
+    "submission_type": "Program Announcement — proposals submitted only in response to issued QBIT calls under this PA",
+    "abstract_submission_date": null,
+    "proposal_submission_date": null,
+    "invited_to_propose": null,
+    "darpa_feedback_on_abstract": null,
+    "document_version": "2026.05.13",
+    "last_updated": "2026-05-13",
+    "prepared_by": "Dr. Marcus Chen (Technical), Jordan Okonkwo (Compliance)",
+    "approved_by_ci": false,
+    "approved_by_admin": false,
+    "legal_review_completed": false,
+    "compliance_checklist": {
+      "sam_registration_verified": true,
+      "cmmc_status_verified": true,
+      "security_clearance_verified": false,
+      "representations_certifications_completed": false,
+      "cost_accounting_standards_compliant": true,
+      "export_control_review_completed": true
+    }
+  }
+}

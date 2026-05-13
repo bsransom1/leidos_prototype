@@ -143,7 +143,7 @@ Parses uploaded PDF and extracts structure, requirements, and deadlines.
 **Response**: BAA object with parsed sections and metadata
 
 ### POST `/api/generate-proposal-stream`
-Generates proposal draft using OpenAI with real-time progress updates via Server-Sent Events (SSE).
+Generates proposal draft using Anthropic Claude with real-time progress updates via Server-Sent Events (SSE).
 
 **Request**: JSON with `baa` and `organizationContext`
 **Response**: SSE stream with progress updates (0-100%) and final proposal object with sections, confidence scores, and feedback
@@ -171,8 +171,8 @@ Required environment variables (add to `.env.local`):
 NEXT_PUBLIC_SUPABASE_URL=your_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 
-# OpenAI API Configuration
-OPENAI_API_KEY=your_openai_api_key
+# Anthropic API Configuration
+ANTHROPIC_API_KEY=your_anthropic_api_key
 
 # Resend Email Configuration (for collaboration invitations)
 RESEND_API_KEY=your_resend_api_key  # Optional: Get from https://resend.com
@@ -196,7 +196,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000  # or your production URL
 
 ## Notes
 
-- AI proposal generation uses OpenAI GPT-4o-mini with streaming for real-time progress
+- AI proposal generation uses Anthropic Claude Sonnet with streaming for real-time progress
 - Generates comprehensive ~10-page Stage 1 BAA proposals (5,000-6,000 words, 10 sections)
 - PDF parsing uses pdf2json for text extraction with raw text preservation
 - All proposals are saved to Supabase database with auto-save functionality
@@ -228,7 +228,7 @@ After **Mark awarded**, navigate to **`/dashboard/projects/[proposalId]/pm`**. O
 **Required Vercel Environment Variables:**
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `OPENAI_API_KEY`
+- `ANTHROPIC_API_KEY`
 - `RESEND_API_KEY` (optional)
 - `NEXT_PUBLIC_APP_URL` (set to your Vercel URL)
 

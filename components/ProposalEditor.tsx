@@ -24,6 +24,15 @@ import { Button } from '@/components/ui/button';
 import { isAdmin, type PmRole } from '@/lib/pm-access';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+/**
+ * Pagination approach note:
+ * We render a single continuous document canvas and show page boundaries as a purely visual overlay.
+ * Real pagination happens only during server-side PDF export. The editor never needs to know about pages.
+ */
+
+const CANVAS_WIDTH_PX = 816; // 8.5in at 96dpi
+const PAGE_HEIGHT_PX = 1056; // 11in at 96dpi
+const PAGE_MARGIN_PX = 96; // 1in margins
 
 export type ProposalEditorHandle = {
   save: () => Promise<void>;
@@ -483,11 +492,6 @@ const ProposalEditor = forwardRef<ProposalEditorHandle, ProposalEditorProps>(fun
   },
   ref
 ) {
-  const PAGE_HEIGHT = 1008; // slightly shorter on-screen while keeping 8.5x11 feel
-  const PAGE_GAP = 64;
-  const PAGE_PAD_Y = 80;
-  const PAGE_PAD_X = 96;
-
   void proposalId;
   void baa;
   void onAward;
@@ -501,8 +505,9 @@ const ProposalEditor = forwardRef<ProposalEditorHandle, ProposalEditorProps>(fun
   const [activeEditor, setActiveEditor] = useState<Editor | null>(null);
   const [, forceUpdate] = useState(0);
   const [selectionRect, setSelectionRect] = useState<DOMRect | null>(null);
-  const docRef = useRef<HTMLDivElement | null>(null);
-  const [pages, setPages] = useState<string[][]>(() => [(proposal.sections || []).map((s) => s.id)]);
+  const canvasRef = useRef<HTMLDivElement | null>(null);
+  const [pageCount, setPageCount] = useState(1);
+  const pageCountTimerRef = useRef<number | null>(null);
   const [titles, setTitles] = useState<Record<string, string>>(() =>
     Object.fromEntries((proposal.sections || []).map((s) => [s.id, s.title]))
   );
@@ -514,6 +519,45 @@ const ProposalEditor = forwardRef<ProposalEditorHandle, ProposalEditorProps>(fun
   const [showCollab, setShowCollab] = useState(false);
   const [collabAnchor, setCollabAnchor] = useState<DOMRect | null>(null);
   const dirtyCount = dirty.size;
+
+  const recomputePageCount = useCallback(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+    const h = el.scrollHeight;
+    const next = Math.max(1, Math.ceil(h / PAGE_HEIGHT_PX));
+    setPageCount((prev) => (prev === next ? prev : next));
+  }, []);
+
+  const schedulePageCountRecompute = useCallback(() => {
+    if (pageCountTimerRef.current != null) window.clearTimeout(pageCountTimerRef.current);
+    pageCountTimerRef.current = window.setTimeout(() => {
+      recomputePageCount();
+    }, 150);
+  }, [recomputePageCount]);
+
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+
+    let raf = 0;
+    const schedule = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(() => {
+        raf = 0;
+        recomputePageCount();
+      });
+    };
+
+    const ro = new ResizeObserver(() => schedule());
+    ro.observe(el);
+    schedule();
+
+    return () => {
+      if (pageCountTimerRef.current != null) window.clearTimeout(pageCountTimerRef.current);
+      if (raf) window.cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, [recomputePageCount]);
 
   const handleSave = useCallback(async () => {
     setSaving(true);
@@ -577,86 +621,18 @@ const ProposalEditor = forwardRef<ProposalEditorHandle, ProposalEditorProps>(fun
     };
   }, [activeEditor, readOnly]);
 
-  // Layout-aware paging: render real page boxes and group whole sections into pages.
-  useEffect(() => {
-    const el = docRef.current;
-    if (!el) return;
-
-    const pageHeight = PAGE_HEIGHT; // includes padding
-    const pagePadY = PAGE_PAD_Y;
-    const contentHeight = pageHeight - pagePadY * 2;
-
-    let raf = 0;
-    let t: number | null = null;
-
-    const compute = () => {
-      raf = 0;
-      const container = docRef.current;
-      if (!container) return;
-
-      const wraps = Array.from(container.querySelectorAll<HTMLElement>('div[data-section-id]'));
-
-      const nextPages: string[][] = [];
-      let current: string[] = [];
-      let used = 0;
-
-      for (const wrap of wraps) {
-        const id = wrap.getAttribute('data-section-id') || '';
-        if (!id) continue;
-
-        const h = wrap.offsetHeight;
-        if (current.length > 0 && used + h > contentHeight) {
-          nextPages.push(current);
-          current = [];
-          used = 0;
-        }
-        current.push(id);
-        used += h;
-      }
-      if (current.length) nextPages.push(current);
-      if (nextPages.length === 0) nextPages.push([]);
-
-      setPages((prev) => {
-        if (prev.length !== nextPages.length) return nextPages;
-        for (let i = 0; i < prev.length; i++) {
-          const a = prev[i] || [];
-          const b = nextPages[i] || [];
-          if (a.length !== b.length) return nextPages;
-          for (let j = 0; j < a.length; j++) if (a[j] !== b[j]) return nextPages;
-        }
-        return prev;
-      });
-    };
-
-    const schedule = () => {
-      if (t != null) window.clearTimeout(t);
-      // throttle to prevent jitter while typing
-      t = window.setTimeout(() => {
-        if (raf) return;
-        raf = window.requestAnimationFrame(compute);
-      }, 120);
-    };
-
-    const ro = new ResizeObserver(() => schedule());
-    ro.observe(el);
-    schedule();
-
-    return () => {
-      if (t != null) window.clearTimeout(t);
-      if (raf) window.cancelAnimationFrame(raf);
-      ro.disconnect();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [proposal.sections?.length, readOnly]);
+  // Removed all pagination/page-bucket logic. Page boundaries are now a visual overlay only.
 
   const handleTitleChange = useCallback((id: string, title: string) => {
     setTitles((prev) => ({ ...prev, [id]: title }));
     setDirty((prev) => new Set(prev).add(id));
+    schedulePageCountRecompute();
   }, []);
 
   const handleContentChange = useCallback((id: string, markdown: string) => {
     setContents((prev) => ({ ...prev, [id]: markdown }));
     setDirty((prev) => new Set(prev).add(id));
+    schedulePageCountRecompute();
   }, []);
 
   const sections = proposal.sections || [];
@@ -743,38 +719,64 @@ const ProposalEditor = forwardRef<ProposalEditorHandle, ProposalEditorProps>(fun
               <p className="text-sm text-ds-text-muted">No sections generated yet.</p>
             </div>
           ) : (
-            <div ref={docRef} className="space-y-0">
-              {pages.map((page, pageIndex) => (
-                <div key={`pagewrap-${pageIndex}`}>
-                  <div
-                    className="border border-ds-border/60 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.10)] rounded-[4px]"
-                    style={{ minHeight: PAGE_HEIGHT }}
-                  >
-                    <div style={{ paddingLeft: PAGE_PAD_X, paddingRight: PAGE_PAD_X, paddingTop: PAGE_PAD_Y, paddingBottom: PAGE_PAD_Y }}>
-                      {page.map((sectionId) => {
-                        const section = sections.find((s) => s.id === sectionId);
-                        if (!section) return null;
-                        return (
-                          <div key={section.id} data-section-id={section.id}>
-                            <SectionEditor
-                              section={section}
-                              titleOverride={titles[section.id] ?? section.title}
-                              onTitleChange={handleTitleChange}
-                              onContentChange={handleContentChange}
-                              onFocus={(ed) => {
-                                setActiveEditor(ed);
-                                onActiveEditorChange?.(ed);
-                              }}
-                              readOnly={readOnly}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div style={{ height: PAGE_GAP }} aria-hidden="true" />
+            <div className="py-12">
+              <div
+                ref={canvasRef}
+                className="relative mx-auto bg-white shadow-[0_1px_4px_rgba(0,0,0,0.10)]"
+                style={{
+                  width: CANVAS_WIDTH_PX,
+                  minHeight: PAGE_HEIGHT_PX,
+                  padding: PAGE_MARGIN_PX,
+                }}
+              >
+                {/* Page break overlay (visual only) */}
+                <div
+                  className="absolute left-0 top-0 h-full w-full"
+                  style={{ pointerEvents: 'none', zIndex: 10 }}
+                  aria-hidden="true"
+                >
+                  {Array.from({ length: Math.max(0, pageCount - 1) }).map((_, idx) => {
+                    const top = PAGE_HEIGHT_PX * (idx + 1);
+                    return (
+                      <div key={`pb-${idx}`} className="absolute left-0 right-0" style={{ top }}>
+                        <div
+                          className="absolute"
+                          style={{
+                            left: 0,
+                            right: 0,
+                            height: 1,
+                            background: 'rgba(0,0,0,0.10)',
+                          }}
+                        />
+                        <div
+                          className="absolute font-mono text-[10px] text-ds-text-subtle"
+                          style={{ left: 12, top: -18, userSelect: 'none' }}
+                        >
+                          {idx + 1}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
+
+                <div className="space-y-0">
+                  {sections.map((section) => (
+                    <div key={section.id}>
+                      <SectionEditor
+                        section={section}
+                        titleOverride={titles[section.id] ?? section.title}
+                        onTitleChange={handleTitleChange}
+                        onContentChange={handleContentChange}
+                        onFocus={(ed) => {
+                          setActiveEditor(ed);
+                          onActiveEditorChange?.(ed);
+                        }}
+                        readOnly={readOnly}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>

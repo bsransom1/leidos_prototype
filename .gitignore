@@ -48,8 +48,8 @@ next-env.d.ts
 # supabase local CLI cache
 supabase/.temp/
 
-# Large demo PDFs (avoid repo bloat)
-public/baas/
+# Large demo PDFs in public/baas (JSON org-context fixtures may be tracked)
+public/baas/*.pdf
 
 # Local org-context fixture (may contain demo PII — do not commit)
 org_context.json
