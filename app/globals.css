@@ -258,7 +258,7 @@ body {
 .doc-page-breaks {
   /* 11in at 96dpi minus typical browser print margins is variable; use 1056px as a practical guide. */
   --doc-page-height: 1056px;
-  --doc-page-gap: 28px;
+  --doc-page-gap: 56px;
   background-color: #ffffff;
   background-image:
     repeating-linear-gradient(

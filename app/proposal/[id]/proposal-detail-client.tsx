@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Trash, PencilSimple, FloppyDisk, X, SquaresFour, DownloadSimple, Medal, ListNumbers } from '@phosphor-icons/react';
+import { ArrowLeft, ArrowRight, Trash, PencilSimple, FloppyDisk, X, SquaresFour, DownloadSimple, Medal, ListNumbers, Users } from '@phosphor-icons/react';
 import ProposalEditor, { type ProposalEditorHandle } from '@/components/ProposalEditor';
 import type { BAA, Proposal, User as AppUser } from '@/types';
 import type { User } from '@supabase/supabase-js';
@@ -216,7 +216,7 @@ export default function ProposalDetailClient({ proposal, user, effectiveRole }: 
                 </div>
               ) : (
                 <>
-                  <p className="ds-h3 truncate text-ds-text max-w-[42rem]">{proposal.title}</p>
+                  <p className="ds-h3 truncate text-ds-text max-w-[42rem]">{proposalData.title}</p>
                   {editPermitted && (
                     <button
                       type="button"
@@ -261,18 +261,18 @@ export default function ProposalDetailClient({ proposal, user, effectiveRole }: 
                   const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
                   editorRef.current?.openCollaborators(rect);
                 }}
-                className="hidden sm:inline-flex h-7 w-7 items-center justify-center rounded-ds-sm border border-ds-border bg-ds-primary font-mono text-[10px] font-bold uppercase text-white"
+                className="hidden sm:inline-flex h-7 w-7 items-center justify-center rounded-ds-sm border border-ds-border bg-ds-shell/60 text-ds-text-secondary hover:bg-ds-shell"
               >
-                {collaborators[0]?.name?.charAt(0) ?? 'U'}
+                <Users className="h-4 w-4" weight="bold" aria-hidden />
               </button>
             )}
 
             {/* Compact formatting controls in header (editable only) */}
             {!documentReadOnly && activeEditor && (
-              <div className="hidden lg:flex items-center gap-1 rounded-ds-sm border border-ds-border bg-ds-surface px-1 py-0.5">
+              <div className="hidden lg:flex items-center gap-0.5 rounded-ds-sm border border-ds-border bg-ds-surface px-1 py-0.5">
                 <button
                   type="button"
-                  className="h-6 w-6 font-mono text-[11px] font-semibold text-ds-text-muted hover:text-ds-text"
+                  className="h-5 w-5 font-mono text-[10px] font-semibold text-ds-text-muted hover:text-ds-text"
                   onMouseDown={(e) => { e.preventDefault(); activeEditor.chain().focus().toggleBold().run(); }}
                   title="Bold"
                 >
@@ -280,7 +280,7 @@ export default function ProposalDetailClient({ proposal, user, effectiveRole }: 
                 </button>
                 <button
                   type="button"
-                  className="h-6 w-6 font-mono text-[11px] font-semibold text-ds-text-muted hover:text-ds-text italic"
+                  className="h-5 w-5 font-mono text-[10px] font-semibold text-ds-text-muted hover:text-ds-text italic"
                   onMouseDown={(e) => { e.preventDefault(); activeEditor.chain().focus().toggleItalic().run(); }}
                   title="Italic"
                 >
@@ -288,7 +288,7 @@ export default function ProposalDetailClient({ proposal, user, effectiveRole }: 
                 </button>
                 <button
                   type="button"
-                  className="h-6 w-6 font-mono text-[11px] font-semibold text-ds-text-muted hover:text-ds-text underline"
+                  className="h-5 w-5 font-mono text-[10px] font-semibold text-ds-text-muted hover:text-ds-text underline"
                   onMouseDown={(e) => { e.preventDefault(); activeEditor.chain().focus().toggleUnderline().run(); }}
                   title="Underline"
                 >

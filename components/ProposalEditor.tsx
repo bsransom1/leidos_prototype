@@ -390,7 +390,6 @@ function ToolbarDivider() {
 
 function SectionEditor({
   section,
-  sectionIndex,
   titleOverride,
   onTitleChange,
   onContentChange,
@@ -398,7 +397,6 @@ function SectionEditor({
   readOnly,
 }: {
   section: ProposalSection;
-  sectionIndex: number;
   titleOverride: string;
   onTitleChange: (id: string, title: string) => void;
   onContentChange: (id: string, markdown: string) => void;
@@ -438,14 +436,6 @@ function SectionEditor({
       className="scroll-mt-24"
     >
       <div className="relative">
-        {/* Margin section label (outside text margin) */}
-        <span
-          aria-hidden
-          className="absolute -left-14 top-1 font-mono text-[10px] text-slate-500 tabular-nums"
-        >
-          {String(sectionIndex + 1).padStart(2, '0')}
-        </span>
-
         {/* In-document heading */}
         {readOnly ? (
           <h2 className="text-[15px] font-bold tracking-tight text-slate-950 mt-10 first:mt-0">
@@ -512,6 +502,7 @@ const ProposalEditor = forwardRef<ProposalEditorHandle, ProposalEditorProps>(fun
   const [contents, setContents] = useState<Record<string, string>>(() =>
     Object.fromEntries((proposal.sections || []).map((s) => [s.id, s.content || '']))
   );
+  const [docTitle, setDocTitle] = useState(() => proposal.title);
   const [dirty, setDirty] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [showCollab, setShowCollab] = useState(false);
@@ -525,11 +516,11 @@ const ProposalEditor = forwardRef<ProposalEditorHandle, ProposalEditorProps>(fun
       title: titles[s.id] ?? s.title,
       content: contents[s.id] ?? s.content,
     }));
-    const updatedProposal: Proposal = { ...proposal, sections: updatedSections };
+    const updatedProposal: Proposal = { ...proposal, title: docTitle.trim() || proposal.title, sections: updatedSections };
     await onSave(updatedProposal);
     setDirty(new Set());
     setSaving(false);
-  }, [onSave, proposal, titles, contents]);
+  }, [onSave, proposal, titles, contents, docTitle]);
 
   useImperativeHandle(ref, () => ({
     save: async () => {
@@ -675,11 +666,30 @@ const ProposalEditor = forwardRef<ProposalEditorHandle, ProposalEditorProps>(fun
             </div>
           ) : (
             <div className="space-y-0">
+              {/* Document title (in-canvas, used for export) */}
+              <div className="mb-10">
+                {readOnly ? (
+                  <h1 className="font-serif text-[22px] font-bold leading-tight text-slate-950">
+                    {docTitle}
+                  </h1>
+                ) : (
+                  <input
+                    type="text"
+                    value={docTitle}
+                    onChange={(e) => {
+                      setDocTitle(e.target.value);
+                      setDirty((prev) => new Set(prev).add('__doc_title__'));
+                    }}
+                    className="w-full bg-transparent font-serif text-[22px] font-bold leading-tight text-slate-950 placeholder:text-slate-400 focus:outline-none"
+                    placeholder="Proposal title"
+                    spellCheck={false}
+                  />
+                )}
+              </div>
               {sections.map((section, index) => (
                 <SectionEditor
                   key={section.id}
                   section={section}
-                  sectionIndex={index}
                   titleOverride={titles[section.id] ?? section.title}
                   onTitleChange={handleTitleChange}
                   onContentChange={handleContentChange}

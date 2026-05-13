@@ -9,7 +9,7 @@ import PDFUpload from '@/components/PDFUpload';
 import OrganizationContextJSONUpload from '@/components/OrganizationContextJSONUpload';
 import ProposalEditor, { type ProposalEditorHandle } from '@/components/ProposalEditor';
 import ConfidenceScore from '@/components/ConfidenceScore';
-import { DownloadSimple, FloppyDisk, Medal, ListNumbers } from '@phosphor-icons/react';
+import { DownloadSimple, FloppyDisk, Medal, ListNumbers, Users } from '@phosphor-icons/react';
 import type { Editor } from '@tiptap/core';
 import ProposalGenerationLoader from '@/components/ProposalGenerationLoader';
 import { BAA, OrganizationContext, Proposal, User } from '@/types';
@@ -499,16 +499,16 @@ export default function CreateProposalClient({ user, existingProposal, effective
                   title="Collaborators"
                   onClick={(e) => editorRef.current?.openCollaborators((e.currentTarget as HTMLButtonElement).getBoundingClientRect())}
                   onDoubleClick={(e) => editorRef.current?.openCollaborators((e.currentTarget as HTMLButtonElement).getBoundingClientRect())}
-                  className="hidden sm:inline-flex h-7 w-7 items-center justify-center rounded-ds-sm border border-ds-border bg-ds-primary font-mono text-[10px] font-bold uppercase text-white"
+                  className="hidden sm:inline-flex h-7 w-7 items-center justify-center rounded-ds-sm border border-ds-border bg-ds-shell/60 text-ds-text-secondary hover:bg-ds-shell"
                 >
-                  {collaborators[0]?.name?.charAt(0) ?? 'U'}
+                  <Users className="h-4 w-4" weight="bold" aria-hidden />
                 </button>
               )}
               {canEdit(effectiveRole) && activeEditor && (
-                <div className="hidden lg:flex items-center gap-1 rounded-ds-sm border border-ds-border bg-ds-surface px-1 py-0.5">
+                <div className="hidden lg:flex items-center gap-0.5 rounded-ds-sm border border-ds-border bg-ds-surface px-1 py-0.5">
                   <button
                     type="button"
-                    className="h-6 w-6 font-mono text-[11px] font-semibold text-ds-text-muted hover:text-ds-text"
+                    className="h-5 w-5 font-mono text-[10px] font-semibold text-ds-text-muted hover:text-ds-text"
                     onMouseDown={(e) => { e.preventDefault(); activeEditor.chain().focus().toggleBold().run(); }}
                     title="Bold"
                   >
@@ -516,7 +516,7 @@ export default function CreateProposalClient({ user, existingProposal, effective
                   </button>
                   <button
                     type="button"
-                    className="h-6 w-6 font-mono text-[11px] font-semibold text-ds-text-muted hover:text-ds-text italic"
+                    className="h-5 w-5 font-mono text-[10px] font-semibold text-ds-text-muted hover:text-ds-text italic"
                     onMouseDown={(e) => { e.preventDefault(); activeEditor.chain().focus().toggleItalic().run(); }}
                     title="Italic"
                   >
@@ -524,7 +524,7 @@ export default function CreateProposalClient({ user, existingProposal, effective
                   </button>
                   <button
                     type="button"
-                    className="h-6 w-6 font-mono text-[11px] font-semibold text-ds-text-muted hover:text-ds-text underline"
+                    className="h-5 w-5 font-mono text-[10px] font-semibold text-ds-text-muted hover:text-ds-text underline"
                     onMouseDown={(e) => { e.preventDefault(); activeEditor.chain().focus().toggleUnderline().run(); }}
                     title="Underline"
                   >
