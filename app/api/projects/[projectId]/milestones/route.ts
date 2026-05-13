@@ -23,7 +23,14 @@ export async function GET(
     .order('phase_number');
 
   const ids = (phases ?? []).map((p) => p.id);
-  if (!ids.length) return NextResponse.json({ phases: [], milestones: [] });
+  if (!ids.length) {
+    return NextResponse.json({
+      phases: [],
+      milestones: [],
+      deliverablesByMilestone: {},
+      role,
+    });
+  }
 
   const { data: milestones } = await supabase
     .from('pm_milestones')

@@ -118,13 +118,21 @@ export async function GET(
   const atRisk = byStatus('at_risk');
   const missed = byStatus('missed');
 
-  const popEnd = proposal.period_of_performance_end
-    ? new Date(proposal.period_of_performance_end)
-    : new Date();
-  const popStart = proposal.period_of_performance_start
-    ? new Date(proposal.period_of_performance_start)
-    : new Date();
-  const daysRemaining = Math.max(0, differenceInDays(popEnd, new Date()));
+  const popEndStr = proposal.period_of_performance_end;
+  const popStartStr = proposal.period_of_performance_start;
+  const popEnd = popEndStr ? new Date(popEndStr) : null;
+  const popStart = popStartStr ? new Date(popStartStr) : popEnd ?? new Date();
+
+  let daysRemaining: number | null = null;
+  let popCompleted = false;
+  if (popEnd) {
+    const d = differenceInDays(popEnd, new Date());
+    if (d < 0) {
+      popCompleted = true;
+    } else {
+      daysRemaining = d;
+    }
+  }
 
   const phaseProgress = (phases ?? []).map((ph) => {
     const ms = milestones.filter((m) => m.phase_id === ph.id);
@@ -162,7 +170,7 @@ export async function GET(
 
   const totalSpent = (phases ?? []).reduce((s, p) => s + Number(p.spent_to_date ?? 0), 0);
   const totalObl = (phases ?? []).reduce((s, p) => s + Number(p.obligated_amount ?? 0), 0);
-  const totalDays = Math.max(1, differenceInDays(popEnd, popStart));
+  const totalDays = Math.max(1, popEnd ? differenceInDays(popEnd, popStart) : 1);
   const burnActual = totalSpent / (totalDays / 30);
   const burnPlan =
     (phases ?? []).reduce((s, p) => s + Number(p.burn_rate_plan ?? 0), 0) / Math.max(1, phases?.length ?? 1);
@@ -183,6 +191,7 @@ export async function GET(
       popEnd: proposal.period_of_performance_end,
       cmmcLevel: proposal.cmmc_level,
       daysRemaining,
+      popCompleted,
       totalContractValue: proposal.total_contract_value,
       costShare: proposal.cost_share_amount,
     },

@@ -6,7 +6,7 @@
     "institution_parent": null,
     "website": "https://www.stratum-graphene.example",
     "established_year": 2017,
-    "description": "Stratum Graphene Technologies manufactures large-area monolayer graphene via roll-to-roll chemical vapor deposition (CVD), performs scalable transfer and lamination into aerospace-qualified epoxy systems, and operates an accredited mechanical testing laboratory focused on composite fatigue, interlaminar shear, and compression-after-impact relevant to primary and secondary aerostructures. The company emphasizes empirical datasets—static strength, fatigue life, environmental aging—not unsubstantiated theoretical claims about graphene performance.",
+    "description": "Stratum Graphene Technologies manufactures large-area monolayer graphene via roll-to-roll chemical vapor deposition (CVD)—sheet and interlayer products only; the company does not pursue carbon nanotube (CNT) or carbon nanoparticle structural additives, consistent with DARPA-SN-26-62 scope. Stratum performs scalable transfer and lamination into aerospace-qualified epoxy systems and operates a mechanical testing laboratory focused on composite fatigue, interlaminar shear, and compression-after-impact. Claims to government customers are anchored to measured structural coupons, joint lap-shear/ILSS surrogates, and factory throughput and yield observations—not modeling-only narratives or uncorroborated theoretical performance.",
     "naics_code": "325998",
     "dun_number": "112233445",
     "cage_code": "3PLZ9",
@@ -51,7 +51,7 @@
     "title": "Chief Technology Officer",
     "email": "s.okonkwo@stratum-graphene.example",
     "phone": "+1-425-555-0134",
-    "background_summary": "Materials scientist with 16 years in aerospace composites manufacturing and qualification (AS9100 environments). Led teams qualifying carbon/epoxy prepreg structures for UAV primary structures and introduced graphene-enhanced interleaf concepts with statistically powered fatigue datasets (stress-life curves, environmental conditioning per ASTM). Expertise in scalable lamination, void management, and standardized coupon-to-element validation pathways suitable for white paper responses grounded in test evidence."
+    "background_summary": "Materials scientist with 16 years in aerospace composites manufacturing and qualification (AS9100 environments). Led teams qualifying carbon/epoxy prepreg structures for UAV primary structures and introduced monolayer-graphene interleaf concepts with statistically powered fatigue datasets (stress-life curves, environmental conditioning per ASTM)—always tied to physical specimens, not stand-alone simulation. For DARPA-SN-26-62, responses emphasize coupon-level substantiation, line-rate and yield metrics from manufacturing, and explicit avoidance of CNT-based approaches and modeling-only structural assertions."
   },
   "administrative_poc": {
     "name": "Kevin Porter",
@@ -62,13 +62,14 @@
   },
   "research_profile": {
     "focus_areas": [
-      "Roll-to-roll monolayer graphene synthesis and defect mapping",
+      "Roll-to-roll monolayer graphene synthesis and defect mapping (no CNT / nanoparticle structural fillers)",
       "Transfer & lamination into aerospace epoxy systems (controlled void content)",
-      "Structural composites testing: tension/compression, ILSS, CAI, fatigue",
-      "Hybrid laminates: graphene interlayers vs baseline carbon fiber/epoxy",
-      "Manufacturing cost modeling ($/lb Part + scrap + recurring NRE amortization)"
+      "Structural composites testing: tension/compression, ILSS, CAI, fatigue—coupon and sub-element evidence first",
+      "Hybrid laminates: monolayer graphene interlayers vs baseline carbon fiber/epoxy under matched manufacturing controls",
+      "Manufacturing throughput, yield, and floor observation as primary scale-up evidence",
+      "Empirical cost modeling ($/lb) grounded in measured scrap, cycle time, and labor—not FEA-derived structural claims"
     ],
-    "research_description": "Stratum's operating model pairs scalable graphene sheet supply with statistically framed structural validation. For aerospace load-bearing applications, the company emphasizes through-thickness integrity (interlaminar toughening hypothesis tested via Mode I/II fracture surrogates), not cosmetic conductivity enhancements. Stratum maintains traceable lab datasets comparing baseline UD carbon/epoxy coupons against graphene-interleaved architectures under identical cure cycles and fiber areal weights.",
+    "research_description": "Stratum pairs scalable monolayer graphene sheet supply with statistically framed structural validation using physical coupons and elements. Load-bearing claims are demonstrated through identical-cure comparisons of baseline UD carbon/epoxy versus graphene-interleaved stacks (lap-shear, ILSS, static, fatigue, conditioning per ASTM). Through-thickness behavior is explored via Mode I/II fracture surrogates when data exists—not as modeling-only predictions. Scale-up and barrier discussions cite line rates, rework, web breaks, and QC binning from the factory floor. Stratum does not position carbon nanotubes or nanoparticle additives as part of its structural roadmap for this RFI.",
     "prior_experience": "Delivered pilot-line graphene interlayers for a regional UAV OEM demonstrator wing spar cap (non-flight article); joint testing campaign with a Tier 1 aerostructures supplier comparing fatigue crack growth trends vs baseline laminate under matched spectrum loading.",
     "prior_publications": [
       {
@@ -114,15 +115,17 @@
     ],
     "key_capabilities": [
       "Roll-to-roll monolayer graphene up to documented maximum sheet dimensions (see internal datasheet; export-controlled processing details withheld from public marketing)",
-      "Automated optical defect mapping + sheet grading for structural applications",
+      "Zero use of carbon nanotube or carbon nanoparticle structural additives in Stratum's reported load-bearing approaches for this program",
+      "Automated optical defect mapping + sheet grading correlated to mechanical coupon bins",
       "Hot debulk/vacuum bag cure profiles aligned with AS9100 traceability",
-      "Structural testing lab (Instron servo-hydraulic + environmental chambers)",
-      "Cost modeling for aerospace recurring manufacturing ($/lb aerostructure basis)"
+      "Structural testing lab (Instron servo-hydraulic + environmental chambers) for coupon- and element-level substantiation",
+      "Throughput and yield instrumentation on the line (web speed, downtime codes) feeding scale-up narratives",
+      "Cost modeling for aerospace recurring manufacturing ($/lb) tied to observed labor, scrap, and cycle—not simulation-only structural pricing"
     ],
     "technical_infrastructure": {
-      "computing_resources": "MES-linked PostgreSQL production database for batch traceability; FEA preprocessing workstations (baseline comparative models—not offered as primary RFI evidence per DARPA exclusions).",
-      "laboratory_facilities": "18,000 sq ft manufacturing bay with climate-controlled layup room; 12-ft roll handling station; CT scanning partnership for void characterization; fatigue frames up to 250 kN; conditioning ovens with FAA-relevant humidity cycles.",
-      "software_tools": "MES/QMS (ISO9001/AS9100 aligned), statistical analysis (Minitab/Python), coupon tracking digital twins for batch genealogy.",
+      "computing_resources": "MES-linked PostgreSQL for batch and coupon ID traceability; SPC dashboards tied to physical test results. No reliance on finite-element or analytical models as primary evidence for DARPA-SN-26-62 responses—consistent with RFI discouragement of modeling-only submissions.",
+      "laboratory_facilities": "18,000 sq ft manufacturing bay with climate-controlled layup room; 12-ft roll handling station; CT scanning partnership for void characterization (supporting interpretation of physical panels, not a substitute for coupon tests); fatigue frames up to 250 kN; conditioning ovens with FAA-relevant humidity cycles.",
+      "software_tools": "MES/QMS (ISO9001/AS9100 aligned), statistical analysis (Minitab/Python), specimen-level genealogy linking each coupon to roll lot, cure cycle, and operator shift.",
       "partnerships": "Tier 2 aerostructures supplier under NDA for co-developed demonstration panels; university collaboration for fracture mechanics specimen fabrication."
     }
   },
@@ -148,7 +151,7 @@
         "level": "None",
         "active": false
       },
-      "allocation_percent": 45,
+      "allocation_percent": 28,
       "publications_last_3_years": 7,
       "commitment_confirmed": true,
       "conflict_of_interest": "No involvement in DARPA SETA support related to graphene RFIs.",
@@ -175,7 +178,7 @@
         "level": "None",
         "active": false
       },
-      "allocation_percent": 50,
+      "allocation_percent": 26,
       "publications_last_3_years": 5,
       "commitment_confirmed": true,
       "conflict_of_interest": "None identified.",
@@ -202,7 +205,7 @@
         "level": "None",
         "active": false
       },
-      "allocation_percent": 55,
+      "allocation_percent": 24,
       "publications_last_3_years": 4,
       "commitment_confirmed": true,
       "conflict_of_interest": "None identified.",
@@ -229,7 +232,7 @@
         "level": "None",
         "active": false
       },
-      "allocation_percent": 20,
+      "allocation_percent": 12,
       "publications_last_3_years": 0,
       "commitment_confirmed": true,
       "conflict_of_interest": "None identified.",
@@ -256,7 +259,7 @@
         "level": "None",
         "active": false
       },
-      "allocation_percent": 25,
+      "allocation_percent": 10,
       "publications_last_3_years": 2,
       "commitment_confirmed": true,
       "conflict_of_interest": "None identified.",
@@ -294,25 +297,37 @@
     }
   ],
   "funding_plan": {
-    "total_requested_usd": 0,
-    "period_of_performance_months": null,
-    "period_start_date": null,
-    "period_end_date": null,
+    "total_requested_usd": 120000,
+    "period_of_performance_months": 3,
+    "period_start_date": "2026-04-01",
+    "period_end_date": "2026-06-30",
     "cost_share_contributed_usd": 0,
     "cost_share_percent": 0,
-    "cost_share_description": "DARPA-SN-26-62 is an RFI for market research—not a funding solicitation. Stratum includes funding_plan structure for schema compatibility with P.A.S.S. tooling; requested amounts would apply only to a future program solicitation if issued.",
+    "cost_share_description": "DARPA-SN-26-62 is an RFI (no government payment). The amounts below are illustrative internal B&P / IRAD budget for preparing the white paper and supporting data pulls—satisfies tooling validation only; not a claim against DARPA.",
     "requested_instrument_type": "N/A — RFI response only (no contract formed by response)",
     "breakdown": [
       {
-        "category": "RFI response preparation (internal labor)",
-        "amount_usd": 0,
-        "percent_of_total": 0,
-        "notes": "Absorbed as bid & proposal / IRAD allocation; not reimbursed per RFI disclaimers."
+        "category": "RFI white paper — technical labor (engineering, drafting, figures)",
+        "amount_usd": 75000,
+        "percent_of_total": 62.5,
+        "notes": "CTO, manufacturing lead, test engineer time; internal rate card."
+      },
+      {
+        "category": "Supporting test data pull & coupon documentation",
+        "amount_usd": 30000,
+        "percent_of_total": 25,
+        "notes": "Lab technician time, specimen prep, archival plots for submission."
+      },
+      {
+        "category": "Admin, export review, and proprietary marking / legal review",
+        "amount_usd": 15000,
+        "percent_of_total": 12.5,
+        "notes": "Contracts and compliance review before email submission."
       }
     ]
   },
   "project_goals": {
-    "primary_objective": "Provide DARPA/TTO with empirical, manufacturing-grounded insight into graphene sheet scalability, joining strategies, structural substantiation datasets, and realistic weight/cost trades for aerospace load-bearing structures—explicitly excluding theoretical assertions without data and excluding non-structural sensor integrations unless tied to load-bearing applications.",
+    "primary_objective": "Provide DARPA/TTO with empirical, manufacturing-grounded insight into monolayer graphene sheet scalability, joining strategies, structural substantiation from coupons and elements, and realistic weight/cost trades for aerospace load-bearing structures. The response aligns with RFI exclusions: no carbon nanotube or nanoparticle structural approaches, no modeling-only structural claims, and no non–load-bearing sensor angles unless explicitly tied to structural substantiation. Assertions are tied to measured coupons, joint tests, and factory throughput and yield—not uncorroborated theory.",
     "technical_goals": [
       {
         "goal_id": "tg-rfi-geo-1",
@@ -345,9 +360,9 @@
       {
         "goal_id": "tg-rfi-geo-5",
         "title": "Weight reduction & cost estimates",
-        "description": "Provide conservative weight reduction estimate for equal strength/stiffness targets and a $/lb manufacturing cost model basis (including scrap, cure cycle time, capital amortization).",
-        "success_metric": "Explicit assumptions table; sensitivity to yield and fiber price volatility.",
-        "deliverable_aligned": "Cost model appendix within page limits."
+        "description": "Provide conservative weight reduction estimate for equal strength/stiffness targets derived from or bounded by coupon-derived allowables and sub-element tests—not FEA-only stacks. Provide $/lb manufacturing cost basis from observed scrap, cure cycle time, labor, and capital amortization on the actual line.",
+        "success_metric": "Assumptions table that cites specimen IDs / test standards where strength/stiffness equivalency is claimed; cost sensitivity to yield and fiber price using floor data.",
+        "deliverable_aligned": "Summary tables within RFI page limits; figures from physical tests where applicable."
       }
     ],
     "expected_outcomes": [
@@ -363,10 +378,10 @@
       }
     ],
     "fundamental_research_claim": false,
-    "fundamental_research_justification": "RFI response emphasizes controlled experiments and manufacturing economics rather than unrestricted publication intent.",
+    "fundamental_research_justification": "RFI response emphasizes controlled experiments, coupon-level structural evidence, and manufacturing economics—not unrestricted publication and not modeling-only structural assertions.",
     "revolutionary_vs_evolutionary": "Positions graphene interlayers as a potential evolutionary-but-material weight/stiffness lever when manufacturing-controlled—not a replacement for primary fiber architecture without substantiation.",
     "relationship_to_i2o_thrust_areas": [],
-    "competitive_landscape": "Multiple vendors claim large-area graphene; differentiation is traceable structural datasets and aerospace process discipline—not marketing brochures.",
+    "competitive_landscape": "Multiple vendors claim large-area graphene; Stratum differentiates with traceable coupon and element datasets, line-rate and yield transparency, and explicit alignment with RFI boundaries (no CNTs/particles; no modeling-only pitches).",
     "transition_and_commercialization": "Primary transition path is insertion as qualified interlayer/adhesive additive into existing carbon/epoxy supply chains for UAV and regional jet tier suppliers."
   },
   "compliance_and_constraints": {
@@ -409,7 +424,7 @@
       "personal_conflicts": "None declared for listed POCs.",
       "mitigation": "NDAs with partners; segregated teams for blinded replicate testing."
     },
-    "special_considerations": "RFI explicitly excludes carbon nanotubes/particles and discourages modeling-only responses; Stratum's narrative is anchored to measured structural coupons and manufacturing throughput observations."
+    "special_considerations": "DARPA-SN-26-62 excludes carbon nanotube material or particles in these applications and discourages modeling-only and uncorroborated theoretical responses. Stratum's RFI narrative is limited to monolayer graphene sheet and interlayer approaches, grounded in measured structural coupons and elements, joint characterization data, and manufacturing throughput and yield observations. Simulation or FEA, if mentioned at all, is ancillary to interpretation of physical data—not a substitute for substantiation."
   },
   "submission_metadata": {
     "baa_number": "DARPA-SN-26-62",

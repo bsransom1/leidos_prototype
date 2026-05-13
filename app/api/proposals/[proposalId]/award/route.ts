@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getPmRole } from '@/lib/pm-access';
 import { ensurePmSeedForAwardedProposal } from '@/lib/pm-seed';
-import { addYears } from 'date-fns';
+import { addMonths, subMonths } from 'date-fns';
 import type { PostgrestError } from '@supabase/supabase-js';
 import { isPostgrestMissingColumnError } from '@/lib/postgrest-helpers';
 
@@ -12,6 +12,22 @@ function jsonFromPostgrestError(err: PostgrestError) {
     code: err.code,
     details: err.details,
     hint: err.hint,
+  };
+}
+
+function awardMetadataRow(now: Date) {
+  const popStart = subMonths(now, 6);
+  const popEnd = addMonths(now, 30);
+  return {
+    status: 'awarded' as const,
+    awarded_at: now.toISOString(),
+    contract_number: 'HR001126C0042',
+    period_of_performance_start: popStart.toISOString().slice(0, 10),
+    period_of_performance_end: popEnd.toISOString().slice(0, 10),
+    total_contract_value: 4_750_000,
+    cost_share_amount: 0,
+    total_invoiced: 1_240_000,
+    cmmc_level: 'Level 2',
   };
 }
 
@@ -50,22 +66,11 @@ export async function POST(
     }
 
     const now = new Date();
-    const popStart = now;
-    const popEnd = addYears(now, 3);
-    const contractNumber = 'HR001126S0001';
-    const totalValue = 2_400_000;
-    const phaseI = 400_000;
+    const popStart = subMonths(now, 6);
+    const popEnd = addMonths(now, 30);
+    const contractNumber = 'HR001126C0042';
 
-    const fullAwardRow = {
-      status: 'awarded' as const,
-      awarded_at: now.toISOString(),
-      contract_number: contractNumber,
-      period_of_performance_start: popStart.toISOString().slice(0, 10),
-      period_of_performance_end: popEnd.toISOString().slice(0, 10),
-      total_contract_value: totalValue,
-      cost_share_amount: 0,
-      cmmc_level: 'CMMC Level 2',
-    };
+    const fullAwardRow = awardMetadataRow(now);
 
     let awardMetadataPartial = false;
     let updErr = (await supabase.from('proposals').update(fullAwardRow).eq('id', proposalId)).error;
@@ -106,8 +111,6 @@ export async function POST(
       contractNumber,
       popStart,
       popEnd,
-      totalValue,
-      phaseIObligated: phaseI,
     });
 
     if (!seed.ok) {

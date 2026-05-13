@@ -17,6 +17,10 @@ import {
   parseISO,
 } from 'date-fns';
 import {
+  buildPmDashboardFallbackData,
+  isPmDemoEntityId,
+} from '@/lib/pm-dashboard-fallback-data';
+import {
   ArrowLeft,
   ArrowRight,
   SquaresFour,
@@ -36,7 +40,10 @@ type OverviewPayload = {
     popStart: string | null;
     popEnd: string | null;
     cmmcLevel: string | null;
-    daysRemaining: number;
+    /** Calendar days until PoP end; null when PoP end is not set */
+    daysRemaining: number | null;
+    /** True when PoP end date is before today */
+    popCompleted?: boolean;
     totalContractValue: number | null;
     costShare: number | null;
   };
@@ -129,30 +136,161 @@ export default function PmDashboardClient({
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [reseedBusy, setReseedBusy] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
 
   const base = `/api/projects/${projectId}`;
+
+  const popDaysRemainingLabel = (p: OverviewPayload['proposal']) => {
+    if (!p.popEnd) return '—';
+    if (p.popCompleted) return 'Completed';
+    if (p.daysRemaining == null) return '—';
+    const n = p.daysRemaining;
+    return n === 1 ? '1 day' : `${n} days`;
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
     setErr(null);
+    const fetchOpts: RequestInit = { credentials: 'include' };
     try {
-      const [o, m, b, r] = await Promise.all([
-        fetch(`${base}/pm/overview`).then((x) => x.json()),
-        fetch(`${base}/milestones`).then((x) => x.json()),
-        fetch(`${base}/budget`).then((x) => x.json()),
-        fetch(`${base}/risks`).then((x) => x.json()),
+      const [resO, resM, resB, resR] = await Promise.all([
+        fetch(`${base}/pm/overview`, fetchOpts),
+        fetch(`${base}/milestones`, fetchOpts),
+        fetch(`${base}/budget`, fetchOpts),
+        fetch(`${base}/risks`, fetchOpts),
       ]);
-      if (o.error) throw new Error(o.error);
-      setOverview(o);
-      setMilestonesPayload(m);
-      setBudget(b);
-      setRisksPayload(r);
+      const [o, m, b, r] = await Promise.all([
+        resO.json(),
+        resM.json(),
+        resB.json(),
+        resR.json(),
+      ]);
+
+      const overviewPayload = o as OverviewPayload & { error?: string };
+      const milestonesPayloadRaw = m as {
+        error?: string;
+        phases?: unknown;
+        milestones?: unknown;
+        deliverablesByMilestone?: unknown;
+        role?: string;
+      };
+      const budgetPayload = b as { error?: string; phases?: unknown; role?: string };
+      const risksPayloadRaw = r as { error?: string; risks?: unknown; role?: string };
+
+      const overviewBad =
+        !resO.ok ||
+        Boolean(overviewPayload.error) ||
+        !overviewPayload.proposal ||
+        !overviewPayload.metrics;
+
+      const phasesLen = Array.isArray(milestonesPayloadRaw.phases) ? milestonesPayloadRaw.phases.length : 0;
+      const milestonesLen = Array.isArray(milestonesPayloadRaw.milestones)
+        ? milestonesPayloadRaw.milestones.length
+        : 0;
+      const milestonesEmpty =
+        !resM.ok ||
+        Boolean(milestonesPayloadRaw.error) ||
+        (phasesLen === 0 && milestonesLen === 0);
+
+      const budgetEmpty =
+        !resB.ok ||
+        Boolean(budgetPayload.error) ||
+        !Array.isArray(budgetPayload.phases) ||
+        budgetPayload.phases.length === 0;
+
+      const risksEmpty =
+        !resR.ok ||
+        Boolean(risksPayloadRaw.error) ||
+        !Array.isArray(risksPayloadRaw.risks) ||
+        risksPayloadRaw.risks.length === 0;
+
+      const useDemo = overviewBad || milestonesEmpty || budgetEmpty || risksEmpty;
+
+      if (useDemo) {
+        const roleHint =
+          (!overviewBad && overviewPayload.role) ||
+          milestonesPayloadRaw.role ||
+          budgetPayload.role ||
+          risksPayloadRaw.role ||
+          'admin';
+        const fb = buildPmDashboardFallbackData(new Date(), {
+          projectTitle: title,
+          role: roleHint,
+        });
+        setOverview({
+          ...fb.overview,
+          proposal: { ...fb.overview.proposal, title: title || fb.overview.proposal.title },
+        });
+        setMilestonesPayload(fb.milestones);
+        setBudget(fb.budget);
+        setRisksPayload(fb.risks);
+        setDemoMode(true);
+      } else {
+        setOverview(overviewPayload);
+        setMilestonesPayload({
+          phases: Array.isArray(milestonesPayloadRaw.phases) ? milestonesPayloadRaw.phases : [],
+          milestones: Array.isArray(milestonesPayloadRaw.milestones) ? milestonesPayloadRaw.milestones : [],
+          deliverablesByMilestone:
+            milestonesPayloadRaw.deliverablesByMilestone &&
+            typeof milestonesPayloadRaw.deliverablesByMilestone === 'object'
+              ? (milestonesPayloadRaw.deliverablesByMilestone as Record<
+                  string,
+                  Array<Record<string, unknown>>
+                >)
+              : {},
+          role: typeof milestonesPayloadRaw.role === 'string' ? milestonesPayloadRaw.role : 'viewer',
+        });
+        setBudget(
+          budgetPayload as {
+            phases: Array<{
+              phaseNumber: number;
+              title: string;
+              obligated: number;
+              invoiced: number;
+              remaining: number;
+              burnRatePlan: number;
+              health: string;
+            }>;
+            totals: { obligated: number; invoiced: number; remaining: number };
+            proposal: { totalContractValue: number; costShare: number };
+            role: string;
+          }
+        );
+        setRisksPayload(
+          risksPayloadRaw as {
+            risks: Array<{
+              id: string;
+              title: string;
+              category: string;
+              probability: number;
+              impact: number;
+              mitigation: string | null;
+              score: number;
+            }>;
+            role: string;
+          }
+        );
+        setDemoMode(false);
+      }
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Failed to load');
+      try {
+        const fb = buildPmDashboardFallbackData(new Date(), { projectTitle: title, role: 'admin' });
+        setOverview({
+          ...fb.overview,
+          proposal: { ...fb.overview.proposal, title: title || fb.overview.proposal.title },
+        });
+        setMilestonesPayload(fb.milestones);
+        setBudget(fb.budget);
+        setRisksPayload(fb.risks);
+        setDemoMode(true);
+      } catch {
+        setErr(e instanceof Error ? e.message : 'Failed to load');
+      }
     } finally {
       setLoading(false);
     }
-  }, [base]);
+  }, [base, title]);
 
   useEffect(() => {
     load();
@@ -161,6 +299,25 @@ export default function PmDashboardClient({
   const role = overview?.role ?? milestonesPayload?.role ?? 'viewer';
   const canEdit = role === 'admin' || role === 'editor';
   const isAdmin = role === 'admin';
+
+  const showReseedDemo =
+    isAdmin &&
+    (process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_SANDBOX === 'true');
+
+  const reseedDemoPm = async () => {
+    if (!showReseedDemo) return;
+    setReseedBusy(true);
+    try {
+      const res = await fetch(`${base}/pm/reseed`, { method: 'POST' });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((j as { error?: string }).error || 'Reseed failed');
+      await load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Reseed failed');
+    } finally {
+      setReseedBusy(false);
+    }
+  };
 
   const budgetChartData = useMemo(() => {
     if (!budget?.phases) return [];
@@ -218,6 +375,7 @@ export default function PmDashboardClient({
   }, [milestonesPayload]);
 
   const addMilestone = async () => {
+    if (demoMode) return;
     if (!canEdit || !newMs.phaseId || !newMs.title || !newMs.dueDate) return;
     const res = await fetch(`${base}/milestones`, {
       method: 'POST',
@@ -240,6 +398,7 @@ export default function PmDashboardClient({
   };
 
   const addRisk = async () => {
+    if (demoMode) return;
     if (!isAdmin) return;
     const res = await fetch(`${base}/risks`, {
       method: 'POST',
@@ -285,9 +444,26 @@ export default function PmDashboardClient({
                 Post-award PM • {overview?.proposal.contractNumber ?? '—'} • CMMC{' '}
                 {overview?.proposal.cmmcLevel ?? '—'}
               </p>
+              {demoMode && (
+                <p className="mt-1 text-[10px] leading-snug text-amber-700/90">
+                  Presentation mode: representative DARPA / Leidos program data is shown because the API returned no
+                  PM rows, partial data, or an error. Live edits are disabled for these placeholder rows.
+                </p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            {showReseedDemo && (
+              <button
+                type="button"
+                onClick={reseedDemoPm}
+                disabled={reseedBusy}
+                className="rounded-ds-sm border border-ds-border/70 bg-transparent px-2 py-1 font-mono text-[9px] font-medium uppercase tracking-[0.08em] text-ds-text-muted hover:border-ds-border hover:text-ds-text-secondary disabled:opacity-50"
+                title="Replace PM seed data with demo dataset (sandbox / non-production only)"
+              >
+                {reseedBusy ? 'Reseeding…' : 'Reseed demo data'}
+              </button>
+            )}
             <Link
               href={`/proposal/${projectId}`}
               className="inline-flex items-center gap-1.5 border border-ds-border bg-ds-shell/60 px-3 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-ds-text-secondary hover:border-ds-border-strong hover:text-ds-text transition-colors"
@@ -332,7 +508,7 @@ export default function PmDashboardClient({
         {tab === 'overview' && overview && (
           <div className="space-y-6 max-w-6xl">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <StatCard label="Days remaining (PoP)" value={String(overview.proposal.daysRemaining)} />
+              <StatCard label="Days remaining (PoP)" value={popDaysRemainingLabel(overview.proposal)} />
               <StatCard label="Milestones accepted" value={`${overview.metrics.accepted} / ${overview.metrics.totalMilestones}`} />
               <StatCard label="At risk" value={String(overview.metrics.atRisk)} />
               <StatCard
@@ -433,7 +609,7 @@ export default function PmDashboardClient({
               </div>
             </div>
 
-            {canEdit && milestonesPayload.phases.length > 0 && (
+            {canEdit && !demoMode && milestonesPayload.phases.length > 0 && (
               <div className="space-y-4 rounded-ds-md border border-dashed border-ds-border/55 bg-ds-surface/70 p-5">
                 <h3 className="text-xs font-semibold text-ds-text-secondary">Add milestone</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
@@ -497,7 +673,7 @@ export default function PmDashboardClient({
                           <span className="font-medium">Completion criteria:</span> {m.completion_criteria as string}
                         </p>
                       </div>
-                      {canEdit && (
+                      {canEdit && !demoMode && !isPmDemoEntityId(m.id as string) && (
                         <select
                           className="rounded-ds-sm border border-ds-border bg-ds-page px-2 py-1.5 text-xs text-ds-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-accent focus-visible:ring-offset-2 focus-visible:ring-offset-ds-page"
                           value={m.status as string}
@@ -640,7 +816,7 @@ export default function PmDashboardClient({
               </div>
             </div>
 
-            {isAdmin && (
+            {isAdmin && !demoMode && (
               <div className="rounded-ds-md border border-ds-border bg-ds-surface shadow-ds-sm p-4 space-y-2">
                 <h3 className="text-xs font-semibold">Add risk (admin)</h3>
                 <input
