@@ -19,21 +19,15 @@ export default async function SharedProposalPage({
 
   if (collaboratorError || !collaborator) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-ds-page px-4">
-        <div className="w-full max-w-md border border-ds-border bg-ds-surface shadow-ds-md">
-          <div className="h-[3px] bg-gradient-to-r from-ds-primary to-ds-accent" />
-          <div className="px-8 py-7">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-ds-text-muted mb-3">
-              Access Error
+      <div className="flex min-h-screen items-center justify-center bg-[#e8eaed] px-4">
+        <div className="w-full max-w-sm rounded-lg border border-gray-200 bg-white p-8 shadow-sm">
+          <p className="text-[11px] font-semibold tracking-wide text-blue-700">P.A.S.S.</p>
+          <p className="text-[10px] text-gray-500">Shared proposal</p>
+          <div className="mt-6">
+            <p className="text-sm font-semibold text-gray-900">Invalid or expired invitation</p>
+            <p className="mt-2 text-sm leading-relaxed text-gray-600">
+              This invitation link is invalid, has expired, or has already been used. Contact the proposal owner to request a new link.
             </p>
-            <h1 className="text-lg font-bold text-ds-text mb-3">Invalid or expired invitation</h1>
-            <p className="text-sm leading-relaxed text-ds-text-muted">
-              This invitation link is invalid, has expired, or has already been used.
-              Contact the proposal owner to request a new link.
-            </p>
-          </div>
-          <div className="border-t border-ds-border bg-ds-shell/40 px-8 py-3">
-            <p className="font-mono text-[10px] text-ds-text-muted">LEIDOS GENAI · PROPOSAL INTELLIGENCE</p>
           </div>
         </div>
       </div>
@@ -43,7 +37,7 @@ export default async function SharedProposalPage({
   // Mark invitation as accepted if user is logged in with matching email
   const { data: { user } } = await supabase.auth.getUser();
   let isAuthenticated = false;
-  
+
   if (user && user.email?.toLowerCase() === collaborator.email.toLowerCase()) {
     isAuthenticated = true;
     // Accept invitation server-side via RPC (RLS-safe). Ignore failures here; the workspace

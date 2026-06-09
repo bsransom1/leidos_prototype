@@ -250,9 +250,9 @@ export async function POST(request: NextRequest) {
 }
 
 function inviteRoleEmailLabel(r: (typeof COLLAB_ROLES)[number]): string {
-  if (r === 'admin') return 'ADMIN — Full control & invites';
-  if (r === 'editor') return 'EDITOR — Edit content & AI';
-  return 'VIEWER — Read only';
+  if (r === 'admin') return 'Admin · Full control & invites';
+  if (r === 'editor') return 'Editor · Edit & AI assist';
+  return 'Viewer · Read only';
 }
 
 async function sendInvitationEmail(
@@ -295,7 +295,7 @@ async function sendInvitationEmail(
     const { data, error } = await resend.emails.send({
       from: fromEmail,
       to: [toEmail],
-      subject: `[LEIDOS GENAI] Proposal review access granted — ${proposalTitle}`,
+      subject: `[P.A.S.S.] Proposal shared with you — ${proposalTitle}`,
       html: emailHtml,
       text: `${inviterEmail} has shared the following DARPA BAA proposal with you (${inviteRoleEmailLabel(accessRole)}):\n\n"${proposalTitle}"\n\nOpen the proposal:\n${invitationLink}\n\nThis link is unique to ${toEmail}. Do not forward.`,
     });
@@ -328,103 +328,81 @@ function buildInvitationEmail({
 }): string {
   const accessLabel =
     accessRole === 'admin'
-      ? 'ADMIN — Full control & invites'
+      ? 'Admin · Full control & invites'
       : accessRole === 'editor'
-        ? 'EDITOR — Edit & AI'
-        : 'VIEWER — Read only';
+        ? 'Editor · Edit & AI assist'
+        : 'Viewer · Read only';
   const accessIntro =
     accessRole === 'viewer'
-      ? `You've been granted read access to a proposal`
-      : `You've been granted workspace access to a proposal`;
+      ? `${inviterEmail} has shared a proposal with you`
+      : `${inviterEmail} has given you workspace access to a proposal`;
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Proposal Access — ${proposalTitle}</title>
+  <title>Proposal shared with you — ${proposalTitle}</title>
 </head>
-<body style="margin:0;padding:0;background-color:#060a12;font-family:'Helvetica Neue',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#060a12;padding:32px 16px;">
+<body style="margin:0;padding:0;background-color:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6;padding:40px 16px;">
     <tr>
       <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+        <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
 
-          <!-- Header -->
+          <!-- Brand header -->
           <tr>
-            <td style="background-color:#060c18;border:1px solid rgba(80,110,150,0.35);border-bottom:none;padding:20px 28px;">
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td>
-                    <span style="font-family:monospace;font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#7a8ca8;">LEIDOS</span>
-                    <span style="font-family:monospace;font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#dce6f0;"> GENAI</span>
-                    <span style="font-family:monospace;font-size:10px;color:rgba(107,124,150,0.8);margin-left:12px;">// PROPOSAL INTELLIGENCE PLATFORM</span>
-                  </td>
-                  <td align="right">
-                    <span style="font-family:monospace;font-size:10px;color:rgba(107,124,150,0.6);letter-spacing:0.1em;">CONTROLLED ACCESS</span>
-                  </td>
-                </tr>
-              </table>
+            <td style="background-color:#ffffff;border:1px solid #e5e7eb;border-radius:8px 8px 0 0;padding:24px 32px;border-bottom:none;">
+              <p style="margin:0;font-family:monospace;font-size:12px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#1d4ed8;">P.A.S.S.</p>
+              <p style="margin:2px 0 0 0;font-size:11px;color:#6b7280;">Proposal Automation Solicitation System</p>
             </td>
-          </tr>
-
-          <!-- Navy accent bar -->
-          <tr>
-            <td style="height:3px;background:linear-gradient(90deg,#0033a0 0%,#c5920a 100%);border-left:1px solid rgba(80,110,150,0.35);border-right:1px solid rgba(80,110,150,0.35);"></td>
           </tr>
 
           <!-- Body -->
           <tr>
-            <td style="background-color:#0c1422;border:1px solid rgba(80,110,150,0.35);border-top:none;border-bottom:none;padding:32px 28px;">
+            <td style="background-color:#ffffff;border:1px solid #e5e7eb;border-top:none;border-bottom:none;padding:32px 32px 28px;">
 
-              <p style="margin:0 0 8px 0;font-family:monospace;font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#6b7c96;">
-                ACCESS NOTIFICATION
-              </p>
-              <h1 style="margin:0 0 24px 0;font-size:20px;font-weight:700;color:#dce6f0;letter-spacing:0.01em;line-height:1.2;">
+              <p style="margin:0 0 20px 0;font-size:15px;font-weight:600;color:#111827;line-height:1.4;">
                 ${accessIntro}
-              </h1>
-
-              <p style="margin:0 0 20px 0;font-size:13px;color:rgba(220,230,240,0.8);line-height:1.6;">
-                <strong style="color:#dce6f0;">${inviterEmail}</strong> has shared a DARPA BAA proposal with you.
               </p>
 
               <!-- Proposal title block -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
                 <tr>
-                  <td style="background-color:#080e1a;border:1px solid rgba(80,110,150,0.35);border-left:3px solid #0033a0;padding:16px 18px;">
-                    <p style="margin:0 0 4px 0;font-family:monospace;font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#6b7c96;">PROPOSAL TITLE</p>
-                    <p style="margin:0;font-size:15px;font-weight:600;color:#dce6f0;line-height:1.4;">${proposalTitle}</p>
+                  <td style="background-color:#f9fafb;border:1px solid #e5e7eb;border-left:3px solid #2563eb;border-radius:0 4px 4px 0;padding:14px 16px;">
+                    <p style="margin:0 0 4px 0;font-size:11px;font-weight:500;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;">Proposal</p>
+                    <p style="margin:0;font-size:15px;font-weight:600;color:#111827;line-height:1.4;">${proposalTitle}</p>
                   </td>
                 </tr>
               </table>
 
               <!-- Access details -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;border:1px solid rgba(80,110,150,0.25);">
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;border:1px solid #e5e7eb;border-radius:4px;">
                 <tr>
-                  <td width="50%" style="padding:12px 16px;border-right:1px solid rgba(80,110,150,0.25);">
-                    <p style="margin:0 0 3px 0;font-family:monospace;font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#6b7c96;">ACCESS LEVEL</p>
-                    <p style="margin:0;font-size:12px;color:#dce6f0;font-weight:600;">${accessLabel}</p>
+                  <td width="50%" style="padding:12px 16px;border-right:1px solid #e5e7eb;">
+                    <p style="margin:0 0 3px 0;font-size:11px;font-weight:500;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;">Access level</p>
+                    <p style="margin:0;font-size:13px;font-weight:600;color:#111827;">${accessLabel}</p>
                   </td>
                   <td width="50%" style="padding:12px 16px;">
-                    <p style="margin:0 0 3px 0;font-family:monospace;font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#6b7c96;">GRANTED TO</p>
-                    <p style="margin:0;font-size:12px;color:#dce6f0;font-family:monospace;">${toEmail}</p>
+                    <p style="margin:0 0 3px 0;font-size:11px;font-weight:500;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;">Granted to</p>
+                    <p style="margin:0;font-size:13px;color:#374151;font-family:monospace;">${toEmail}</p>
                   </td>
                 </tr>
               </table>
 
               <!-- CTA -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
                 <tr>
                   <td align="center">
                     <a href="${invitationLink}"
-                       style="display:inline-block;padding:12px 32px;background-color:#0033a0;color:#ffffff;text-decoration:none;font-family:monospace;font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;">
-                      ACCESS PROPOSAL DOCUMENT &#8594;
+                       style="display:inline-block;padding:12px 32px;background-color:#2563eb;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;border-radius:6px;">
+                      Open proposal &rarr;
                     </a>
                   </td>
                 </tr>
               </table>
 
-              <p style="margin:0;font-size:11px;color:#6b7c96;line-height:1.6;">
-                This link is unique to <span style="color:#7a8ca8;font-family:monospace;">${toEmail}</span>. Sign in with this address to use your assigned access level in the app. Do not forward this email.
+              <p style="margin:0;font-size:12px;color:#6b7280;line-height:1.6;">
+                This link is personal to <strong>${toEmail}</strong>. Sign in with this address to access your assigned role. Do not forward this email.
               </p>
 
             </td>
@@ -432,18 +410,12 @@ function buildInvitationEmail({
 
           <!-- Footer -->
           <tr>
-            <td style="background-color:#060a12;border:1px solid rgba(80,110,150,0.35);border-top:1px solid rgba(80,110,150,0.2);padding:16px 28px;">
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td>
-                    <p style="margin:0;font-family:monospace;font-size:10px;color:rgba(107,124,150,0.5);letter-spacing:0.08em;">
-                      LEIDOS GENAI · PROPOSAL INTELLIGENCE PLATFORM<br>
-                      If the button does not work, copy this URL into your browser:<br>
-                      <a href="${invitationLink}" style="color:rgba(107,124,150,0.7);word-break:break-all;">${invitationLink}</a>
-                    </p>
-                  </td>
-                </tr>
-              </table>
+            <td style="background-color:#f9fafb;border:1px solid #e5e7eb;border-top:1px solid #e5e7eb;border-radius:0 0 8px 8px;padding:16px 32px;">
+              <p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.6;">
+                P.A.S.S. &mdash; Proposal Automation Solicitation System<br>
+                If the button above does not work, copy this URL into your browser:<br>
+                <a href="${invitationLink}" style="color:#6b7280;word-break:break-all;">${invitationLink}</a>
+              </p>
             </td>
           </tr>
 

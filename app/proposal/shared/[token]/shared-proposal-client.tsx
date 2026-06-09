@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
-import type { Proposal, BAA, ProposalSection } from '@/types';
+import type { Proposal, BAA } from '@/types';
 import { useRouter } from 'next/navigation';
-import { SignIn, CheckCircle, WarningCircle, XCircle, LockKey, FileText } from '@phosphor-icons/react';
+import { SignIn, ListNumbers } from '@phosphor-icons/react';
+import ProposalEditor from '@/components/ProposalEditor';
+import { Button } from '@/components/ui/button';
+import ConfidenceScore from '@/components/ConfidenceScore';
 
 type CollaboratorShareRole = 'viewer' | 'editor' | 'admin';
 
@@ -22,10 +24,44 @@ interface SharedProposalViewProps {
   isAuthenticated: boolean;
 }
 
-function roleShareLabel(role: CollaboratorShareRole): string {
+function roleLabel(role: CollaboratorShareRole): string {
   if (role === 'admin') return 'Admin · Full control';
   if (role === 'editor') return 'Editor · Edit & AI';
   return 'Viewer · Read only';
+}
+
+function SharedBrandMark() {
+  return (
+    <div className="shrink-0">
+      <p className="text-[11px] font-semibold tracking-wide text-blue-700">P.A.S.S.</p>
+      <p className="text-[10px] text-gray-500">Shared proposal</p>
+    </div>
+  );
+}
+
+function SharedStatusCard({
+  title,
+  description,
+  loading,
+}: {
+  title: string;
+  description: string;
+  loading?: boolean;
+}) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#e8eaed] px-4">
+      <div className="w-full max-w-sm rounded-lg border border-gray-200 bg-white p-8 text-center shadow-sm">
+        <SharedBrandMark />
+        <div className="mt-6 flex flex-col items-center gap-3">
+          {loading && (
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+          )}
+          <p className="text-sm font-semibold text-gray-900">{title}</p>
+          <p className="text-sm leading-relaxed text-gray-600">{description}</p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function SharedProposalView({
@@ -40,8 +76,9 @@ export default function SharedProposalView({
   const [proposalData, setProposalData] = useState<Proposal | null>(null);
   const [baaData, setBaaData] = useState<BAA | null>(null);
   const [loading, setLoading] = useState(true);
+  const [outlineOpen, setOutlineOpen] = useState(false);
 
-  // Editors/admins use the full proposal workspace; this route is read-only markdown.
+  // Editors/admins use the full proposal workspace; this route is read-only.
   useEffect(() => {
     if (!loading && isAuthenticated && proposalId && (collaboratorRole === 'editor' || collaboratorRole === 'admin')) {
       router.replace(`/proposal/${proposalId}`);
@@ -63,14 +100,17 @@ export default function SharedProposalView({
     router.push(`/login?redirect=${encodeURIComponent(`/proposal/shared/${invitationToken}`)}`);
   };
 
+  const handleScrollToSection = (sectionId: string) => {
+    document.getElementById(`section-${sectionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (window.innerWidth < 1024) setOutlineOpen(false);
+  };
+
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-ds-page">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-ds-primary border-t-transparent" />
-          <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-ds-text-muted">
-            Loading proposal...
-          </p>
+      <div className="flex min-h-screen items-center justify-center bg-[#e8eaed] px-4">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+          <p className="text-sm text-gray-600">Loading document…</p>
         </div>
       </div>
     );
@@ -78,337 +118,153 @@ export default function SharedProposalView({
 
   if (!proposalData && !proposal.generated_output) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-ds-page px-4">
-        <div className="w-full max-w-md border border-ds-border bg-ds-surface shadow-ds-md">
-          <div className="h-[3px] bg-gradient-to-r from-ds-primary to-ds-accent" />
-          <div className="px-8 py-8 text-center">
-            <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center border border-ds-border bg-ds-shell">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-ds-primary border-t-transparent" />
-            </div>
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-ds-text-muted mb-3">
-              Generation in progress
-            </p>
-            <h1 className="text-base font-bold text-ds-text mb-3">{proposal.title}</h1>
-            <p className="text-sm leading-relaxed text-ds-text-muted">
-              This proposal is currently being generated. Check back in a few minutes — the link will work once generation is complete.
-            </p>
-          </div>
-          <div className="border-t border-ds-border bg-ds-shell/40 px-8 py-3 text-center">
-            <p className="font-mono text-[10px] text-ds-text-muted">LEIDOS GENAI · PROPOSAL INTELLIGENCE</p>
-          </div>
-        </div>
-      </div>
+      <SharedStatusCard
+        title={proposal.title}
+        description="This proposal is still being generated. Check back in a few minutes — the link will work once generation is complete."
+        loading
+      />
     );
   }
 
   if (!proposalData || !baaData) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-ds-page px-4">
-        <div className="w-full max-w-md border border-ds-border bg-ds-surface shadow-ds-md">
-          <div className="h-[3px] bg-gradient-to-r from-ds-primary to-ds-accent" />
-          <div className="px-8 py-7">
-            <h1 className="text-base font-bold text-ds-text mb-3">Proposal unavailable</h1>
-            <p className="text-sm leading-relaxed text-ds-text-muted">
-              This proposal could not be loaded. Contact the proposal owner.
-            </p>
-          </div>
-        </div>
-      </div>
+      <SharedStatusCard
+        title="Proposal unavailable"
+        description="This proposal could not be loaded. Contact the proposal owner to get a new link."
+      />
     );
   }
 
-  // Brief handoff while redirecting editors/admins to the workspace
   if (isAuthenticated && (collaboratorRole === 'editor' || collaboratorRole === 'admin')) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-ds-page">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-ds-primary border-t-transparent" />
-          <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-ds-text-muted">
-            Opening workspace…
-          </p>
+      <div className="flex min-h-screen items-center justify-center bg-[#e8eaed]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+          <p className="text-sm text-gray-600">Opening workspace…</p>
         </div>
       </div>
     );
   }
 
   const sections = proposalData.sections || [];
-  const generatedDate = proposalData.createdAt
-    ? new Date(proposalData.createdAt).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
-    : null;
+  const noticeTag = baaData.noticeNumbers?.[0] ?? '';
 
   return (
-    <div className="min-h-screen bg-ds-page">
-      {/* ── Sticky top bar ─────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-20 border-b border-ds-border bg-ds-header/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-6 py-2.5">
-          {/* Brand + title */}
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex items-center gap-1.5 shrink-0">
-              <FileText className="h-4 w-4 text-ds-primary" weight="bold" />
-              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ds-text-muted">
-                Leidos <span className="text-ds-text">GenAI</span>
-              </span>
+    <div className="flex h-screen flex-col bg-[#e8eaed]">
+      <header className="sticky top-0 z-30 border-b border-gray-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between gap-4 px-5 py-2.5">
+          <SharedBrandMark />
+
+          <div className="min-w-0 flex-1 flex flex-col items-center justify-center px-4">
+            <div className="flex items-center gap-2 min-w-0">
+              {noticeTag && (
+                <span className="shrink-0 rounded border border-gray-200 bg-gray-50 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-gray-500">
+                  {noticeTag}
+                </span>
+              )}
+              <p className="truncate text-[14px] font-semibold text-gray-900">{proposalData.title}</p>
             </div>
-            <span className="text-ds-border shrink-0">/</span>
-            <p className="font-mono text-[11px] text-ds-text truncate">{proposal.title}</p>
+            <p className="mt-0.5 truncate max-w-[48rem] text-[11px] text-gray-500">
+              {baaData.title || 'Shared proposal'}
+            </p>
           </div>
 
-          {/* Right side */}
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="hidden sm:flex items-center gap-1.5 border border-ds-border bg-ds-shell/60 px-2 py-1">
-              <LockKey className="h-3 w-3 text-ds-text-muted" weight="bold" />
-              <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-ds-text-muted">
-                {roleShareLabel(collaboratorRole)} · {collaboratorEmail}
-              </span>
-            </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="hidden rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[10px] text-gray-600 sm:inline">
+              {roleLabel(collaboratorRole)} · {collaboratorEmail}
+            </span>
+
             {!isAuthenticated && (
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                className="!border-gray-200 !bg-white !px-3 !py-1.5 !text-[11px] !text-gray-700 hover:!bg-gray-50"
                 onClick={handleSignIn}
-                className="inline-flex items-center gap-1.5 border border-ds-primary bg-ds-primary/20 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-ds-text hover:bg-ds-primary/30 transition-colors"
               >
-                <SignIn className="h-3 w-3" weight="bold" />
+                <SignIn className="h-3.5 w-3.5" weight="bold" aria-hidden />
                 Sign in
-              </button>
+              </Button>
             )}
+
+            <Button
+              type="button"
+              variant="secondary"
+              className="!border-gray-200 !bg-white !px-3 !py-1.5 !text-[11px] !text-gray-700 hover:!bg-gray-50"
+              onClick={() => setOutlineOpen((v) => !v)}
+              title="Toggle outline"
+            >
+              <ListNumbers className="h-3.5 w-3.5" weight="bold" aria-hidden />
+              Outline
+            </Button>
           </div>
         </div>
       </header>
 
-      {/* ── Document body ───────────────────────────────────────────────── */}
-      <main className="mx-auto max-w-4xl px-6 py-10">
-
-        {/* Document header */}
-        <div className="mb-10 border border-ds-border bg-ds-surface">
-          {/* Accent bar */}
-          <div className="h-[3px] bg-gradient-to-r from-ds-primary to-ds-accent" />
-          <div className="px-8 py-6">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ds-text-muted mb-2">
-              DARPA BAA Proposal
-            </p>
-            <h1 className="text-2xl font-bold text-ds-text leading-tight mb-4">
-              {proposalData.title}
-            </h1>
-
-            <div className="grid grid-cols-2 gap-x-8 gap-y-2 sm:grid-cols-3 text-[12px]">
-              <div>
-                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ds-text-muted block mb-0.5">
-                  Solicitation
-                </span>
-                <span className="text-ds-text-secondary">{baaData.title || '—'}</span>
-              </div>
-              {generatedDate && (
-                <div>
-                  <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ds-text-muted block mb-0.5">
-                    Generated
-                  </span>
-                  <span className="text-ds-text-secondary">{generatedDate}</span>
-                </div>
-              )}
-              <div>
-                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ds-text-muted block mb-0.5">
-                  Sections
-                </span>
-                <span className="text-ds-text-secondary">{sections.length}</span>
-              </div>
-              {proposalData.overallConfidence != null && (
-                <div>
-                  <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ds-text-muted block mb-0.5">
-                    Confidence
-                  </span>
-                  <span className="font-mono text-ds-accent font-semibold">
-                    {proposalData.overallConfidence}%
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Confidentiality notice */}
-          <div className="border-t border-ds-border bg-ds-shell/40 px-8 py-3">
-            <p className="font-mono text-[10px] text-ds-text-muted">
-              <span className="text-amber-400 font-semibold">CONTROLLED — READ ONLY</span>
-              {' '}· Shared with {collaboratorEmail} · Do not distribute
-            </p>
+      <div className="flex flex-1 min-h-0 overflow-hidden bg-[#e8eaed]">
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6">
+          <div className="mx-auto w-full max-w-[780px]">
+            <ProposalEditor
+              proposal={proposalData}
+              baa={baaData}
+              onSave={async () => {}}
+              readOnly
+              effectiveRole="viewer"
+              disableFloatingSelectionToolbar
+            />
           </div>
         </div>
 
-        {/* Table of contents */}
-        {sections.length > 1 && (
-          <div className="mb-8 border border-ds-border bg-ds-surface p-5">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-ds-text-muted mb-3">
-              Table of Contents
-            </p>
-            <ol className="space-y-1.5">
-              {sections.map((s, i) => (
-                <li key={s.id} className="flex items-center gap-3">
-                  <a
-                    href={`#section-${s.id}`}
-                    className="flex items-center gap-2.5 group w-full"
-                  >
-                    <span className="font-mono text-[11px] text-ds-text-muted w-5 shrink-0">
-                      {String(i + 1).padStart(2, '0')}
-                    </span>
-                    <span className="text-[12px] text-ds-text-secondary group-hover:text-ds-text transition-colors flex-1">
-                      {s.title}
-                    </span>
-                    <span className="ml-auto font-mono text-[10px] shrink-0">
-                      {s.status === 'strong' && <span className="text-emerald-400">STRONG</span>}
-                      {s.status === 'needs-improvement' && <span className="text-amber-400">REVIEW</span>}
-                      {s.status === 'weak' && <span className="text-orange-400">WEAK</span>}
-                    </span>
-                  </a>
-                </li>
-              ))}
-            </ol>
-          </div>
+        {outlineOpen && (
+          <>
+            <button
+              type="button"
+              className="fixed inset-0 z-20 bg-black/20 lg:hidden"
+              onClick={() => setOutlineOpen(false)}
+              aria-label="Close outline"
+            />
+            <aside className="fixed right-0 top-[53px] z-30 h-[calc(100vh-53px)] w-[280px] overflow-y-auto border-l border-gray-200 bg-white lg:static lg:top-0 lg:z-auto lg:h-auto">
+              <div className="border-b border-gray-200 px-4 py-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-500">Outline</p>
+                {proposalData.overallConfidence != null && (
+                  <div className="mt-3">
+                    <ConfidenceScore score={proposalData.overallConfidence} />
+                  </div>
+                )}
+              </div>
+              <ul className="py-2">
+                {sections.map((s, idx) => (
+                  <li key={s.id}>
+                    <button
+                      type="button"
+                      onClick={() => handleScrollToSection(s.id)}
+                      className="w-full px-4 py-2 text-left transition-colors hover:bg-gray-50"
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="mt-[2px] w-6 shrink-0 tabular-nums text-[10px] text-gray-400">
+                          {String(idx + 1).padStart(2, '0')}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[12px] font-semibold text-gray-900">{s.title}</p>
+                          <div className="mt-1 flex flex-wrap items-center gap-2">
+                            {s.confidence != null && (
+                              <span className="text-[10px] text-gray-500">{s.confidence}% confidence</span>
+                            )}
+                            {s.required && (
+                              <span className="rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-700">
+                                Required
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </aside>
+          </>
         )}
-
-        {/* Proposal sections — full document */}
-        <div className="space-y-6">
-          {sections.length === 0 ? (
-            <div className="border border-dashed border-ds-border bg-ds-surface/50 py-16 text-center">
-              <p className="text-sm text-ds-text-muted">No proposal sections available.</p>
-            </div>
-          ) : (
-            sections.map((section, index) => (
-              <ProposalDocSection key={section.id} section={section} index={index} />
-            ))
-          )}
-        </div>
-
-        {/* Document footer */}
-        <div className="mt-12 border-t border-ds-border pt-6 text-center">
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ds-text-muted">
-            Leidos GenAI · Proposal Intelligence Platform
-          </p>
-          <p className="font-mono text-[10px] text-ds-text-subtle mt-1">
-            This document was generated by AI and requires human review before submission.
-          </p>
-        </div>
-      </main>
+      </div>
     </div>
-  );
-}
-
-// ── Section component ──────────────────────────────────────────────────────────
-
-function ProposalDocSection({ section, index }: { section: ProposalSection; index: number }) {
-  const statusConfig = {
-    strong: {
-      icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-400" weight="bold" />,
-      label: 'Strong',
-      labelClass: 'text-emerald-400',
-      barClass: 'bg-emerald-600/60',
-    },
-    'needs-improvement': {
-      icon: <WarningCircle className="h-3.5 w-3.5 text-amber-400" weight="bold" />,
-      label: 'Needs Review',
-      labelClass: 'text-amber-400',
-      barClass: 'bg-amber-600/60',
-    },
-    weak: {
-      icon: <XCircle className="h-3.5 w-3.5 text-orange-400" weight="bold" />,
-      label: 'Weak',
-      labelClass: 'text-orange-400',
-      barClass: 'bg-orange-600/60',
-    },
-  };
-  const cfg = statusConfig[section.status as keyof typeof statusConfig] ?? statusConfig.weak;
-
-  return (
-    <article id={`section-${section.id}`} className="border border-ds-border bg-ds-surface scroll-mt-16">
-      {/* Section header */}
-      <div className="flex items-center justify-between gap-4 border-b border-ds-border bg-ds-surface-elevated/60 px-6 py-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="font-mono text-[10px] font-semibold text-ds-text-muted shrink-0">
-            {String(index + 1).padStart(2, '0')}
-          </span>
-          <h2 className="text-[13px] font-semibold text-ds-text leading-tight truncate">
-            {section.title}
-          </h2>
-          {section.required && (
-            <span className="shrink-0 border border-ds-accent/40 bg-ds-accent/10 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-amber-300">
-              Required
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {cfg.icon}
-          <span className={`font-mono text-[10px] font-semibold uppercase tracking-[0.1em] ${cfg.labelClass}`}>
-            {cfg.label}
-          </span>
-          {section.confidence != null && (
-            <span className="font-mono text-[10px] text-ds-text-muted ml-1">
-              {section.confidence}%
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Section content */}
-      <div className="px-8 py-6">
-        {section.content ? (
-          <div className="prose-proposal">
-            <ReactMarkdown
-              components={{
-                p: ({ children }) => (
-                  <p className="mb-4 text-[13px] leading-relaxed text-ds-text-secondary last:mb-0">
-                    {children}
-                  </p>
-                ),
-                strong: ({ children }) => (
-                  <strong className="font-semibold text-ds-text">{children}</strong>
-                ),
-                h1: ({ children }) => (
-                  <h1 className="mb-3 mt-6 text-base font-bold text-ds-text first:mt-0">{children}</h1>
-                ),
-                h2: ({ children }) => (
-                  <h2 className="mb-2 mt-5 text-sm font-semibold text-ds-text first:mt-0">{children}</h2>
-                ),
-                h3: ({ children }) => (
-                  <h3 className="mb-2 mt-4 text-[12px] font-semibold uppercase tracking-wide text-ds-text-muted first:mt-0">
-                    {children}
-                  </h3>
-                ),
-                ul: ({ children }) => (
-                  <ul className="mb-4 ml-6 list-disc space-y-1.5 last:mb-0">{children}</ul>
-                ),
-                ol: ({ children }) => (
-                  <ol className="mb-4 ml-6 list-decimal space-y-1.5 last:mb-0">{children}</ol>
-                ),
-                li: ({ children }) => (
-                  <li className="text-[13px] leading-relaxed text-ds-text-secondary pl-1">{children}</li>
-                ),
-                blockquote: ({ children }) => (
-                  <blockquote className="my-4 border-l-4 border-ds-primary/60 pl-4 italic text-ds-text-muted">
-                    {children}
-                  </blockquote>
-                ),
-                hr: () => <hr className="my-6 border-t border-ds-border" />,
-                code: ({ children, className }) => {
-                  const isInline = !className;
-                  return isInline ? (
-                    <code className="rounded bg-ds-shell px-1 py-0.5 font-mono text-[11px] text-amber-300">
-                      {children}
-                    </code>
-                  ) : (
-                    <code className={className}>{children}</code>
-                  );
-                },
-              }}
-            >
-              {section.content}
-            </ReactMarkdown>
-          </div>
-        ) : (
-          <p className="text-[13px] italic text-ds-text-muted">No content generated for this section.</p>
-        )}
-      </div>
-    </article>
   );
 }
