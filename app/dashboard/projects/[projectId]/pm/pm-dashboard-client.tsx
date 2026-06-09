@@ -446,8 +446,8 @@ export default function PmDashboardClient({
               </p>
               {demoMode && (
                 <p className="mt-1 text-[10px] leading-snug text-amber-700/90">
-                  Presentation mode: representative DARPA / Leidos program data is shown because the API returned no
-                  PM rows, partial data, or an error. Live edits are disabled for these placeholder rows.
+                  Presentation mode: placeholder data is shown because the API returned no PM rows, partial data, or an
+                  error. Live edits are disabled for these placeholder rows.
                 </p>
               )}
             </div>
@@ -459,9 +459,9 @@ export default function PmDashboardClient({
                 onClick={reseedDemoPm}
                 disabled={reseedBusy}
                 className="rounded-ds-sm border border-ds-border/70 bg-transparent px-2 py-1 font-mono text-[9px] font-medium uppercase tracking-[0.08em] text-ds-text-muted hover:border-ds-border hover:text-ds-text-secondary disabled:opacity-50"
-                title="Replace PM seed data with demo dataset (sandbox / non-production only)"
+                title="Reseed PM data from this proposal's BAA and org context"
               >
-                {reseedBusy ? 'Reseeding…' : 'Reseed demo data'}
+                {reseedBusy ? 'Reseeding…' : 'Reseed from proposal data'}
               </button>
             )}
             <Link

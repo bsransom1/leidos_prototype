@@ -57,7 +57,7 @@ export function PassBrand({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
           P.A.S.S.
         </p>
         <p className={cn('mt-0.5 font-mono uppercase tracking-[0.1em] text-ds-text-muted', dims.sub)}>
-          Proposal Automation Service System
+          Proposal Automation Solicitation System
         </p>
       </div>
     </div>

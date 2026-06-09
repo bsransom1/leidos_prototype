@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { addDays, addMonths, format, parseISO, subMonths } from 'date-fns';
+import { seedPmFromIngest } from '@/lib/pm-seed-from-ingest';
 
 /** Passed from award route / reseed; all PoP dates are relative to `new Date()` at call time. */
 export type PmSeedOptions = {
@@ -31,13 +32,14 @@ export function pmSeedOptionsFromProposalDates(proposal: PmSeedProposalDates): P
 }
 
 /**
- * If PM rows are missing or clearly broken (phases without milestones), delete and insert demo seed.
- * Used when opening the PM hub so a prior partial seed cannot strand the dashboard on empty data.
+ * If PM rows are missing or clearly broken (phases without milestones), re-seed from the
+ * proposal's own baa_input + organization_context_json. Used when opening the PM hub so a
+ * prior partial seed cannot strand the dashboard on empty data.
  */
 export async function repairPmSeedIfBroken(
   supabase: SupabaseClient,
   proposalId: string,
-  proposal: PmSeedProposalDates
+  _proposal: PmSeedProposalDates
 ): Promise<{ ok: boolean; repaired: boolean; error?: string }> {
   const { data: phases, error: phErr } = await supabase
     .from('pm_phases')
@@ -60,12 +62,8 @@ export async function repairPmSeedIfBroken(
   const needsRepair = phaseIds.length === 0 || milestoneCount === 0;
   if (!needsRepair) return { ok: true, repaired: false };
 
-  const del = await deletePmDataForProposal(supabase, proposalId);
-  if (!del.ok) return { ok: false, repaired: false, error: del.error };
-
-  const options = pmSeedOptionsFromProposalDates(proposal);
-  const ins = await insertLeidosPmDemoSeed(supabase, proposalId, options);
-  if (!ins.ok) return { ok: false, repaired: true, error: ins.error };
+  const result = await seedPmFromIngest(supabase, proposalId);
+  if (!result.ok) return { ok: false, repaired: true, error: result.error };
   return { ok: true, repaired: true };
 }
 
@@ -404,15 +402,14 @@ export async function insertLeidosPmDemoSeed(
 }
 
 /**
- * After award: always replace PM rows with the current demo seed so a stale/partial
- * `pm_phases` row cannot block the new dataset (that was the empty-dashboard failure mode).
+ * After award: seed PM rows from the proposal's own BAA + org JSON ingest data.
+ * Kept for backward compatibility — award route now calls seedPmFromIngest directly.
+ * @deprecated Use seedPmFromIngest from lib/pm-seed-from-ingest instead.
  */
 export async function ensurePmSeedForAwardedProposal(
   supabase: SupabaseClient,
   proposalId: string,
-  options: PmSeedOptions
+  _options: PmSeedOptions
 ): Promise<{ ok: boolean; error?: string }> {
-  const del = await deletePmDataForProposal(supabase, proposalId);
-  if (!del.ok) return del;
-  return insertLeidosPmDemoSeed(supabase, proposalId, options);
+  return seedPmFromIngest(supabase, proposalId);
 }

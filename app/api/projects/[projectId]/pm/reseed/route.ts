@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getPmRole, isAdmin } from '@/lib/pm-access';
-import { deletePmDataForProposal, insertLeidosPmDemoSeed } from '@/lib/pm-seed';
-import { addMonths, subMonths } from 'date-fns';
-import { isPostgrestMissingColumnError } from '@/lib/postgrest-helpers';
+import { seedPmFromIngest } from '@/lib/pm-seed-from-ingest';
 
-/** Demo-only: reset PM tables and reload Leidos/DARPA I2O seed. */
+/** Reseed PM tables from the proposal's own BAA + org JSON ingest data. */
 export async function POST(
   _request: NextRequest,
   context: { params: Promise<{ projectId: string }> }
@@ -39,38 +37,15 @@ export async function POST(
     return NextResponse.json({ error: 'Proposal must be awarded to reseed PM data' }, { status: 400 });
   }
 
-  const del = await deletePmDataForProposal(supabase, projectId);
-  if (!del.ok) {
-    return NextResponse.json({ error: del.error ?? 'Delete failed' }, { status: 500 });
+  const result = await seedPmFromIngest(supabase, projectId);
+
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error ?? 'Reseed failed' }, { status: 500 });
   }
 
-  const now = new Date();
-  const popStart = subMonths(now, 6);
-  const popEnd = addMonths(now, 30);
-  const contractNumber = 'HR001126C0042';
-
-  const ins = await insertLeidosPmDemoSeed(supabase, projectId, { contractNumber, popStart, popEnd });
-  if (!ins.ok) {
-    return NextResponse.json({ error: ins.error ?? 'Insert failed' }, { status: 500 });
-  }
-
-  const awardPatch = {
-    contract_number: contractNumber,
-    period_of_performance_start: popStart.toISOString().slice(0, 10),
-    period_of_performance_end: popEnd.toISOString().slice(0, 10),
-    total_contract_value: 4_750_000,
-    cost_share_amount: 0,
-    total_invoiced: 1_240_000,
-    cmmc_level: 'Level 2',
-  };
-
-  const { error: updErr } = await supabase.from('proposals').update(awardPatch).eq('id', projectId);
-  if (updErr && !isPostgrestMissingColumnError(updErr)) {
-    return NextResponse.json(
-      { success: true, message: 'PM data reseeded; proposal metadata update failed', warning: updErr.message },
-      { status: 200 }
-    );
-  }
-
-  return NextResponse.json({ success: true, message: 'PM data reseeded' });
+  return NextResponse.json({
+    success: true,
+    message: 'PM data reseeded from proposal ingest',
+    pm_profile: result.profile,
+  });
 }

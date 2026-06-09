@@ -1,4 +1,4 @@
-# P.A.S.S. — Proposal Automation Service System
+# P.A.S.S. — Proposal Automation Solicitation System
 
 A web-based AI assistant for research organizations to analyze government BAAs/RFPs, generate structured proposal drafts, score confidence, collaborate with viewers, and manage post-award program data.
 
@@ -243,4 +243,4 @@ After **Mark awarded**, navigate to **`/dashboard/projects/[proposalId]/pm`**. O
 
 ## License
 
-Private prototype — P.A.S.S. (Proposal Automation Service System).
+Private prototype — P.A.S.S. (Proposal Automation Solicitation System).

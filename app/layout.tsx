@@ -17,7 +17,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'P.A.S.S. — Proposal Automation Service System',
+  title: 'P.A.S.S. — Proposal Automation Solicitation System',
   description: 'Solicitation analysis and compliant proposal generation for government BAA/RFP programs.',
 };
 
