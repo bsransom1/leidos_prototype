@@ -29,6 +29,12 @@ interface OrganizationContextJSONUploadProps {
   baa: BAA;
   onSubmit: (context: OrganizationContext) => void;
   onContinue?: () => void;
+  /** Called when JSON passes validation (e.g. demo saves full schema). */
+  onValidatedJson?: (data: OrganizationContextJSON) => void;
+  /** Hide the template download button (demo uses its own sample link). */
+  hideTemplateDownload?: boolean;
+  /** Override continue button label. */
+  continueLabel?: string;
 }
 
 // ── helpers ────────────────────────────────────────────────────────────────────
@@ -580,6 +586,9 @@ export default function OrganizationContextJSONUpload({
   baa,
   onSubmit,
   onContinue,
+  onValidatedJson,
+  hideTemplateDownload = false,
+  continueLabel = 'Continue to Review & Plan',
 }: OrganizationContextJSONUploadProps) {
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -619,6 +628,9 @@ export default function OrganizationContextJSONUpload({
       const data = JSON.parse(text);
       const result = validateOrganizationContext(data);
       setValidationResult(result);
+      if (result.valid && result.data) {
+        onValidatedJson?.(result.data);
+      }
     } catch (error) {
       setValidationResult({
         valid: false,
@@ -651,6 +663,7 @@ export default function OrganizationContextJSONUpload({
         <h2 className="font-mono text-xs font-semibold uppercase tracking-[0.12em] text-ds-text">
           Organization Context
         </h2>
+        {!hideTemplateDownload && (
         <button
           onClick={handleDownloadTemplate}
           disabled={isDownloading}
@@ -662,6 +675,7 @@ export default function OrganizationContextJSONUpload({
             <><DownloadSimple className="w-3 h-3" weight="bold" /><span>Download Template</span></>
           )}
         </button>
+        )}
       </div>
 
       {/* Upload dropzone */}
@@ -742,7 +756,7 @@ export default function OrganizationContextJSONUpload({
               className="flex items-center gap-1.5 border border-emerald-600 bg-emerald-600 px-4 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-white transition-colors hover:bg-emerald-700"
             >
               <CheckCircle className="w-3.5 h-3.5" weight="bold" />
-              Continue to Review &amp; Plan
+              {continueLabel}
             </button>
           </div>
         </>

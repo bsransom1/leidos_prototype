@@ -72,6 +72,7 @@ export default function ProposalGenerationLoader({
         let buffer = '';
         let hasReceivedData = false;
         let lastProgressTime = Date.now();
+        let streamCompleted = false;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -87,52 +88,53 @@ export default function ProposalGenerationLoader({
 
           for (const line of lines) {
             if (!line.startsWith('data: ')) continue;
+
+            let data: { type?: string; progress?: number; message?: string; error?: string; details?: string; data?: unknown; sectionTitle?: string; sectionIndex?: number; totalSections?: number; chunkCount?: number; totalChars?: number };
             try {
-              const data = JSON.parse(line.slice(6));
-              lastProgressTime = Date.now();
+              data = JSON.parse(line.slice(6));
+            } catch {
+              continue;
+            }
 
-              if (data.type === 'progress') {
-                setProgress(data.progress);
-                setMessage(data.message);
+            lastProgressTime = Date.now();
 
-              } else if (data.type === 'section-start') {
-                // New section banner in the log
-                setLog((prev) => [
-                  ...prev,
-                  {
-                    kind: 'section',
-                    title: data.sectionTitle,
-                    index: data.sectionIndex,
-                    total: data.totalSections,
-                  },
-                ]);
+            if (data.type === 'progress') {
+              setProgress(data.progress ?? 0);
+              setMessage(data.message ?? '');
 
-              } else if (data.type === 'chunk-update') {
-                // Append or update the last chunk line under the current section
-                const text = `chunks ${data.chunkCount}  /  ${Number(data.totalChars).toLocaleString()} chars`;
-                setLog((prev) => {
-                  const last = prev[prev.length - 1];
-                  // Replace last chunk line (same section) so the count rolls up, not appends
-                  if (last?.kind === 'chunk') {
-                    return [...prev.slice(0, -1), { kind: 'chunk', text }];
-                  }
-                  return [...prev, { kind: 'chunk', text }];
-                });
+            } else if (data.type === 'section-start') {
+              setLog((prev) => [
+                ...prev,
+                {
+                  kind: 'section',
+                  title: data.sectionTitle ?? '',
+                  index: data.sectionIndex ?? 0,
+                  total: data.totalSections ?? 0,
+                },
+              ]);
 
-              } else if (data.type === 'complete') {
-                setProgress(100);
-                setMessage('Proposal generation complete');
-                setIsGenerating(false);
-                if (timeoutId) clearTimeout(timeoutId);
-                setTimeout(() => onComplete(data.data), 500);
-                return;
+            } else if (data.type === 'chunk-update') {
+              const text = `chunks ${data.chunkCount}  /  ${Number(data.totalChars).toLocaleString()} chars`;
+              setLog((prev) => {
+                const last = prev[prev.length - 1];
+                if (last?.kind === 'chunk') {
+                  return [...prev.slice(0, -1), { kind: 'chunk', text }];
+                }
+                return [...prev, { kind: 'chunk', text }];
+              });
 
-              } else if (data.type === 'error') {
-                if (timeoutId) clearTimeout(timeoutId);
-                throw new Error(data.error || data.details || 'Failed to generate proposal');
-              }
-            } catch (e: any) {
-              // Skip invalid JSON lines silently
+            } else if (data.type === 'complete') {
+              setProgress(100);
+              setMessage('Proposal generation complete');
+              setIsGenerating(false);
+              streamCompleted = true;
+              if (timeoutId) clearTimeout(timeoutId);
+              setTimeout(() => onComplete(data.data), 500);
+              return;
+
+            } else if (data.type === 'error') {
+              if (timeoutId) clearTimeout(timeoutId);
+              throw new Error(data.error || data.details || 'Failed to generate proposal');
             }
           }
 
@@ -142,6 +144,9 @@ export default function ProposalGenerationLoader({
         }
 
         if (!hasReceivedData) throw new Error('No data received from stream');
+        if (!streamCompleted) {
+          throw new Error('Generation ended before completion. The model output may have been truncated — please try again.');
+        }
 
       } catch (error: any) {
         setIsGenerating(false);

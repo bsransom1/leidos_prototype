@@ -1,68 +1,37 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { UploadSimple, CheckCircle, FileText } from '@phosphor-icons/react';
 import { PassBrand, BackLink } from '@/components/ui/app-shell';
-import { Button } from '@/components/ui/button';
+import OrganizationContextJSONUpload from '@/components/OrganizationContextJSONUpload';
 import { getDemoBaa, saveDemoOrgContext } from '@/lib/demo-state';
+import type { BAA, OrganizationContext } from '@/types';
+import type { OrganizationContextJSON } from '@/types/organization-context';
 
 export default function DemoContextPage() {
   const router = useRouter();
-  const [parsed, setParsed] = useState<object | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
+  const [baa, setBaa] = useState<BAA | null>(null);
+  const [validatedJson, setValidatedJson] = useState<OrganizationContextJSON | null>(null);
 
-  // Guard: must have BAA from previous step
   useEffect(() => {
-    if (typeof window !== 'undefined' && !getDemoBaa()) {
+    const stored = getDemoBaa();
+    if (!stored) {
       router.replace('/demo/upload');
+      return;
     }
+    setBaa(stored as BAA);
   }, [router]);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (!file) return;
-    setError(null);
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const text = e.target?.result as string;
-        const obj = JSON.parse(text);
-        if (!obj || typeof obj !== 'object' || !('organization' in obj)) {
-          setError('Invalid org context file. Must contain an "organization" key.');
-          setParsed(null);
-          setFileName(null);
-          return;
-        }
-        setParsed(obj);
-        setFileName(file.name);
-      } catch {
-        setError('Could not parse JSON. Make sure the file is valid JSON.');
-        setParsed(null);
-        setFileName(null);
-      }
-    };
-    reader.readAsText(file);
-  }, []);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { 'application/json': ['.json'] },
-    maxFiles: 1,
-  });
-
   const handleContinue = () => {
-    if (!parsed) return;
-    saveDemoOrgContext(parsed);
+    if (!validatedJson) return;
+    saveDemoOrgContext(validatedJson);
     router.push('/demo/generate');
   };
 
+  if (!baa) return null;
+
   return (
     <div className="min-h-screen bg-ds-page">
-      {/* ── Header ──────────────────────────────────────────────────────── */}
       <header className="border-b border-ds-border bg-ds-header">
         <div className="flex items-center justify-between px-6 py-3">
           <PassBrand size="sm" />
@@ -94,61 +63,16 @@ export default function DemoContextPage() {
           </p>
         </div>
 
-        {/* Drop zone */}
-        <div
-          {...getRootProps()}
-          className={`cursor-pointer border-2 border-dashed p-8 text-center transition-colors ${
-            isDragActive
-              ? 'border-ds-accent/70 bg-ds-accent/10'
-              : parsed
-                ? 'border-emerald-800/65 bg-emerald-950/30'
-                : 'border-ds-border bg-ds-shell/35 hover:border-ds-border-strong hover:bg-white/[0.02]'
-          }`}
-        >
-          <input {...getInputProps()} />
-
-          {parsed ? (
-            <div className="flex items-center justify-center gap-3">
-              <CheckCircle className="h-5 w-5 text-emerald-400" weight="bold" aria-hidden />
-              <div className="text-left">
-                <p className="text-[13px] font-semibold text-emerald-700">
-                  Context loaded — {fileName}
-                </p>
-                <p className="font-mono text-[11px] text-ds-text-muted">
-                  Drop a different file to replace
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center">
-              <div className="mb-3 flex h-10 w-10 items-center justify-center border border-ds-border bg-ds-surface-elevated/40">
-                <FileText className="h-5 w-5 text-ds-text-muted" weight="bold" aria-hidden />
-              </div>
-              <p className="mb-2 text-[14px] font-semibold text-ds-text">
-                {isDragActive ? 'Release to load' : 'Drag & drop org context JSON'}
-              </p>
-              <span className="font-mono border border-ds-primary bg-ds-primary px-5 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white">
-                Browse file
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Inline error */}
-        {error && (
-          <p className="mt-3 flex items-center gap-2 text-[12px] text-red-400">
-            <span className="font-semibold">Error:</span> {error}
-          </p>
-        )}
-
-        {/* Continue */}
-        {parsed && (
-          <div className="mt-5 flex justify-end">
-            <Button type="button" variant="primary" onClick={handleContinue}>
-              Continue to generation →
-            </Button>
-          </div>
-        )}
+        <OrganizationContextJSONUpload
+          baa={baa}
+          hideTemplateDownload
+          continueLabel="Continue to generation →"
+          onValidatedJson={setValidatedJson}
+          onSubmit={(_context: OrganizationContext) => {
+            /* full JSON saved via onValidatedJson on continue */
+          }}
+          onContinue={handleContinue}
+        />
       </main>
     </div>
   );

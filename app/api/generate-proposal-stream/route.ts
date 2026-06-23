@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@/lib/supabase/server';
 import { getPmRole, canEdit } from '@/lib/pm-access';
+import { parseGeneratedProposalJson } from '@/lib/proposal-json-parse';
 
 const anthropic = new Anthropic();
 
@@ -433,7 +434,7 @@ Return ONLY valid JSON in this structure:
           
           const stream = anthropic.messages.stream({
             model: 'claude-sonnet-4-6',
-            max_tokens: 8000,
+            max_tokens: 16384,
             system: systemPrompt,
             messages: [{ role: 'user', content: userPrompt }],
           });
@@ -466,21 +467,9 @@ Return ONLY valid JSON in this structure:
           
           sendProgress(95, 'Processing and validating proposal...');
 
-          let jsonText = fullText.trim();
-          jsonText = jsonText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
-          
-          const jsonStart = jsonText.indexOf('{');
-          const jsonEnd = jsonText.lastIndexOf('}');
-          
-          if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
-            throw new Error('No valid JSON object found in response');
-          }
-          
-          jsonText = jsonText.substring(jsonStart, jsonEnd + 1);
-
           let proposalData: any;
           try {
-            proposalData = JSON.parse(jsonText);
+            proposalData = parseGeneratedProposalJson(fullText);
             console.log('✅ JSON parsed successfully');
             console.log('📊 Sections found:', proposalData.sections?.length || 0);
             if (proposalData.sections) {
@@ -491,8 +480,8 @@ Return ONLY valid JSON in this structure:
             }
           } catch (parseError: any) {
             console.error('❌ JSON parse failed:', parseError.message);
-            console.error('📝 JSON text length:', jsonText.length);
-            console.error('📝 JSON start:', jsonText.substring(0, 200));
+            console.error('📝 Response length:', fullText.length);
+            console.error('📝 Response start:', fullText.substring(0, 200));
             throw new Error(`JSON parse failed: ${parseError.message}`);
           }
 

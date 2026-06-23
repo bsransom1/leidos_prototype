@@ -58,19 +58,19 @@
       "name": "Braden Ransom",
       "role": "Lead Research Engineer",
       "expertise": ["Full-stack development (Next.js, Supabase)", "LLM integration and orchestration", "UX for AI systems"],
-      "allocation_percent": 50
+      "allocation_percent": 35
     },
     {
       "name": "Jordan Lee",
       "role": "Systems Engineer",
       "expertise": ["Requirements decomposition", "BAA/RFP analysis", "Systems architecture"],
-      "allocation_percent": 40
+      "allocation_percent": 25
     },
     {
       "name": "Avery Chen",
       "role": "AI Research Assistant",
       "expertise": ["NLP", "evaluation pipelines", "data preprocessing"],
-      "allocation_percent": 30
+      "allocation_percent": 15
     }
   ],
   "technical_approach": {
