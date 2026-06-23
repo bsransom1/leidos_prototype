@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getUserStubFromCookies, middlewareCookieReader } from '@/lib/supabase/middleware-session';
 
 function isProtectedRoute(pathname: string): boolean {
+  if (pathname.startsWith('/demo')) return false;
   if (pathname.startsWith('/dashboard') || pathname.startsWith('/create')) return true;
   if (pathname.startsWith('/proposal/shared')) return false;
   return pathname.startsWith('/proposal');
@@ -11,6 +12,7 @@ function isProtectedRoute(pathname: string): boolean {
 function needsSessionForMiddleware(pathname: string): boolean {
   if (pathname === '/') return false;
   if (pathname.startsWith('/auth/callback')) return false;
+  if (pathname.startsWith('/demo')) return false;
   return (
     isProtectedRoute(pathname) ||
     pathname === '/login' ||

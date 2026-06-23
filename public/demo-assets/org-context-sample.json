@@ -1,0 +1,148 @@
+{
+  "organization": {
+    "name": "UC Irvine Applied AI & Decision Systems Group",
+    "type": "University-Affiliated Research Lab",
+    "institution": "University of California, Irvine",
+    "website": "https://engineering.uci.edu",
+    "primary_contact": {
+      "name": "Dr. Alexandra Martinez",
+      "email": "alex.martinez@uci.edu",
+      "role": "Principal Investigator"
+    },
+    "secondary_contact": {
+      "name": "Braden Ransom",
+      "email": "bransom@uci.edu",
+      "role": "Lead Research Engineer"
+    },
+    "operating_environment": "Unclassified research environment with capability to simulate government proposal workflows using publicly available BAAs and RFPs",
+    "organizational_maturity": "Prototype-to-pilot stage; prior experience delivering research prototypes to government stakeholders"
+  },
+  "research_profile": {
+    "focus_areas": [
+      "AI-assisted proposal generation",
+      "Large language models for structured document synthesis",
+      "Human-AI collaboration in high-stakes workflows",
+      "Natural language understanding of technical solicitations",
+      "Decision-support systems for government acquisition"
+    ],
+    "prior_experience": "The group has developed multiple prototype systems focused on AI-assisted document analysis and generation, including tools for parsing regulatory documents, extracting structured requirements, and generating structured outputs. Prior work includes collaboration with academic and public-sector stakeholders on decision-support interfaces.",
+    "key_capabilities": [
+      "Retrieval-Augmented Generation (RAG)",
+      "Prompt engineering for structured outputs",
+      "Document parsing and semantic chunking",
+      "Full-stack web application development",
+      "Human-in-the-loop system design",
+      "Evaluation of AI system reliability and trust"
+    ],
+    "representative_projects": [
+      {
+        "name": "AI-Assisted Document Structuring Tool",
+        "description": "System for parsing long-form PDFs into structured sections with semantic tagging",
+        "outcome": "Reduced manual document review time by ~40% in controlled evaluations"
+      },
+      {
+        "name": "Interactive Proposal Drafting Interface",
+        "description": "Prototype interface for generating structured responses to mock BAAs",
+        "outcome": "Demonstrated feasibility of LLM-assisted drafting with human oversight"
+      }
+    ]
+  },
+  "team": [
+    {
+      "name": "Dr. Alexandra Martinez",
+      "role": "Principal Investigator",
+      "expertise": ["Applied AI systems", "Human-centered computing", "Program leadership"],
+      "allocation_percent": 25
+    },
+    {
+      "name": "Braden Ransom",
+      "role": "Lead Research Engineer",
+      "expertise": ["Full-stack development (Next.js, Supabase)", "LLM integration and orchestration", "UX for AI systems"],
+      "allocation_percent": 50
+    },
+    {
+      "name": "Jordan Lee",
+      "role": "Systems Engineer",
+      "expertise": ["Requirements decomposition", "BAA/RFP analysis", "Systems architecture"],
+      "allocation_percent": 40
+    },
+    {
+      "name": "Avery Chen",
+      "role": "AI Research Assistant",
+      "expertise": ["NLP", "evaluation pipelines", "data preprocessing"],
+      "allocation_percent": 30
+    }
+  ],
+  "technical_approach": {
+    "system_architecture": {
+      "frontend": "Next.js web application with structured dashboard interface",
+      "backend": "Serverless API routes with LLM orchestration",
+      "database": "Supabase (PostgreSQL) for user data and proposal storage",
+      "ai_stack": ["OpenAI / Anthropic APIs", "Embedding models for semantic retrieval", "Vector storage for document context"]
+    },
+    "core_pipeline": [
+      "Ingest BAA or RFP document",
+      "Parse and segment document into semantic sections",
+      "Extract key requirements and evaluation criteria",
+      "Generate structured proposal outline",
+      "Expand into full draft with section-level generation",
+      "Store and allow human review/editing"
+    ],
+    "human_in_the_loop": {
+      "review_points": ["Requirement extraction validation", "Outline approval", "Final draft refinement"],
+      "editing_capability": true
+    }
+  },
+  "infrastructure_and_data": {
+    "data_sources": ["Publicly available BAAs", "Government RFP documents", "Synthetic test cases"],
+    "data_handling": "No classified or export-controlled data is used; all processing occurs on unclassified inputs",
+    "deployment_environment": "Cloud-hosted environment (Vercel + Supabase)",
+    "scalability_considerations": ["Handling long documents (50+ pages)", "Managing token limits via chunking", "Caching intermediate outputs"]
+  },
+  "funding_plan": {
+    "total_requested_usd": 1250000,
+    "duration_months": 18,
+    "breakdown": [
+      { "category": "Personnel", "amount_usd": 750000, "notes": "Engineering, research, and PI oversight" },
+      { "category": "Cloud & AI Compute", "amount_usd": 250000, "notes": "LLM usage, vector storage, compute scaling" },
+      { "category": "Equipment", "amount_usd": 100000, "notes": "Development and testing infrastructure" },
+      { "category": "Program Management & Travel", "amount_usd": 150000, "notes": "Stakeholder coordination and reviews" }
+    ]
+  },
+  "project_goals": {
+    "primary_objective": "Develop an AI-assisted system that enables rapid understanding and structured response generation for government BAAs and RFPs.",
+    "technical_goals": [
+      "Automate requirement extraction from unstructured documents",
+      "Generate structured proposal outlines aligned with evaluation criteria",
+      "Support iterative human-AI collaboration in drafting",
+      "Improve speed and consistency of proposal development"
+    ],
+    "evaluation_metrics": [
+      "Reduction in proposal drafting time",
+      "Accuracy of requirement extraction",
+      "User trust and usability scores",
+      "Alignment with BAA evaluation criteria"
+    ],
+    "expected_outcomes": [
+      "Functional prototype platform",
+      "Demonstrated time savings in controlled studies",
+      "Documentation for transition to operational environments"
+    ]
+  },
+  "risk_and_mitigation": [
+    { "risk": "LLM hallucination in generated proposals", "mitigation": "Introduce validation steps and human review checkpoints" },
+    { "risk": "Misinterpretation of BAA requirements", "mitigation": "Use structured extraction and traceability mapping" },
+    { "risk": "Token/context limitations for long documents", "mitigation": "Chunking, retrieval-based context injection" }
+  ],
+  "transition_and_impact": {
+    "target_users": ["Defense contractors", "Academic research labs", "Government proposal teams"],
+    "transition_path": "Pilot deployment within research and contractor environments, followed by integration into internal proposal workflows",
+    "long_term_vision": "Establish AI-assisted proposal generation as a standard capability in government acquisition ecosystems"
+  },
+  "compliance_and_constraints": {
+    "security_clearance_required": false,
+    "export_control_applicable": false,
+    "ethical_considerations": "Ensure transparency of AI-generated content and maintain human oversight",
+    "special_constraints": "System limited to unclassified data and research use during initial phases"
+  }
+}

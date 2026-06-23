@@ -429,7 +429,7 @@ Return ONLY valid JSON in this structure:
           let totalContentLength = 0;
           
           const stream = anthropic.messages.stream({
-            model: 'claude-sonnet-4-20250514',
+            model: 'claude-sonnet-4-6',
             max_tokens: 8000,
             system: systemPrompt,
             messages: [{ role: 'user', content: userPrompt }],
@@ -586,7 +586,7 @@ ${JSON.stringify({ title: proposalData.title, sections: proposalData.sections },
 `;
             
             const groundingResp = await anthropic.messages.create({
-              model: 'claude-sonnet-4-20250514',
+              model: 'claude-sonnet-4-6',
               max_tokens: 1000,
               messages: [{ role: 'user', content: auditorPrompt }],
             });
