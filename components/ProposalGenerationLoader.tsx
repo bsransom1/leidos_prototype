@@ -10,6 +10,8 @@ interface ProposalGenerationLoaderProps {
   organizationContext: any;
   /** When set, server enforces editor/admin role before streaming generation. */
   proposalId?: string;
+  /** Skip auth for stateless /demo flow (no DB writes). */
+  demoMode?: boolean;
 }
 
 /** A log entry is either a section header or a chunk line under a section */
@@ -23,6 +25,7 @@ export default function ProposalGenerationLoader({
   baa,
   organizationContext,
   proposalId,
+  demoMode = false,
 }: ProposalGenerationLoaderProps) {
   const [progress, setProgress]       = useState(0);
   const [message, setMessage]         = useState('Initializing proposal generation...');
@@ -49,7 +52,7 @@ export default function ProposalGenerationLoader({
         const response = await fetch('/api/generate-proposal-stream', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ baa, organizationContext, proposalId }),
+          body: JSON.stringify({ baa, organizationContext, proposalId, demoMode }),
         });
 
         if (!response.ok) {

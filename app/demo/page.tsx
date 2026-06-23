@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { PassBrand } from '@/components/ui/app-shell';
 import { ButtonLink } from '@/components/ui/button';
 
@@ -145,9 +144,17 @@ export default function DemoLandingPage() {
 
       {/* ── Footer ───────────────────────────────────────────────────────── */}
       <footer className="border-t border-ds-border bg-ds-shell">
-        <div className="mx-auto max-w-5xl px-6 py-4 text-center">
+        <div className="mx-auto max-w-5xl px-6 py-4 text-center space-y-2">
           <p className="font-mono text-[10px] text-ds-text-muted">
             P.A.S.S. — Built by Leidos &amp; Gentlemen · UCI Informatics Capstone 2026
+          </p>
+          <p>
+            <a
+              href="/login"
+              className="font-mono text-[10px] uppercase tracking-[0.1em] text-ds-text-muted underline underline-offset-2 hover:text-ds-text-secondary"
+            >
+              Sign in to full app
+            </a>
           </p>
         </div>
       </footer>

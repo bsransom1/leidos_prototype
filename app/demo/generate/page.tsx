@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { PassBrand } from '@/components/ui/app-shell';
 import ProposalGenerationLoader from '@/components/ProposalGenerationLoader';
 import { getDemoBaa, getDemoOrgContext, saveDemoProposal, clearDemoState } from '@/lib/demo-state';
-import { ButtonLink } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 
 export default function DemoGeneratePage() {
   const router = useRouter();
@@ -72,14 +72,15 @@ export default function DemoGeneratePage() {
           <div className="border border-red-800/50 bg-red-950/30 p-6 text-center">
             <p className="mb-1 text-[13px] font-semibold text-red-300">Generation failed</p>
             <p className="mb-5 text-[12px] text-ds-text-muted">{error}</p>
-            <ButtonLink href="/demo/upload" variant="secondary" onClick={handleRetry} prefetch={false}>
+            <Button type="button" variant="secondary" onClick={handleRetry}>
               ← Try again
-            </ButtonLink>
+            </Button>
           </div>
         ) : ready && baa && orgContext ? (
           <ProposalGenerationLoader
             baa={baa}
             organizationContext={orgContext}
+            demoMode
             onComplete={handleComplete}
             onError={handleError}
           />

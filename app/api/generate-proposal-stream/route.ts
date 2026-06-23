@@ -7,29 +7,32 @@ const anthropic = new Anthropic();
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authErr,
-    } = await supabase.auth.getUser();
-
-    if (authErr || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
     const body = await request.json();
-    const { baa, organizationContext, proposalId } = body;
+    const { baa, organizationContext, proposalId, demoMode } = body;
 
-    if (proposalId && typeof proposalId === 'string') {
-      const role = await getPmRole(supabase, user.id, user.email ?? undefined, proposalId);
-      if (!canEdit(role)) {
-        return new Response(JSON.stringify({ error: 'Only editors and admins can run proposal generation.' }), {
-          status: 403,
+    const supabase = await createClient();
+
+    if (!demoMode) {
+      const {
+        data: { user },
+        error: authErr,
+      } = await supabase.auth.getUser();
+
+      if (authErr || !user) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
           headers: { 'Content-Type': 'application/json' },
         });
+      }
+
+      if (proposalId && typeof proposalId === 'string') {
+        const role = await getPmRole(supabase, user.id, user.email ?? undefined, proposalId);
+        if (!canEdit(role)) {
+          return new Response(JSON.stringify({ error: 'Only editors and admins can run proposal generation.' }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
       }
     }
 

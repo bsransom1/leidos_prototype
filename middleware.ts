@@ -10,7 +10,7 @@ function isProtectedRoute(pathname: string): boolean {
 
 /** Avoid middleware work unless redirects depend on knowing who is logged in. */
 function needsSessionForMiddleware(pathname: string): boolean {
-  if (pathname === '/') return false;
+  if (pathname === '/') return true;
   if (pathname.startsWith('/auth/callback')) return false;
   if (pathname.startsWith('/demo')) return false;
   return (
@@ -30,6 +30,14 @@ export async function middleware(request: NextRequest) {
   }
 
   const pathname = request.nextUrl.pathname;
+
+  // Portfolio entry: unauthenticated visitors go to demo; signed-in users to dashboard
+  if (pathname === '/') {
+    if (user) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+    return NextResponse.redirect(new URL('/demo', request.url));
+  }
 
   if (isProtectedRoute(pathname) && !user) {
     return NextResponse.redirect(new URL('/login', request.url));
