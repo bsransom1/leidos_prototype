@@ -5,6 +5,9 @@ import { getPmRole, canEdit } from '@/lib/pm-access';
 import { parseGeneratedProposalJson } from '@/lib/proposal-json-parse';
 
 const anthropic = new Anthropic();
+const GENERATION_MAX_TOKENS = 8000;
+/** Rough char budget for progress bar during streaming (~4 chars/token). */
+const ESTIMATED_STREAM_CHARS = GENERATION_MAX_TOKENS * 3.5;
 
 export async function POST(request: NextRequest) {
   try {
@@ -428,43 +431,55 @@ Return ONLY valid JSON in this structure:
           }
 
           let fullText = '';
-          let sectionCount = 0;
+          let detectedSections = 1;
           let chunkCount = 0;
           let totalContentLength = 0;
-          
+          let lastProgressPct = 10;
+
           const stream = anthropic.messages.stream({
             model: 'claude-sonnet-4-6',
-            max_tokens: 16384,
+            max_tokens: GENERATION_MAX_TOKENS,
             system: systemPrompt,
             messages: [{ role: 'user', content: userPrompt }],
           });
-          
+
           stream.on('text', (textDelta) => {
             if (!textDelta) return;
             fullText += textDelta;
             totalContentLength += textDelta.length;
             chunkCount++;
-            
-            if (chunkCount % 100 === 0) {
+
+            if (chunkCount % 50 === 0) {
               sendChunkUpdate(chunkCount, totalContentLength);
             }
-            
-            const newSectionCount = (fullText.match(/\}\s*,\s*\{/g) || []).length + 1;
-            if (newSectionCount > sectionCount) {
-              sectionCount = newSectionCount;
-              const nextSectionTitle = sectionsToGenerate[sectionCount] ?? '';
-              if (nextSectionTitle) {
-                sendSectionStart(sectionCount + 1, nextSectionTitle);
+
+            // Detect completed section objects via stable id markers (not `},{` in content)
+            const sectionIds = [...fullText.matchAll(/"id"\s*:\s*"section-(\d+)"/g)].map((m) =>
+              parseInt(m[1], 10),
+            );
+            const maxSectionId = sectionIds.length ? Math.max(...sectionIds) : 1;
+            if (maxSectionId > detectedSections) {
+              for (let s = detectedSections + 1; s <= maxSectionId; s++) {
+                const title = sectionsToGenerate[s - 1];
+                if (title) sendSectionStart(s, title);
               }
+              detectedSections = maxSectionId;
+            }
+
+            const charPct = Math.min(88, 10 + (totalContentLength / ESTIMATED_STREAM_CHARS) * 78);
+            const sectionPct = Math.min(88, 10 + (detectedSections / totalSections) * 78);
+            const pct = Math.max(charPct, sectionPct);
+            if (pct >= lastProgressPct + 1) {
+              lastProgressPct = Math.floor(pct);
               sendProgress(
-                Math.min(90, 10 + (sectionCount / totalSections) * 80),
-                `Completed ${sectionCount} of ${totalSections} sections`
+                lastProgressPct,
+                `Generating section ${detectedSections} of ${totalSections}…`,
               );
             }
           });
-          
+
           await stream.finalMessage();
-          
+
           sendProgress(95, 'Processing and validating proposal...');
 
           let proposalData: any;
@@ -553,7 +568,8 @@ Return ONLY valid JSON in this structure:
             };
           });
           
-          // Grounding verification pass (best-effort)
+          // Grounding verification pass (best-effort; skip in demo for speed)
+          if (!demoMode) {
           sendProgress(90, 'Verifying proposal grounding...');
           try {
             const auditorPrompt = `You are a grounding auditor. You will be given (1) the BAA text and (2) a generated proposal (JSON).
@@ -628,6 +644,7 @@ ${JSON.stringify({ title: proposalData.title, sections: proposalData.sections },
             }
           } catch (e: any) {
             console.error('Grounding check failed:', e?.message || e);
+          }
           }
           
           // Log total word count for validation
